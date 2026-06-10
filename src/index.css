@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+*:not(.no-default-transition) {
+  @apply transition-all duration-300;
+}
+
+.no-default-transition,
+.no-default-transition * {
+  transition: none !important;
+}
+
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+
+.animate-fadeIn { animation: fadeIn .3s ease-out }
+.animate-slideUp { animation: slideUp .3s ease-out }
+
+/* Chrome, Edge, Safari */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* 🔒 REMOVE SCROLLBAR FROM ENTIRE APP */
+
+/* Chrome, Edge, Safari */
+*::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+  display: none;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: none;
+}
+
+/* Internet Explorer */
+* {
+  -ms-overflow-style: none;
+}
+
+.is-negative-number {
+  color: rgb(225 29 72) !important;
+}
+
+@media (max-width: 768px) {
+  table {
+    min-width: 640px;
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  table th,
+  table td {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-panel {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 18px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid:has(.stat-card) {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-card {
+    display: none !important;
+  }
+}
