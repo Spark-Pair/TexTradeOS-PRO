@@ -5,6 +5,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
+import UpdateManager from "../components/UpdateManager";
 
 export default function Layout({ children }) {
   const { logout, user } = useAuth();
@@ -101,6 +102,7 @@ export default function Layout({ children }) {
         confirmText="Logout"
         cancelText="Cancel"
       />
+      <UpdateManager />
     </div>
   );
 }
