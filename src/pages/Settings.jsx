@@ -10,6 +10,8 @@ import {
   defaultAccessRules,
   normalizeBusinessUserRoles,
 } from "../utils/accessConfig";
+import useAuth from "../hooks/useAuth";
+import SystemManagement from "../components/SystemManagement";
 
 const emptyReferenceData = () => ({
   user_roles: normalizeBusinessUserRoles([]),
@@ -34,6 +36,7 @@ function RuleCheckbox({ checked, onChange, label }) {
 }
 
 export default function SettingsPage() {
+  const { user } = useAuth();
   const { showToast } = useToast();
   const [referenceData, setReferenceData] = useState(emptyReferenceData());
   const [ruleDataDraft, setRuleDataDraft] = useState(emptyRuleData());
@@ -181,6 +184,7 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+      {(user?.role === "developer" || user?.role === "admin") && <SystemManagement />}
     </div>
   );
 }

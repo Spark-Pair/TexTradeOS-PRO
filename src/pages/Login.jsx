@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from "../context/ToastContext";
 import { loginUser } from '../api/auth.api';
 import useAuth from '../hooks/useAuth';
+import { fetchSetupStatus } from '../api/system';
 
 import Input from '../components/Input';
 import Button from '../components/Button';
@@ -26,6 +27,14 @@ export default function Login() {
       navigate('/dashboard', { replace: true });
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    fetchSetupStatus()
+      .then(({ data }) => {
+        if (!data?.license?.allowed) navigate("/setup", { replace: true });
+      })
+      .catch(() => {});
+  }, [navigate]);
 
   const handleChange = (e) => {
     setForm(prev => ({

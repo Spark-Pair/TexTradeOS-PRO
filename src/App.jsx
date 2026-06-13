@@ -14,6 +14,7 @@ const Invoices = lazy(() => import("./pages/Invoices"));
 const Users = lazy(() => import("./pages/Users"));
 const Settings = lazy(() => import("./pages/Settings"));
 const KeyboardShortcuts = lazy(() => import("./pages/KeyboardShortcuts"));
+const Setup = lazy(() => import("./pages/Setup"));
 
 const NEGATIVE_NUMBER_REGEX = /^\(?\s*(?:PKR|RS\.?)?\s*-\s*\d[\d,]*(?:\.\d+)?\s*\)?$/i;
 const NEGATIVE_NUMBER_CLASS = "is-negative-number";
@@ -178,6 +179,7 @@ export default function App() {
           <Suspense fallback={routeFallback}>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/setup" element={<Setup />} />
               <Route
                 element={
                   <ProtectedRoute>
