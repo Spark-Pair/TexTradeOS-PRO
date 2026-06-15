@@ -4,6 +4,7 @@ import { apiClient } from "../api/apiClient";
 import useAuth from "../hooks/useAuth";
 import Button from "./Button";
 import { IS_DEVELOPMENT } from "../config/environment";
+import { handOffUpdateToLauncher } from "../utils/updateHandoff";
 
 const DISMISSED_KEY = "textradeos-dismissed-update";
 
@@ -51,6 +52,7 @@ export default function UpdateManager() {
       await apiClient.post("/updates/install");
       localStorage.removeItem(DISMISSED_KEY);
       setRequested(true);
+      handOffUpdateToLauncher();
     } catch (requestError) {
       setError(requestError?.response?.data?.message || "Could not request the update");
       setInstalling(false);

@@ -21,6 +21,7 @@ import {
   requestUpdateInstall,
   waitForCommand,
 } from "../api/system";
+import { handOffUpdateToLauncher } from "../utils/updateHandoff";
 
 const formatBytes = (value) => {
   const bytes = Number(value || 0);
@@ -92,7 +93,7 @@ export default function SystemManagement() {
     setBusy("update");
     try {
       await requestUpdateInstall();
-      showToast({ type: "success", message: "Update approved. Installation is starting." });
+      handOffUpdateToLauncher();
     } catch (error) {
       showToast({ type: "error", message: error?.response?.data?.message || "Update failed" });
     } finally {
