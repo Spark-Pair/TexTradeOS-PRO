@@ -8,7 +8,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import UpdateManager from "../components/UpdateManager";
 
 export default function Layout({ children }) {
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const location = useLocation();
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);

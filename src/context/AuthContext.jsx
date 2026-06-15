@@ -1,6 +1,5 @@
 import { createContext, useCallback, useEffect, useState } from "react";
 import { AUTH_SESSION_EXPIRED_EVENT, storage } from "../api/apiClient";
-import { clearOfflineData, initOfflineForUser, offlineAccess } from "../offline/idb";
 import { useToast } from "./ToastContext";
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -20,15 +19,10 @@ export default function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
 
-  const activateUser = useCallback(async (nextUser) => {
+  const activateUser = useCallback((nextUser) => {
     if (!nextUser) return null;
     setUser(nextUser);
     localStorage.setItem("cachedUser", JSON.stringify(nextUser));
-    offlineAccess.unlock();
-    await initOfflineForUser({
-      userId: nextUser._id || nextUser.id,
-      businessId: nextUser.businessId?._id || nextUser.businessId || nextUser.business?.id,
-    });
     return nextUser;
   }, []);
 
@@ -37,7 +31,8 @@ export default function AuthProvider({ children }) {
     const { accessToken, refreshToken, sessionId } = storage.getAuth();
     const hasStoredSession = accessToken || (refreshToken && sessionId);
     if (cachedUser && hasStoredSession) {
-      activateUser(cachedUser).finally(() => setLoading(false));
+      activateUser(cachedUser);
+      setLoading(false);
       return;
     }
     if (cachedUser && !hasStoredSession) {
@@ -50,8 +45,6 @@ export default function AuthProvider({ children }) {
     const handleSessionExpired = () => {
       setUser(null);
       localStorage.removeItem("cachedUser");
-      offlineAccess.lock();
-      clearOfflineData().catch(() => null);
       showToast({
         type: "error",
         message: "Your session expired. Please log in again.",
@@ -74,7 +67,7 @@ export default function AuthProvider({ children }) {
             businessId: source.business?.id || source.businessId,
           }
         : null;
-      const activeUser = await activateUser(nextUser);
+      const activeUser = activateUser(nextUser);
       if (!activeUser) return { success: false };
       showToast({
         type: "success",
@@ -90,8 +83,6 @@ export default function AuthProvider({ children }) {
     setUser(null);
     storage.clearAuth();
     localStorage.removeItem("cachedUser");
-    offlineAccess.lock();
-    await clearOfflineData().catch(() => null);
     showToast({ type: "success", message: "Logged out successfully" });
     return { success: true };
   }, [showToast]);

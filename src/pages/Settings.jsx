@@ -113,7 +113,7 @@ export default function SettingsPage() {
   const rules = ruleDataDraft.access_rules || defaultAccessRules(referenceData.user_roles);
 
   return (
-    <div className="relative z-10 max-w-7xl mx-auto h-full overflow-scroll">
+    <div className="relative z-10 max-w-7xl mx-auto">
       <PageHeader
         title="Settings"
         subtitle="Access Rules"

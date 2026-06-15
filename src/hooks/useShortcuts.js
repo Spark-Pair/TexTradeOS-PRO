@@ -13,7 +13,7 @@ function normalizeShortcuts(user) {
 export function useShortcutMap() {
   const { user } = useAuth();
 
-  return useMemo(() => normalizeShortcuts(user), [user?.shortcuts]);
+  return useMemo(() => normalizeShortcuts(user), [user]);
 }
 
 export function useShortcut(actionId) {

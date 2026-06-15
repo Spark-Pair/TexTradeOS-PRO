@@ -39,39 +39,8 @@ export const logoutUser = async () => {
   }
 };
 
-export const logoutAllDevices = async () => {
-  const { accessToken, sessionId } = storage.getAuth();
-
-  try {
-    await apiClient.post(
-      "/auth/logout-all",
-      {},
-      {
-        headers: {
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          ...(sessionId ? { "x-session-id": sessionId } : {}),
-        },
-      }
-    );
-  } catch (error) {
-    console.error('Logout all error:', error);
-  } finally {
-    storage.clearAuth();
-  }
-};
-
 export const getMe = async () => {
   const res = await apiClient.get("/auth/me");
-  return res.data;
-};
-
-export const getUserSessions = async () => {
-  const res = await apiClient.get("/auth/sessions");
-  return res.data;
-};
-
-export const revokeSession = async (sessionId) => {
-  const res = await apiClient.delete(`/auth/sessions/${sessionId}`);
   return res.data;
 };
 

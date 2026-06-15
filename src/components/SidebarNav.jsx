@@ -4,7 +4,7 @@ import { LayoutGrid, FileText, Users2, Settings, LogOut, ChevronDown, Keyboard }
 import SidebarNavItem from './SidebarNavItem';
 import useAuth from '../hooks/useAuth';
 import { AnimatePresence } from "framer-motion";
-import { fetchMyReferenceData, fetchMyRuleData } from '../api/business';
+import { fetchMyInvoiceCounter, fetchMyReferenceData, fetchMyRuleData } from '../api/business';
 import { BUSINESS_ACCESS_ITEMS, hasAccessForRole } from '../utils/accessConfig';
 
 const developerNav = [
@@ -134,28 +134,27 @@ const SidebarNav = ({ currentPath, handleLogout, isMobileOpen = false, onCloseMo
     runWhenIdle(async () => {
       switch (path) {
         case '/dashboard': {
-          const { fetchDashboardSummary, fetchDashboardTrend } = await import('../api/dashboard');
-          await Promise.allSettled([fetchDashboardSummary(), fetchDashboardTrend()]);
+          const { fetchDashboardTrend } = await import('../api/dashboard');
+          const now = new Date();
+          const dateTo = now.toISOString().slice(0, 10);
+          now.setDate(now.getDate() - 29);
+          const dateFrom = now.toISOString().slice(0, 10);
+          await fetchDashboardTrend({ date_from: dateFrom, date_to: dateTo });
           break;
         }
         case '/invoices': {
-          const [invoiceApi, businessApi] = await Promise.all([
-            import('../api/invoice'),
-            import('../api/business'),
-          ]);
+          const invoiceApi = await import('../api/invoice');
           await Promise.allSettled([
             invoiceApi.fetchInvoices({ page: 1, limit: 20 }),
             invoiceApi.fetchInvoiceOrderGroups({ page: 1, limit: 20 }),
-            businessApi.fetchMyInvoiceBanner(),
-            businessApi.fetchMyInvoiceCounter(),
+            fetchMyInvoiceCounter(),
           ]);
           break;
         }
         case '/settings': {
-          const businessApi = await import('../api/business');
           await Promise.allSettled([
-            businessApi.fetchMyReferenceData(),
-            businessApi.fetchMyRuleData(),
+            fetchMyReferenceData(),
+            fetchMyRuleData(),
           ]);
           break;
         }

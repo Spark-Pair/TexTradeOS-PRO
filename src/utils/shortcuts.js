@@ -6,8 +6,8 @@ export const SHORTCUT_ACTIONS = [
   },
   {
     id: "production_add_row",
-    label: "Add Row",
-    description: "Add a new production row from last input (pcs/rounds)",
+    label: "Add Invoice Row",
+    description: "Adds another item row while entering an invoice.",
   },
 ];
 
