@@ -13,6 +13,8 @@ import {
   toggleBusinessUserStatus,
   resetBusinessUserPassword,
   createBusinessUser,
+  deleteBusinessUser,
+  deleteUser,
 } from "../api/user";
 
 import StatCard from "../components/StatCard";
@@ -184,6 +186,7 @@ export default function Users() {
     if (isDeveloper) return false;
     return hasAccessForRole(ruleData, referenceData, "users_manage", user?.role);
   }, [isDeveloper, referenceData, ruleData, user?.role]);
+  const canDeleteUsers = isDeveloper || user?.role === "admin";
 
   useEffect(() => {
     if (isDeveloper) return;
@@ -324,6 +327,37 @@ export default function Users() {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleDeleteUser = (targetUser) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete User",
+      message: `Permanently delete "${targetUser.name}"? You can do this only after deleting every invoice created by this user.`,
+      variant: "danger",
+      confirmText: "Delete User",
+      onConfirm: async () => {
+        try {
+          if (isDeveloper) {
+            await deleteUser(targetUser._id);
+          } else {
+            await deleteBusinessUser(targetUser._id);
+          }
+          const nextPage = users.length === 1 && pagination.currentPage > 1
+            ? pagination.currentPage - 1
+            : pagination.currentPage;
+          await loadUsers(nextPage);
+          if (isDeveloper) await loadActiveUsers();
+          showToast({ type: "success", message: "User deleted successfully" });
+        } catch (err) {
+          showToast({
+            type: "error",
+            message: err.response?.data?.message || "Failed to delete user",
+          });
+          throw err;
+        }
+      },
+    });
   };
 
   const filterConfig = [
@@ -569,6 +603,13 @@ export default function Users() {
                         onToggleStatus={(data) =>
                           handleUserDetailsActions("toggleStatus", data)
                         }
+                        canDelete={
+                          canDeleteUsers &&
+                          (isDeveloper || item.role !== "developer") &&
+                          String(item._id) !== String(user?.id || user?._id || "")
+                        }
+                        deleteDisabled={Number(item.createdInvoiceCount || 0) > 0}
+                        onDelete={handleDeleteUser}
                       />
                     ))
                   )}

@@ -1,9 +1,20 @@
-import { Eye, Power, MoreVertical, KeyRound, Key } from "lucide-react";
+import { Eye, Power, MoreVertical, KeyRound, Trash2 } from "lucide-react";
 import ContextMenu from "../ContextMenu";
 import StatusBadge from "../StatusBadge";
 import { useState } from "react";
 
-export default function UserRow({ item, index, startIndex, onResetPassword, onView, onToggleStatus, showBusiness = true }) {
+export default function UserRow({
+  item,
+  index,
+  startIndex,
+  onResetPassword,
+  onView,
+  onToggleStatus,
+  onDelete,
+  canDelete = false,
+  deleteDisabled = false,
+  showBusiness = true,
+}) {
   const [activeMenu, setActiveMenu] = useState(null);
   const businessName = item?.business_name || item?.businessId?.name || "-";
 
@@ -57,6 +68,20 @@ export default function UserRow({ item, index, startIndex, onResetPassword, onVi
             <Power size={16} strokeWidth={2.5} />
             {item.isActive ? "Mark Inactive" : "Mark Active"}
           </button>
+          {canDelete && (
+            <>
+              <div className="h-[1px] bg-gray-200 my-1.5" />
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(item); setActiveMenu(null); }}
+                disabled={deleteDisabled}
+                title={deleteDisabled ? "Delete this user's invoices first" : undefined}
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-transparent"
+              >
+                <Trash2 size={16} strokeWidth={2.5} />
+                Delete User
+              </button>
+            </>
+          )}
         </ContextMenu>
       </td>
     </tr>

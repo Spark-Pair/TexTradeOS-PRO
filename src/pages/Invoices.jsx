@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eye, MoreVertical, Plus, Receipt, Wallet, Hash, Sigma } from "lucide-react";
+import { Eye, MoreVertical, Plus, Receipt, Wallet, Hash, Sigma, Trash2 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import TableToolbar from "../components/table/TableToolbar";
 import TableSkeleton from "../components/table/TableLoader";
@@ -7,11 +7,13 @@ import FilterDrawer from "../components/FilterDrawer";
 import ContextMenu from "../components/ContextMenu";
 import { useToast } from "../context/ToastContext";
 import { formatDate, formatNumbers } from "../utils";
-import { createInvoice, fetchInvoice, fetchInvoices } from "../api/invoice";
+import { createInvoice, deleteInvoice, fetchInvoice, fetchInvoices } from "../api/invoice";
 import InvoiceFormModal from "../components/Invoice/InvoiceFormModal";
 import InvoicePreviewModal from "../components/Invoice/InvoicePreviewModal";
 import Button from "../components/Button";
 import StatCard from "../components/StatCard";
+import ConfirmModal from "../components/ConfirmModal";
+import useAuth from "../hooks/useAuth";
 
 const toMillis = (value) => {
   if (!value) return 0;
@@ -41,12 +43,14 @@ const sortLatestFirst = (rows = []) =>
 
 export default function Invoices() {
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formModal, setFormModal] = useState({ isOpen: false });
   const [previewModal, setPreviewModal] = useState({ isOpen: false, data: null });
   const [previewLoading, setPreviewLoading] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
     customer_name: "",
@@ -141,6 +145,27 @@ export default function Invoices() {
       setPreviewModal({ isOpen: false, data: null });
     } finally {
       setPreviewLoading(false);
+    }
+  };
+
+  const canDeleteInvoices = user?.role === "developer" || user?.role === "admin";
+
+  const handleDeleteInvoice = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteInvoice(deleteTarget._id);
+      setDeleteTarget(null);
+      const nextPage = invoices.length === 1 && pagination.currentPage > 1
+        ? pagination.currentPage - 1
+        : pagination.currentPage;
+      await loadInvoices(nextPage, filters);
+      showToast({ type: "success", message: "Invoice deleted successfully" });
+    } catch (err) {
+      showToast({
+        type: "error",
+        message: err.response?.data?.message || "Failed to delete invoice",
+      });
+      throw err;
     }
   };
 
@@ -246,6 +271,22 @@ export default function Invoices() {
                               <Eye size={16} strokeWidth={2.5} />
                               Preview Invoice
                             </button>
+                            {canDeleteInvoices && (
+                              <>
+                                <div className="h-[1px] bg-gray-200 my-1.5" />
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteTarget(invoice);
+                                    setActiveMenu(null);
+                                  }}
+                                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-red-600 hover:bg-red-50 cursor-pointer"
+                                >
+                                  <Trash2 size={16} strokeWidth={2.5} />
+                                  Delete Invoice
+                                </button>
+                              </>
+                            )}
                           </ContextMenu>
                         </td>
                       </tr>
@@ -277,6 +318,16 @@ export default function Invoices() {
         filters={filterConfig}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
+      />
+
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteInvoice}
+        title="Delete Invoice"
+        message={`Delete invoice "${deleteTarget?.invoice_number || ""}"? This cannot be undone.`}
+        confirmText="Delete Invoice"
+        variant="danger"
       />
     </>
   );

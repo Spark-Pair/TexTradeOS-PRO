@@ -19,3 +19,8 @@ export const createInvoice = async (data) => {
   const res = await apiClient.post("/invoices", data);
   return res.data;
 };
+
+export const deleteInvoice = async (id) => {
+  const res = await apiClient.delete(`/invoices/${id}`);
+  return res.data;
+};

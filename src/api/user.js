@@ -57,3 +57,13 @@ export const toggleBusinessUserStatus = async (id) => {
   const res = await apiClient.patch(`${USER_URL}/business/${id}/toggle-status`);
   return res.data;
 };
+
+export const deleteUser = async (id) => {
+  const res = await apiClient.delete(`${USER_URL}/${id}`);
+  return res.data;
+};
+
+export const deleteBusinessUser = async (id) => {
+  const res = await apiClient.delete(`${USER_URL}/business/${id}`);
+  return res.data;
+};
