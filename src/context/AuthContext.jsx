@@ -1,5 +1,5 @@
 import { createContext, useCallback, useEffect, useState } from "react";
-import { storage } from "../api/apiClient";
+import { AUTH_SESSION_EXPIRED_EVENT, storage } from "../api/apiClient";
 import { clearOfflineData, initOfflineForUser, offlineAccess } from "../offline/idb";
 import { useToast } from "./ToastContext";
 
@@ -34,16 +34,33 @@ export default function AuthProvider({ children }) {
 
   useEffect(() => {
     const cachedUser = readCachedUser();
-    const { accessToken } = storage.getAuth();
-    if (cachedUser && accessToken) {
+    const { accessToken, refreshToken, sessionId } = storage.getAuth();
+    const hasStoredSession = accessToken || (refreshToken && sessionId);
+    if (cachedUser && hasStoredSession) {
       activateUser(cachedUser).finally(() => setLoading(false));
       return;
     }
-    if (cachedUser && !accessToken) {
+    if (cachedUser && !hasStoredSession) {
       localStorage.removeItem("cachedUser");
     }
     setLoading(false);
   }, [activateUser]);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setUser(null);
+      localStorage.removeItem("cachedUser");
+      offlineAccess.lock();
+      clearOfflineData().catch(() => null);
+      showToast({
+        type: "error",
+        message: "Your session expired. Please log in again.",
+      });
+    };
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, [showToast]);
 
   const login = useCallback(async (authData) => {
     setLoading(true);

@@ -5,6 +5,7 @@ import { useToast } from "../context/ToastContext";
 import { loginUser } from '../api/auth.api';
 import useAuth from '../hooks/useAuth';
 import { fetchSetupStatus } from '../api/system';
+import { IS_DEVELOPMENT } from '../config/environment';
 
 import Input from '../components/Input';
 import Button from '../components/Button';
@@ -29,6 +30,7 @@ export default function Login() {
   }, [user, navigate]);
 
   useEffect(() => {
+    if (IS_DEVELOPMENT) return;
     fetchSetupStatus()
       .then(({ data }) => {
         if (!data?.license?.allowed) navigate("/setup", { replace: true });

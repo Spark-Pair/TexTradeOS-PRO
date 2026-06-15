@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  envPrefix: ["VITE_", "IS_"],
   plugins: [
     react(),
     tailwindcss(),
@@ -58,7 +59,13 @@ export default defineConfig({
   },
 
   server: {
-    host: true
+    host: true,
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:4000",
+        changeOrigin: true,
+      },
+    },
     // ❌ REMOVE hmr config completely
   }
 });

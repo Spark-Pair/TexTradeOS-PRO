@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { createElement, useEffect, useState } from "react";
 import Button from "./Button";
+import { IS_DEVELOPMENT } from "../config/environment";
 import { useToast } from "../context/ToastContext";
 import {
   fetchSystemCommand,
@@ -126,42 +127,50 @@ export default function SystemManagement() {
           </span>
           <div>
             <h2 className="text-sm font-semibold text-gray-800">System Management</h2>
-            <p className="mt-0.5 text-xs text-gray-400">Server, license, updates and recovery</p>
+            <p className="mt-0.5 text-xs text-gray-400">
+              {IS_DEVELOPMENT ? "Development server and recovery" : "Server, license, updates and recovery"}
+            </p>
           </div>
         </div>
         <Button outline icon={RefreshCcw} size="sm" onClick={refresh}>Refresh</Button>
       </div>
 
-      <div className="grid gap-4 p-5 lg:grid-cols-3">
+      <div className={`grid gap-4 p-5 ${IS_DEVELOPMENT ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}>
         <InfoCard icon={Database} label="Database" value={formatBytes(status?.databaseSize)} />
-        <InfoCard icon={FileKey2} label="License" value={
-          status?.license?.allowed ? status.license.customer : status?.license?.message || "Checking..."
-        } />
+        {!IS_DEVELOPMENT && (
+          <InfoCard icon={FileKey2} label="License" value={
+            status?.license?.allowed ? status.license.customer : status?.license?.message || "Checking..."
+          } />
+        )}
         <InfoCard icon={RefreshCcw} label="Version" value={status?.version || "Checking..."} />
       </div>
 
       <div className="grid gap-4 border-t border-gray-200 p-5 md:grid-cols-2">
-        <ActionPanel title="License" icon={FileKey2}>
-          <a href="/api/setup/fingerprint" download className="text-sm font-medium text-teal-700 hover:underline">
-            Download fingerprint request
-          </a>
-          <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-teal-700 hover:underline">
-            <Upload size={15} />
-            {busy === "license" ? "Importing..." : "Import replacement license"}
-            <input type="file" accept=".json" className="hidden" onChange={importLicense} />
-          </label>
-        </ActionPanel>
+        {!IS_DEVELOPMENT && (
+          <>
+            <ActionPanel title="License" icon={FileKey2}>
+              <a href="/api/setup/fingerprint" download className="text-sm font-medium text-teal-700 hover:underline">
+                Download fingerprint request
+              </a>
+              <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-teal-700 hover:underline">
+                <Upload size={15} />
+                {busy === "license" ? "Importing..." : "Import replacement license"}
+                <input type="file" accept=".json" className="hidden" onChange={importLicense} />
+              </label>
+            </ActionPanel>
 
-        <ActionPanel title="Updates" icon={Download}>
-          <p className="text-sm text-gray-600">
-            {update ? `Version ${update.version} is available.` : "TexTradeOS is up to date."}
-          </p>
-          {update && (
-            <Button size="sm" loading={busy === "update"} onClick={installUpdate}>
-              Install {update.version}
-            </Button>
-          )}
-        </ActionPanel>
+            <ActionPanel title="Updates" icon={Download}>
+              <p className="text-sm text-gray-600">
+                {update ? `Version ${update.version} is available.` : "TexTradeOS is up to date."}
+              </p>
+              {update && (
+                <Button size="sm" loading={busy === "update"} onClick={installUpdate}>
+                  Install {update.version}
+                </Button>
+              )}
+            </ActionPanel>
+          </>
+        )}
 
         <ActionPanel title="Backup" icon={Database}>
           <p className="text-sm text-gray-600">Create a consistent SQLite snapshot.</p>

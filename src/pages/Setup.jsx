@@ -8,6 +8,7 @@ import {
   importSetupLicense,
   waitForCommand,
 } from "../api/system";
+import { IS_DEVELOPMENT } from "../config/environment";
 
 export default function Setup() {
   const navigate = useNavigate();
@@ -26,8 +27,12 @@ export default function Setup() {
   };
 
   useEffect(() => {
+    if (IS_DEVELOPMENT) {
+      navigate("/login", { replace: true });
+      return;
+    }
     refresh().catch(() => setMessage("Could not contact the TexTradeOS server."));
-  }, []);
+  }, [navigate]);
 
   const importLicense = async (event) => {
     const file = event.target.files?.[0];

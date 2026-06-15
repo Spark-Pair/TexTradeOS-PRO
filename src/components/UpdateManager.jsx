@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { apiClient } from "../api/apiClient";
 import useAuth from "../hooks/useAuth";
 import Button from "./Button";
+import { IS_DEVELOPMENT } from "../config/environment";
 
 const DISMISSED_KEY = "textradeos-dismissed-update";
 
@@ -15,7 +16,7 @@ export default function UpdateManager() {
   const [requested, setRequested] = useState(false);
 
   useEffect(() => {
-    if (!user || started.current || import.meta.env.DEV) return;
+    if (IS_DEVELOPMENT || !user || started.current) return;
     started.current = true;
     apiClient.get("/updates/status")
       .then(({ data }) => {
@@ -28,6 +29,8 @@ export default function UpdateManager() {
       })
       .catch(() => {});
   }, [user]);
+
+  if (IS_DEVELOPMENT) return null;
 
   const update = status?.update;
   if (!update) return null;

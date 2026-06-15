@@ -54,17 +54,19 @@ const getDeviceIcon = (device) => {
   return Monitor;
 };
 
+const emptyStats = {
+  total: 0,
+  active: 0,
+  inactive: 0,
+};
+
 export default function Users() {
   const { user, logout } = useAuth();
   const { showToast } = useToast();
   const isDeveloper = user?.role === "developer";
   const [referenceData, setReferenceData] = useState({ user_roles: [] });
   const [ruleData, setRuleData] = useState({ access_rules: [] });
-  const [stats, setStats] = useState({
-    total: 0,
-    active: 0,
-    inactive: 0,
-  });
+  const [stats, setStats] = useState(emptyStats);
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -104,7 +106,7 @@ export default function Users() {
   const loadUsersStats = useCallback(async () => {
     try {
       const res = isDeveloper ? await fetchUserStats() : await fetchBusinessUserStats();
-      setStats(res.data);
+      setStats({ ...emptyStats, ...(res || {}) });
     } catch (err) {
       console.error(err);
       showToast({
@@ -151,8 +153,11 @@ export default function Users() {
       });
 
       loadUsersStats();
-      setUsers(res.data);
-      setPagination(res.pagination);
+      setUsers(Array.isArray(res?.data) ? res.data : []);
+      setPagination((current) => ({
+        ...current,
+        ...(res?.pagination || {}),
+      }));
     } catch (err) {
       console.error(err);
       showToast({
@@ -395,7 +400,7 @@ export default function Users() {
         <PageHeader
           title="User"
           subtitle="Manage all your users effortlessly."
-          actionLabel={canManageUsers ? "Add User" : undefined}
+          actionLabel={canManageUsers ? "Add User" : undefined} 
           onAction={canCreateUser ? () => setFormModal({ isOpen: true }) : undefined}
           actionIcon={Plus}
         />
