@@ -8,23 +8,44 @@ export default function InvoicePaper({
   isLastCopy = true,
 }) {
   const articles = invoice?.articles || invoice?.orders || [];
+  const customerUrduTitle = String(invoice?.customer_urdu_title || "").trim();
+  const businessUrduTitle = "اخلاق گارمنٹس";
+
+  const customerDetails = [
+    invoice?.customer_phone ? `Phone: ${invoice.customer_phone}` : "",
+    invoice?.customer_address ? `Address: ${invoice.customer_address}` : "",
+  ]
+    .filter(Boolean)
+    .join(" | ");
 
   return (
     <article className={`invoice-paper ${isLastCopy ? "last-copy" : ""}`}>
       <header className="invoice-paper-header">
         <div className="invoice-brand">
-          <span className="invoice-brand-mark">AG</span>
-          <div>
-            <p className="document-eyebrow">Textile Billing</p>
-            <h1>{businessName}</h1>
-            <p className="invoice-kicker">Invoice</p>
+          <div className="invoice-brand-title">
+            <h1>
+              {businessName}
+              {businessUrduTitle && (
+                <span className="urdu-inline" dir="rtl" lang="ur">
+                  {businessUrduTitle}
+                </span>
+              )}
+            </h1>
           </div>
+
+          <p className="invoice-business-details">
+            Phone: 03165825495 | Address: Meetha Dar, Karachi
+          </p>
         </div>
-        <div className="invoice-header-side">
+
+        <div className="invoice-meta-panel">
           {copyLabel && <span className="copy-label">{copyLabel}</span>}
+
+          <p className="invoice-document-type">Sales Invoice</p>
+
           <dl className="invoice-number-box">
             <div>
-              <dt>Invoice</dt>
+              <dt>Invoice No</dt>
               <dd>{invoice?.invoice_number || "-"}</dd>
             </div>
             <div>
@@ -35,26 +56,43 @@ export default function InvoicePaper({
         </div>
       </header>
 
-      <section className="invoice-intro">
-        <div className="customer-card">
-          <p className="meta-label">Billed To</p>
-          <h2 className="customer-name">{invoice?.customer_name || "-"}</h2>
-          <div className="customer-contact">
-            {invoice?.customer_phone && <p>{invoice.customer_phone}</p>}
-            {invoice?.customer_address && <p>{invoice.customer_address}</p>}
-          </div>
+      <section className="billed-to-section">
+        <div className="customer-topline">
+          <p className="section-label">Billed To</p>
         </div>
-        <div className="invoice-intro-note">
-          <span>Statement</span>
-          <p>Garment articles and quantities billed as detailed below.</p>
+
+        <div className="customer-main">
+          <h2>
+            {invoice?.customer_name || "-"}
+            {customerUrduTitle && (
+              <span className="urdu-inline" dir="rtl" lang="ur">
+                {customerUrduTitle}
+              </span>
+            )}
+          </h2>
+
+          {customerDetails && (
+            <p className="customer-contact-line">{customerDetails}</p>
+          )}
         </div>
       </section>
 
-      <InvoiceTable articles={articles} totalAmount={invoice?.total_amount || 0} />
+      <InvoiceTable
+        articles={articles}
+        invoice={invoice}
+        totalAmount={invoice?.total_amount || 0}
+      />
 
       <footer className="invoice-paper-footer">
-        <span>Thank you for your business.</span>
-        <span>Powered by TexTradeOS</span>
+        <div className="invoice-footer-left">
+          <p className="invoice-thanks">Thank you for your business.</p>
+          <p className="invoice-footer-note">System-generated invoice. Please verify items and amounts at the time of delivery.</p>
+        </div>
+
+        <div className="invoice-footer-branding">
+          <p className="invoice-system-credit">TexTradeOS PRO by SparkPair</p>
+          <p className="invoice-agency-credit">+923165825495 | sparkpair.dev</p>
+        </div>
       </footer>
     </article>
   );

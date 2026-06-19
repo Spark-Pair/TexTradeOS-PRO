@@ -37,14 +37,26 @@ const capitalizeWords = (value) =>
     .replace(/\s+/g, " ")
     .replace(/\b\w/g, (character) => character.toUpperCase());
 
-const calculateDiscount = (discount, gross) => {
+const discountDetails = (discount, pcs, rate) => {
   const raw = String(discount || "").trim();
-  if (!raw) return 0;
+  if (!raw) return { amount: 0, type: "" };
+  const pieces = Math.max(0, numberValue(pcs));
+  const unitRate = Math.max(0, numberValue(rate));
+  if (!pieces || !unitRate) return { amount: 0, type: raw.endsWith("%") ? "percent" : "rupee" };
+
   if (raw.endsWith("%")) {
-    const percentage = numberValue(raw.slice(0, -1));
-    return Math.max(0, gross * percentage / 100);
+    const percentage = Math.min(100, Math.max(0, numberValue(raw.slice(0, -1))));
+    return {
+      amount: pieces * (unitRate * percentage / 100),
+      type: "percent",
+    };
   }
-  return Math.max(0, numberValue(raw));
+
+  const perPieceDiscount = Math.min(unitRate, Math.max(0, numberValue(raw)));
+  return {
+    amount: pieces * perPieceDiscount,
+    type: "rupee",
+  };
 };
 
 const calculateArticle = (row) => {
@@ -52,14 +64,46 @@ const calculateArticle = (row) => {
   const pcs = numberValue(row.pcs);
   const rate = numberValue(row.rate);
   const gross = pcs * rate;
-  const discountAmount = Math.min(gross, calculateDiscount(row.discount, gross));
+  const discount = discountDetails(row.discount, pcs, rate);
+  const discountAmount = Math.min(gross, discount.amount);
   return {
     ...row,
     dzn,
     pcs,
     rate,
+    gross_amount: gross,
+    discount_type: discount.type,
     discount_amount: discountAmount,
     amount: Math.max(0, gross - discountAmount),
+  };
+};
+
+const calculateInvoiceTotals = (rows, salesReturnAmount = 0, receivedAmount = 0) => {
+  const grossAmount = rows.reduce((sum, row) => sum + Number(row.gross_amount || 0), 0);
+  const percentDiscountAmount = rows.reduce(
+    (sum, row) => sum + (row.discount_type === "percent" ? Number(row.discount_amount || 0) : 0),
+    0
+  );
+  const rupeeDiscountAmount = rows.reduce(
+    (sum, row) => sum + (row.discount_type === "rupee" ? Number(row.discount_amount || 0) : 0),
+    0
+  );
+  const totalDiscountAmount = percentDiscountAmount + rupeeDiscountAmount;
+  const netAmount = Math.max(0, grossAmount - totalDiscountAmount);
+  const salesReturn = Math.min(netAmount, Math.max(0, numberValue(salesReturnAmount)));
+  const payableAmount = Math.max(0, netAmount - salesReturn);
+  const received = Math.max(0, numberValue(receivedAmount));
+  return {
+    gross_amount: grossAmount,
+    percent_discount_amount: percentDiscountAmount,
+    rupee_discount_amount: rupeeDiscountAmount,
+    total_discount_amount: totalDiscountAmount,
+    net_amount: netAmount,
+    sales_return_amount: salesReturn,
+    received_amount: received,
+    total_amount: payableAmount,
+    balance_amount: Math.max(0, payableAmount - received),
+    return_amount: Math.max(0, received - payableAmount),
   };
 };
 
@@ -150,6 +194,7 @@ function ArticleRow({
 export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
   const { showToast } = useToast();
   const customerInputRef = useRef(null);
+  const urduTitleInputRef = useRef(null);
   const phoneInputRef = useRef(null);
   const addressInputRef = useRef(null);
   const articleGridRef = useRef(null);
@@ -157,9 +202,12 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
   const addRowShortcut = useShortcut("production_add_row");
   const [step, setStep] = useState("entry");
   const [customerName, setCustomerName] = useState("");
+  const [customerUrduTitle, setCustomerUrduTitle] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [articles, setArticles] = useState([newRow()]);
+  const [salesReturnAmount, setSalesReturnAmount] = useState("");
+  const [receivedAmount, setReceivedAmount] = useState("");
   const [previousCustomers, setPreviousCustomers] = useState([]);
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -169,9 +217,12 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
     if (!isOpen) return;
     setStep("entry");
     setCustomerName("");
+    setCustomerUrduTitle("");
     setPhone("");
     setAddress("");
     setArticles([newRow()]);
+    setSalesReturnAmount("");
+    setReceivedAmount("");
     setError("");
 
     Promise.all([
@@ -184,6 +235,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
         if (!name) return;
         byName.set(name.toLowerCase(), {
           name,
+          urduTitle: invoice?.customer_urdu_title || "",
           phone: invoice?.customer_phone || "",
           address: invoice?.customer_address || "",
         });
@@ -202,25 +254,27 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
   }, [isOpen]);
 
   const calculatedArticles = useMemo(() => articles.map(calculateArticle), [articles]);
-  const totalAmount = useMemo(
-    () => calculatedArticles.reduce((sum, row) => sum + row.amount, 0),
-    [calculatedArticles]
+  const invoiceTotals = useMemo(
+    () => calculateInvoiceTotals(calculatedArticles, salesReturnAmount, receivedAmount),
+    [calculatedArticles, receivedAmount, salesReturnAmount]
   );
 
   const draftInvoice = useMemo(() => ({
     invoice_number: invoiceNumber,
     invoice_date: todayInput(),
     customer_name: customerName.trim(),
+    customer_urdu_title: customerUrduTitle.trim(),
     customer_phone: phone.trim(),
     customer_address: address.trim(),
     articles: calculatedArticles,
-    total_amount: totalAmount,
-  }), [address, calculatedArticles, customerName, invoiceNumber, phone, totalAmount]);
+    ...invoiceTotals,
+  }), [address, calculatedArticles, customerName, customerUrduTitle, invoiceNumber, invoiceTotals, phone]);
 
   const chooseCustomer = (name) => {
     setCustomerName(name);
     const match = previousCustomers.find((customer) => customer.name.toLowerCase() === name.trim().toLowerCase());
     if (match) {
+      setCustomerUrduTitle(match.urduTitle);
       setPhone(match.phone);
       setAddress(match.address);
     }
@@ -352,7 +406,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                   value={customerName}
                   onChange={(e) => chooseCustomer(e.target.value)}
                   capitalize
-                  onKeyDown={(event) => moveOnEnter(event, () => focusAndSelect(phoneInputRef.current))}
+                  onKeyDown={(event) => moveOnEnter(event, () => focusAndSelect(urduTitleInputRef.current))}
                   list="invoice-customer-history"
                   placeholder="Enter customer name"
                 />
@@ -360,6 +414,17 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                   {previousCustomers.map((customer) => <option key={customer.name} value={customer.name} />)}
                 </datalist>
               </div>
+              <Input
+                ref={urduTitleInputRef}
+                label="Urdu Title"
+                value={customerUrduTitle}
+                onChange={(e) => setCustomerUrduTitle(e.target.value)}
+                onKeyDown={(event) => moveOnEnter(event, () => focusAndSelect(phoneInputRef.current))}
+                placeholder="اردو نام / عنوان"
+                dir="rtl"
+                lang="ur"
+                required={false}
+              />
               <Input
                 ref={phoneInputRef}
                 label="Phone"
@@ -425,11 +490,43 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                 <tfoot>
                   <tr className="border-t border-gray-300 bg-gray-50 font-semibold">
                     <td colSpan={7} className="px-4 py-3 text-right text-sm text-gray-600">Total</td>
-                    <td className="px-3 py-3 text-right text-sm tabular-nums text-emerald-700">{totalAmount.toFixed(2)}</td>
+                    <td className="px-3 py-3 text-right text-sm tabular-nums text-emerald-700">{invoiceTotals.net_amount.toFixed(2)}</td>
                     <td />
                   </tr>
                 </tfoot>
               </table>
+            </div>
+          </section>
+
+          <section>
+            <SectionHeader step="3" title="Payment Adjustments" subtitle="Sales return and received amount are reflected in the final invoice total" />
+            <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
+              <Input
+                label="Sales Return Amount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={salesReturnAmount}
+                onChange={(e) => setSalesReturnAmount(e.target.value)}
+                placeholder="0.00"
+                required={false}
+              />
+              <Input
+                label="Received Amount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={receivedAmount}
+                onChange={(e) => setReceivedAmount(e.target.value)}
+                placeholder="0.00"
+                required={false}
+              />
+            </div>
+            <div className="mt-3 grid gap-2 rounded-xl border border-gray-300 bg-gray-50 p-3 text-sm md:grid-cols-4">
+              <div><span className="text-gray-500">Gross</span><p className="font-semibold tabular-nums">{invoiceTotals.gross_amount.toFixed(2)}</p></div>
+              <div><span className="text-gray-500">% Discount</span><p className="font-semibold tabular-nums">{invoiceTotals.percent_discount_amount.toFixed(2)}</p></div>
+              <div><span className="text-gray-500">Rs Discount</span><p className="font-semibold tabular-nums">{invoiceTotals.rupee_discount_amount.toFixed(2)}</p></div>
+              <div><span className="text-gray-500">Payable</span><p className="font-semibold tabular-nums text-emerald-700">{invoiceTotals.total_amount.toFixed(2)}</p></div>
             </div>
           </section>
         </div>
