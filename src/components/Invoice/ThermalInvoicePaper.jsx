@@ -42,7 +42,7 @@ export default function ThermalInvoicePaper({ invoice, businessName = "Akhlaq Ga
       <header className="thermal-header">
         <h1>{businessName}</h1>
         <p className="thermal-urdu" dir="rtl" lang="ur">{businessUrduTitle}</p>
-        <p className="thermal-shop-line">Phone: 03165825495 | Meetha Dar, Karachi</p>
+        <p className="thermal-shop-line">Tel: 32441153, 32434590 | Shop No. 1, OT 4/79, Meethadar, Karachi</p>
       </header>
 
       <section className="thermal-meta">

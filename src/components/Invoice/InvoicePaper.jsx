@@ -34,7 +34,7 @@ export default function InvoicePaper({
           </div>
 
           <p className="invoice-business-details">
-            Phone: 03165825495 | Address: Meetha Dar, Karachi
+            Tel: 32441153, 32434590 | Shop No. 1, OT 4/79, Meethadar, Karachi
           </p>
         </div>
 
