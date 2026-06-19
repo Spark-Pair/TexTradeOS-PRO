@@ -31,7 +31,7 @@ export default function Setup() {
       navigate("/login", { replace: true });
       return;
     }
-    refresh().catch(() => setMessage("Could not contact the TexTradeOS server."));
+    refresh().catch(() => setMessage("Could not contact the TexTradeOS PRO server."));
   }, [navigate]);
 
   const importLicense = async (event) => {
@@ -60,8 +60,8 @@ export default function Setup() {
               <FileKey2 size={24} />
             </span>
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Activate TexTradeOS</h1>
-              <p className="text-sm text-gray-500">Perpetual device license</p>
+              <h1 className="text-2xl font-semibold text-gray-900">Activate TexTradeOS PRO</h1>
+              <p className="text-sm text-gray-500">A Product of SparkPair | Perpetual device license</p>
             </div>
           </div>
 

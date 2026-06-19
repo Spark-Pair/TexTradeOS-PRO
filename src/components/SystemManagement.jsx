@@ -55,7 +55,7 @@ export default function SystemManagement() {
       showToast({
         type: "success",
         message: type === "restore"
-          ? "Restore started. TexTradeOS will reconnect automatically."
+          ? "Restore started. TexTradeOS PRO will reconnect automatically."
           : `${type[0].toUpperCase()}${type.slice(1)} completed`,
       });
     } catch (error) {
@@ -108,7 +108,7 @@ export default function SystemManagement() {
       const url = URL.createObjectURL(data);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "TexTradeOS-Diagnostics.json";
+      link.download = "TexTradeOS-PRO-Diagnostics.json";
       link.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -129,7 +129,7 @@ export default function SystemManagement() {
           <div>
             <h2 className="text-sm font-semibold text-gray-800">System Management</h2>
             <p className="mt-0.5 text-xs text-gray-400">
-              {IS_DEVELOPMENT ? "Development server and recovery" : "Server, license, updates and recovery"}
+              {IS_DEVELOPMENT ? "TexTradeOS PRO development server and recovery" : "TexTradeOS PRO by SparkPair - server, license, updates and recovery"}
             </p>
           </div>
         </div>
@@ -162,7 +162,7 @@ export default function SystemManagement() {
 
             <ActionPanel title="Updates" icon={Download}>
               <p className="text-sm text-gray-600">
-                {update ? `Version ${update.version} is available.` : "TexTradeOS is up to date."}
+                {update ? `TexTradeOS PRO ${update.version} is available.` : "TexTradeOS PRO is up to date."}
               </p>
               {update && (
                 <Button size="sm" loading={busy === "update"} onClick={installUpdate}>

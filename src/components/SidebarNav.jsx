@@ -191,9 +191,14 @@ const SidebarNav = ({ currentPath, handleLogout, isMobileOpen = false, onCloseMo
               className="h-full w-full object-contain"
             />
           </div>
-          <h1 className="text-[1.35rem] font-semibold tracking-wide text-[#1C7773]">
-            TexTradeOS
-          </h1>
+          <div className="min-w-0">
+            <h1 className="text-[1.22rem] font-semibold tracking-wide text-[#1C7773]">
+              TexTradeOS PRO
+            </h1>
+            <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-gray-400">
+              A Product of SparkPair
+            </p>
+          </div>
         </div>
 
         {/* Menu */}

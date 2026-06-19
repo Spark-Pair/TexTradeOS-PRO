@@ -1,6 +1,6 @@
-# TexTradeOS Frontend
+# TexTradeOS PRO Frontend
 
-React, Vite, Tailwind, and PWA frontend for TexTradeOS.
+React, Vite, Tailwind, and PWA frontend for TexTradeOS PRO, a product of SparkPair.
 
 ## Development
 

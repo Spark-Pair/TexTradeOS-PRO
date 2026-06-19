@@ -63,7 +63,10 @@ export default function Layout({ children }) {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="text-sm font-semibold text-gray-600">TexTradeOS</div>
+          <div className="text-right">
+            <div className="text-sm font-semibold text-gray-700">TexTradeOS PRO</div>
+            <div className="text-[10px] font-medium text-gray-400">A Product of SparkPair</div>
+          </div>
           <div className="w-10 h-10" />
         </div>
 

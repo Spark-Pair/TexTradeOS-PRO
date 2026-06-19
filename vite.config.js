@@ -22,8 +22,8 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
       },
       manifest: {
-        name: "TexTradeOS",
-        short_name: "TexTradeOS",
+        name: "TexTradeOS PRO",
+        short_name: "TexTradeOS PRO",
         start_url: "/",
         display: "standalone",
         theme_color: "#127475",

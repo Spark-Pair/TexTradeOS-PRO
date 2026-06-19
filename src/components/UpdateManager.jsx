@@ -71,7 +71,7 @@ export default function UpdateManager() {
               {mandatory ? "Update required" : "Update available"}
             </h2>
             <p className="mt-1 text-sm text-gray-500">
-              TexTradeOS {update.version} is available. Installed version: {status.currentVersion}.
+              TexTradeOS PRO {update.version} is available. Installed version: {status.currentVersion}.
             </p>
           </div>
         </div>
