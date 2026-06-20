@@ -195,6 +195,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
   const { showToast } = useToast();
   const customerInputRef = useRef(null);
   const urduTitleInputRef = useRef(null);
+  const salesmanInputRef = useRef(null);
   const phoneInputRef = useRef(null);
   const addressInputRef = useRef(null);
   const articleGridRef = useRef(null);
@@ -203,6 +204,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
   const [step, setStep] = useState("entry");
   const [customerName, setCustomerName] = useState("");
   const [customerUrduTitle, setCustomerUrduTitle] = useState("");
+  const [salesmanName, setSalesmanName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [articles, setArticles] = useState([newRow()]);
@@ -218,6 +220,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
     setStep("entry");
     setCustomerName("");
     setCustomerUrduTitle("");
+    setSalesmanName("");
     setPhone("");
     setAddress("");
     setArticles([newRow()]);
@@ -264,11 +267,12 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
     invoice_date: todayInput(),
     customer_name: customerName.trim(),
     customer_urdu_title: customerUrduTitle.trim(),
+    salesman_name: salesmanName.trim(),
     customer_phone: phone.trim(),
     customer_address: address.trim(),
     articles: calculatedArticles,
     ...invoiceTotals,
-  }), [address, calculatedArticles, customerName, customerUrduTitle, invoiceNumber, invoiceTotals, phone]);
+  }), [address, calculatedArticles, customerName, customerUrduTitle, invoiceNumber, invoiceTotals, phone, salesmanName]);
 
   const chooseCustomer = (name) => {
     setCustomerName(name);
@@ -406,7 +410,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                   value={customerName}
                   onChange={(e) => chooseCustomer(e.target.value)}
                   capitalize
-                  onKeyDown={(event) => moveOnEnter(event, () => focusAndSelect(urduTitleInputRef.current))}
+                  onKeyDown={(event) => moveOnEnter(event, () => focusAndSelect(salesmanInputRef.current))}
                   list="invoice-customer-history"
                   placeholder="Enter customer name"
                 />
@@ -414,6 +418,15 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                   {previousCustomers.map((customer) => <option key={customer.name} value={customer.name} />)}
                 </datalist>
               </div>
+              <Input
+                ref={salesmanInputRef}
+                label="Salesman Name"
+                value={salesmanName}
+                onChange={(e) => setSalesmanName(capitalizeWords(e.target.value))}
+                onKeyDown={(event) => moveOnEnter(event, () => focusAndSelect(urduTitleInputRef.current))}
+                placeholder="Optional"
+                required={false}
+              />
               <Input
                 ref={urduTitleInputRef}
                 label="Urdu Title"

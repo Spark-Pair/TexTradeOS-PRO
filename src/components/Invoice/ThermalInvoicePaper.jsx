@@ -17,6 +17,7 @@ const grossForArticle = (article) => {
 export default function ThermalInvoicePaper({ invoice, businessName = "Akhlaq Garments" }) {
   const articles = invoice?.articles || invoice?.orders || [];
   const customerUrduTitle = String(invoice?.customer_urdu_title || "").trim();
+  const salesmanName = String(invoice?.salesman_name || "").trim();
   const businessUrduTitle = "اخلاق گارمنٹس";
   const customerDetails = [
     invoice?.customer_phone ? `Phone: ${invoice.customer_phone}` : "",
@@ -43,6 +44,7 @@ export default function ThermalInvoicePaper({ invoice, businessName = "Akhlaq Ga
         <h1>{businessName}</h1>
         <p className="thermal-urdu" dir="rtl" lang="ur">{businessUrduTitle}</p>
         <p className="thermal-shop-line">Tel: 32441153, 32434590 | Shop No. 1, OT 4/79, Meethadar, Karachi</p>
+        {salesmanName && <p className="thermal-salesman-line">Salesman: {salesmanName}</p>}
       </header>
 
       <section className="thermal-meta">

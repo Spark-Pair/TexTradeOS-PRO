@@ -75,8 +75,8 @@ export default function InvoiceTable({
       <div className="invoice-table-wrap">
         <table className="invoice-table">
           <colgroup>
-            <col style={{ width: "4%" }} />
-            <col style={{ width: "8%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "12%" }} />
             <col style={{ width: "28%" }} />
             <col style={{ width: "7%" }} />
             <col style={{ width: "7%" }} />

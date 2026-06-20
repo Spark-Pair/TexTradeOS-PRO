@@ -9,6 +9,7 @@ export default function InvoicePaper({
 }) {
   const articles = invoice?.articles || invoice?.orders || [];
   const customerUrduTitle = String(invoice?.customer_urdu_title || "").trim();
+  const salesmanName = String(invoice?.salesman_name || "").trim();
   const businessUrduTitle = "اخلاق گارمنٹس";
 
   const customerDetails = [
@@ -36,6 +37,10 @@ export default function InvoicePaper({
           <p className="invoice-business-details">
             Tel: 32441153, 32434590 | Shop No. 1, OT 4/79, Meethadar, Karachi
           </p>
+
+          {salesmanName && (
+            <p className="invoice-salesman-line">Salesman: {salesmanName}</p>
+          )}
         </div>
 
         <div className="invoice-meta-panel">

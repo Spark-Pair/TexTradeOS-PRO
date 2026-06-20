@@ -110,6 +110,14 @@ const getPrintStyle = (printMode = "a5") => `
     line-height: 1.38;
   }
 
+  .invoice-salesman-line {
+    margin: 5px 0 0;
+    color: #111827;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+
   .copy-label {
     padding: 3px 7px;
     border: var(--invoice-border-width) solid var(--invoice-border-color);
@@ -546,6 +554,13 @@ const getPrintStyle = (printMode = "a5") => `
     color: #383c43;
     font-size: 9.5px;
     font-weight: 550;
+  }
+
+  .thermal-salesman-line {
+    margin: 4px 0 0;
+    color: #111827;
+    font-size: 10.2px;
+    font-weight: 800;
   }
 
   .thermal-meta {
