@@ -10,6 +10,7 @@ import { useToast } from "../../context/ToastContext";
 import { InvoicePaper } from "./InvoicePreviewModal";
 import { useShortcut } from "../../hooks/useShortcuts";
 import { isEventMatchingShortcut } from "../../utils/shortcuts";
+import { v4 as uuidv4 } from "uuid";
 
 const todayInput = () => {
   const date = new Date();
@@ -17,7 +18,7 @@ const todayInput = () => {
 };
 
 const newRow = () => ({
-  _key: crypto.randomUUID(),
+  _key: uuidv4(),
   size: "",
   description: "",
   dzn: "",
