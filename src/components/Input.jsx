@@ -81,6 +81,7 @@ const Input = forwardRef(
 
       // agar user ne apna onFocus diya ho to wo bhi chale
       if (props.onFocus) props.onFocus(e);
+      window.setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 120);
     };
 
     return (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Printer, X } from "lucide-react";
 import Modal from "../Modal";
 import Button from "../Button";
@@ -20,6 +20,12 @@ const getPrintStyle = (printMode = "a5") => `
     overflow-y: hidden;
     border-radius: 12px;
     background: #f3f4f6;
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+
+  .invoice-scale-shell {
+    width: max-content;
+    transform-origin: top left;
   }
 
   .invoice-paper,
@@ -799,7 +805,7 @@ const getPrintStyle = (printMode = "a5") => `
 
   @media (max-width: 720px) {
     .invoice-preview-stage {
-      justify-items: start;
+      padding: 10px 6px;
     }
 
     .invoice-paper {
@@ -809,6 +815,9 @@ const getPrintStyle = (printMode = "a5") => `
   }
 
   @media print {
+    .invoice-scale-shell {
+      zoom: 1 !important;
+    }
     html,
     body {
       margin: 0 !important;
@@ -1164,17 +1173,33 @@ export function InvoicePrintPreview({
   businessName = "Akhlaq Garments",
   printMode = "a5",
 }) {
+  const stageRef = useRef(null);
+  const [previewScale, setPreviewScale] = useState(1);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return undefined;
+    const naturalWidth = printMode === "thermal" ? 302 : 514;
+    const updateScale = () => setPreviewScale(Math.min(1, Math.max(0.45, (stage.clientWidth - 24) / naturalWidth)));
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [printMode]);
+
   return (
     <div
       id="invoice-print-root"
       className={`invoice-print-root invoice-print-${printMode} print-mode-${printMode}`}
     >
-      <div className="invoice-preview-stage">
+      <div ref={stageRef} className="invoice-preview-stage">
+        <div className="invoice-scale-shell" style={{ zoom: previewScale }}>
         {printMode === "thermal" ? (
           <ThermalInvoicePaper invoice={invoice} businessName={businessName} />
         ) : (
           <InvoicePaper invoice={invoice} businessName={businessName} />
         )}
+        </div>
       </div>
     </div>
   );
@@ -1244,11 +1269,11 @@ export default function InvoicePreviewModal({
       maxWidth="max-w-5xl"
       footer={
         <div className="flex w-full flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex rounded-xl border border-gray-300 bg-gray-100 p-1">
+          <div className="inline-flex w-full rounded-xl border border-gray-300 bg-gray-100 p-1 sm:w-auto">
             <button
               type="button"
               onClick={() => setPrintMode("a5")}
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${
                 printMode === "a5"
                   ? "bg-white text-gray-950 shadow-sm"
                   : "text-gray-500 hover:text-gray-800"
@@ -1260,7 +1285,7 @@ export default function InvoicePreviewModal({
             <button
               type="button"
               onClick={() => setPrintMode("thermal")}
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${
                 printMode === "thermal"
                   ? "bg-white text-gray-950 shadow-sm"
                   : "text-gray-500 hover:text-gray-800"
@@ -1270,14 +1295,14 @@ export default function InvoicePreviewModal({
             </button>
           </div>
 
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
             {printMode === "a5" && (
               <p className="text-xs text-gray-400">
                 For A5: select Paper Size A5, Margins: None, Scale: Default.
               </p>
             )}
 
-            <div className="flex gap-2.5">
+            <div className="flex gap-2.5 [&>button]:flex-1 sm:[&>button]:flex-none">
               <Button variant="secondary" outline icon={X} onClick={onClose}>
                 Close
               </Button>

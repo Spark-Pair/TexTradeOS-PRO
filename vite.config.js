@@ -15,29 +15,54 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       cleanupOutdatedCaches: true,
+      devOptions: {
+        enabled: true,
+        type: "module",
+        navigateFallback: "/index.html",
+      },
       includeAssets: ["favicon.ico", "android-chrome-192x192.png", "android-chrome-512x512.png"],
       workbox: {
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.destination === "image" || request.destination === "font",
+            handler: "CacheFirst",
+            options: {
+              cacheName: "textradeos-static-assets",
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+        ],
       },
       manifest: {
+        id: "/",
         name: "TexTradeOS PRO",
         short_name: "TexTradeOS PRO",
         start_url: "/",
+        scope: "/",
         display: "standalone",
+        display_override: ["standalone"],
+        launch_handler: { client_mode: "navigate-existing" },
+        prefer_related_applications: false,
+        orientation: "any",
         theme_color: "#127475",
         background_color: "#ffffff",
         icons: [
           {
             src: "/android-chrome-192x192.png",
             sizes: "192x192",
-            type: "image/png"
+            type: "image/png",
+            purpose: "any maskable"
           },
           {
             src: "/android-chrome-512x512.png",
             sizes: "512x512",
-            type: "image/png"
+            type: "image/png",
+            purpose: "any maskable"
           }
         ]
       }

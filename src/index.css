@@ -50,12 +50,6 @@ input[type=number] {
 }
 
 @media (max-width: 768px) {
-  table {
-    min-width: 640px;
-  }
-}
-
-@media (max-width: 768px) {
   html {
     font-size: 14px;
   }
@@ -72,20 +66,50 @@ input[type=number] {
 
 @media (max-width: 640px) {
   .modal-panel {
-    max-width: 100% !important;
-    width: 100% !important;
-    border-radius: 18px !important;
+    max-width: calc(100% - 0.25rem) !important;
+    width: calc(100% - 0.25rem) !important;
+    border-radius: 22px !important;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
   }
+
+  .modal-footer > div > div:last-child {
+    width: 100% !important;
+  }
+
+  .modal-footer > div > div:last-child > button {
+    flex: 1 1 0% !important;
+    min-width: 0;
+  }
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+body {
+  min-height: 100dvh;
+  background: #f9fafb;
+  overscroll-behavior-y: none;
+}
+
+button, input, select, textarea {
+  touch-action: manipulation;
 }
 
 @media (max-width: 768px) {
   .grid:has(.stat-card) {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    display: flex !important;
+    gap: 0.65rem !important;
+    margin-bottom: 1rem !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x proximity;
+    padding-bottom: 0.2rem;
   }
-}
 
-@media (max-width: 768px) {
   .stat-card {
-    display: none !important;
+    flex: 0 0 12rem;
+    min-height: 4.5rem;
+    scroll-snap-align: start;
   }
 }

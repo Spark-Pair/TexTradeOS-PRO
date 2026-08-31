@@ -5,12 +5,17 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import RoleRoute from './routes/RoleRoute';
 import Layout from './layouts/layout';
 import { ToastProvider } from './context/ToastContext';
+import { ensurePrototypeDemoData } from './utils/prototypeStorage';
 
 // Pages
 import Login from './pages/Login';
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Customers = lazy(() => import("./pages/Customers"));
+const Suppliers = lazy(() => import("./pages/Suppliers"));
 const Invoices = lazy(() => import("./pages/Invoices"));
+const Inventory = lazy(() => import("./pages/Inventory"));
+const Purchases = lazy(() => import("./pages/Purchases"));
 const Users = lazy(() => import("./pages/Users"));
 const Settings = lazy(() => import("./pages/Settings"));
 const KeyboardShortcuts = lazy(() => import("./pages/KeyboardShortcuts"));
@@ -21,6 +26,7 @@ const NEGATIVE_NUMBER_CLASS = "is-negative-number";
 const NON_NEGATIVE_TAGS = new Set(["INPUT", "TEXTAREA", "OPTION", "SCRIPT", "STYLE"]);
 
 export default function App() {
+  ensurePrototypeDemoData();
   useEffect(() => {
     let rafId = 0;
     const pendingElements = new Set();
@@ -207,6 +213,10 @@ export default function App() {
                     </RoleRoute>
                   }
                 />
+                <Route path="/customers" element={<RoleRoute accessKey="customers"><Customers /></RoleRoute>} />
+                <Route path="/suppliers" element={<RoleRoute accessKey="suppliers"><Suppliers /></RoleRoute>} />
+                <Route path="/purchases" element={<RoleRoute accessKey="purchases"><Purchases /></RoleRoute>} />
+                <Route path="/inventory" element={<RoleRoute accessKey="inventory"><Inventory /></RoleRoute>} />
                 <Route path="/invoices" element={<RoleRoute accessKey="invoices"><Invoices /></RoleRoute>} />
                 <Route
                   path="/keyboard-shortcuts"

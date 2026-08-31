@@ -1,32 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutGrid, FileText, Users2, Settings, LogOut, ChevronDown, Keyboard } from 'lucide-react';
+import { LayoutGrid, FileText, Users2, Settings, LogOut, ChevronDown, Keyboard, Boxes } from 'lucide-react';
 import SidebarNavItem from './SidebarNavItem';
 import useAuth from '../hooks/useAuth';
 import { AnimatePresence } from "framer-motion";
 import { fetchMyInvoiceCounter, fetchMyReferenceData, fetchMyRuleData } from '../api/business';
 import { BUSINESS_ACCESS_ITEMS, hasAccessForRole } from '../utils/accessConfig';
 
-const developerNav = [
-  { id: 'dashboard', icon: <LayoutGrid className="w-4.5 h-4.5" />, label: 'Dashboard', path: '/dashboard' },
-  { id: 'users', icon: <Users2 className="w-4.5 h-4.5" />, label: 'Users', path: '/users' },
-  { id: 'invoices', icon: <FileText className="w-4.5 h-4.5" />, label: 'Invoices', path: '/invoices' },
-];
+// const developerNav = [
+//   { id: 'dashboard', icon: <LayoutGrid className="w-4.5 h-4.5" />, label: 'Dashboard', path: '/dashboard' },
+//   { id: 'users', icon: <Users2 className="w-4.5 h-4.5" />, label: 'Users', path: '/users' },
+//   { id: 'suppliers', icon: <FileText className="w-4.5 h-4.5" />, label: 'Suppliers', path: '/suppliers' },
+//   { id: 'invoices', icon: <FileText className="w-4.5 h-4.5" />, label: 'Invoices', path: '/invoices' },
+// ];
 
-const adminNav = [
-  { id: 'dashboard', icon: <LayoutGrid className="w-4.5 h-4.5" />, label: 'Dashboard', path: '/dashboard' },
-  { id: 'users', icon: <Users2 className="w-4.5 h-4.5" />, label: 'Users', path: '/users' },
-  { id: 'invoices', icon: <FileText className="w-4.5 h-4.5" />, label: 'Invoices', path: '/invoices' },
-];
+// const adminNav = [
+//   { id: 'dashboard', icon: <LayoutGrid className="w-4.5 h-4.5" />, label: 'Dashboard helloooo', path: '/dashboard' },
+//   { id: 'users', icon: <Users2 className="w-4.5 h-4.5" />, label: 'Users', path: '/users' },
+//   { id: 'suppliers', icon: <FileText className="w-4.5 h-4.5" />, label: 'Suppliers', path: '/suppliers' },
+//   { id: 'invoices', icon: <FileText className="w-4.5 h-4.5" />, label: 'Invoices', path: '/invoices' },
+// ];
 
-const staffNav = [
-  { id: 'dashboard', icon: <LayoutGrid className="w-4.5 h-4.5" />, label: 'Dashboard', path: '/dashboard' },
-  { id: 'invoices', icon: <FileText className="w-4.5 h-4.5" />, label: 'Invoices', path: '/invoices' },
-];
+// const staffNav = [
+//   { id: 'dashboard', icon: <LayoutGrid className="w-4.5 h-4.5" />, label: 'Dashboard', path: '/dashboard' },
+//   { id: 'suppliers', icon: <FileText className="w-4.5 h-4.5" />, label: 'Suppliers', path: '/suppliers' },
+//   { id: 'invoices', icon: <FileText className="w-4.5 h-4.5" />, label: 'Invoices', path: '/invoices' },
+// ];
 
 const iconMap = {
   dashboard: <LayoutGrid className="w-4.5 h-4.5" />,
   users_manage: <Users2 className="w-4.5 h-4.5" />,
+  customers: <Users2 className="w-4.5 h-4.5" />,
+  suppliers: <FileText className="w-4.5 h-4.5" />,
+  purchases: <FileText className="w-4.5 h-4.5" />,
+  inventory: <Boxes className="w-4.5 h-4.5" />,
   invoices: <FileText className="w-4.5 h-4.5" />,
 };
 
@@ -72,9 +79,9 @@ const SidebarNav = ({ currentPath, handleLogout, isMobileOpen = false, onCloseMo
   }, [user]);
 
   let navItems = [];
-  if (user.role === 'developer') navItems = developerNav;
-  if (user.role === 'admin') navItems = adminNav;
-  if (user.role === 'staff') navItems = staffNav;
+  // if (user.role === 'developer') navItems = developerNav;
+  // if (user.role === 'admin') navItems = adminNav;
+  // if (user.role === 'staff') navItems = staffNav;
   if (user.role !== "developer") {
     navItems = BUSINESS_ACCESS_ITEMS
       .filter((item) => item.show_in_sidebar)

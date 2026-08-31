@@ -132,6 +132,7 @@ const Select = forwardRef(function Select(
       suppressNextFocusOpenRef.current = false;
       return;
     }
+    window.setTimeout(() => triggerRef.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 120);
     openDropdown();
   };
 

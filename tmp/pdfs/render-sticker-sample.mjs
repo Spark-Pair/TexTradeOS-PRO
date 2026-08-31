@@ -1,0 +1,26 @@
+import fs from "node:fs";
+import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
+import bwipjs from "bwip-js";
+
+const article = { article_no: "260042-01", description: "Premium Cotton Lawn", size: "3 Piece", category: "Summer Collection", unit: 12, sale_rate: 3850 };
+const purchase = { purchase_number: "PUR-2026-0042", supplier_name: "Al-Rehman Textiles" };
+const secureCode = "T1.7zYkE4Nd.s3cUrE";
+const qr = await QRCode.toDataURL(secureCode, { width: 500, margin: 1, errorCorrectionLevel: "M" });
+const barcode = `data:image/png;base64,${(await bwipjs.toBuffer({ bcid: "code128", text: secureCode, scale: 3, height: 7, includetext: false, padding: 0 })).toString("base64")}`;
+const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [90, 50] });
+pdf.setFillColor(18, 116, 117); pdf.rect(0, 0, 1.2, 50, "F");
+pdf.setDrawColor(203, 213, 225); pdf.setLineWidth(0.25); pdf.roundedRect(0.5, 0.5, 89, 49, 2, 2, "S");
+pdf.setFillColor(248, 250, 252); pdf.rect(58, 1, 31, 48, "F");
+pdf.setDrawColor(226, 232, 240); pdf.line(58, 3, 58, 47);
+pdf.setTextColor(18, 116, 117); pdf.setFont("helvetica", "bold"); pdf.setFontSize(7); pdf.text("TEXTRADEOS PRO", 7, 7);
+pdf.setTextColor(17, 24, 39); pdf.setFontSize(11); pdf.text(article.article_no, 7, 14, { maxWidth: 46 });
+pdf.setFontSize(9); pdf.text(article.description, 7, 21, { maxWidth: 46 });
+pdf.setFont("helvetica", "normal"); pdf.setFontSize(7); pdf.setTextColor(75, 85, 99);
+pdf.text(`Size: ${String(article.size).slice(0, 13)}`, 7, 29); pdf.text(`Ctg: ${String(article.category).slice(0, 10)}`, 30, 29);
+pdf.text(`Unit: ${article.unit} pcs`, 7, 34); pdf.text(`Sale: Rs ${article.sale_rate.toFixed(2)}`, 30, 34);
+pdf.addImage(barcode, "PNG", 7, 36.5, 46, 6);
+pdf.setFontSize(5.5); pdf.text(`${purchase.purchase_number} - ${purchase.supplier_name}`, 7, 47);
+pdf.addImage(qr, "PNG", 61, 7, 25, 25);
+pdf.setFont("helvetica", "bold"); pdf.setTextColor(18, 116, 117); pdf.setFontSize(6); pdf.text("SCAN ARTICLE", 72.5, 38, { align: "center" });
+fs.writeFileSync(new URL("./sticker-sample.pdf", import.meta.url), Buffer.from(pdf.output("arraybuffer")));

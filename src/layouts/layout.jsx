@@ -6,13 +6,24 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Menu } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 import UpdateManager from "../components/UpdateManager";
+import { syncPrototypeData } from "../utils/prototypeStorage";
 
 export default function Layout({ children }) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const location = useLocation();
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sharedDataReady, setSharedDataReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setSharedDataReady(false);
+    syncPrototypeData()
+      .catch(() => {})
+      .finally(() => { if (active) setSharedDataReady(true); });
+    return () => { active = false; };
+  }, [location.pathname, user?.businessId]);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -33,7 +44,7 @@ export default function Layout({ children }) {
   };
 
   return (
-    <div className="h-screen flex bg-gray-50 overflow-hidden">
+    <div className="flex h-[100dvh] overflow-hidden bg-gray-50">
       {/* Sidebar (Desktop) */}
       <div className="hidden lg:block">
         <SidebarNav
@@ -53,21 +64,16 @@ export default function Layout({ children }) {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 p-3 sm:p-6 overflow-auto min-w-0">
+      <main className="relative flex-1 overflow-auto p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-6 min-w-0">
         {/* Mobile header */}
-        <div className="lg:hidden flex items-center justify-between mb-3">
+        <div className="absolute left-3 top-3 z-20 lg:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 bg-white text-gray-700"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-300 bg-white text-gray-700 shadow-sm active:bg-gray-100"
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="text-right">
-            <div className="text-sm font-semibold text-gray-700">TexTradeOS PRO</div>
-            <div className="text-[10px] font-medium text-gray-400">A Product of SparkPair</div>
-          </div>
-          <div className="w-10 h-10" />
         </div>
 
         <AnimatePresence mode="wait" initial={false}>
@@ -79,7 +85,9 @@ export default function Layout({ children }) {
             transition={{ duration: 0.22, ease: "easeOut" }}
             className="no-default-transition h-full"
           >
-            {children || <Outlet />}
+            {sharedDataReady
+              ? (children || <Outlet />)
+              : <div className="flex h-full items-center justify-center text-sm text-gray-400">Syncing shared business data...</div>}
           </motion.div>
         </AnimatePresence>
       </main>

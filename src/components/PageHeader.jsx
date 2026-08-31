@@ -16,6 +16,9 @@ export default function PageHeader({
   rightContent,
 }) {
   const primaryActionShortcut = useShortcut("page_header_primary_action");
+  const mobileActionLabel = actionLabel
+    ?.replace(/^Generate\s+/i, "New ")
+    .replace(/^Add\s+/i, "New ");
 
   useEffect(() => {
     if (!actionLabel || !onAction || !primaryActionShortcut) return;
@@ -34,22 +37,24 @@ export default function PageHeader({
   }, [actionLabel, onAction, primaryActionShortcut]);
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-5">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-medium tracking-tight">{title}</h1>
-        {subtitle && <p className="text-gray-400 text-sm">{subtitle}</p>}
+    <div className="mb-5 flex min-h-10 items-center justify-between gap-3 pl-13 sm:min-h-0 sm:items-start sm:pl-0">
+      <div className="min-w-0">
+        <h1 className="truncate text-xl font-medium tracking-tight sm:text-3xl">{title}</h1>
+        {subtitle && <p className="hidden text-sm text-gray-400 sm:block">{subtitle}</p>}
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         {rightContent}
         {actionLabel && onAction && (
           <Button
+            className="shrink-0 px-3 sm:px-4"
             icon={actionIcon}
             iconPosition="right"
             onClick={onAction}
             title={`Shortcut: ${formatComboDisplay(primaryActionShortcut)}`}
             aria-label={actionLabel}
           >
+            <span className="sm:hidden">{mobileActionLabel || actionLabel}</span>
             <span className="hidden sm:inline">{actionLabel}</span>
           </Button>
         )}

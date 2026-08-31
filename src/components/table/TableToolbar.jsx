@@ -3,8 +3,8 @@ import Button from "../Button";
 
 export default function TableToolbar({ currentPage, totalPages, onPageChange, onFilter, onExport, onReport }) {
   return (
-    <div className="p-4 sm:p-5 border-b border-gray-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <div className="flex items-center bg-gray-100 rounded-xl p-1 border border-gray-300 w-full sm:w-auto justify-between">
+    <div className="flex items-center gap-2 border-b border-gray-300 bg-white p-3 sm:justify-between sm:p-5">
+      <div className="flex min-w-0 flex-1 items-center justify-between rounded-xl border border-gray-300 bg-gray-100 p-1 sm:flex-none">
         <button
           onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
           disabled={currentPage === 1}
@@ -35,7 +35,7 @@ export default function TableToolbar({ currentPage, totalPages, onPageChange, on
         </button>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3.5 flex-wrap">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3.5">
         <Button icon={SlidersHorizontal} outline={true} variant="secondary" size="sm" onClick={onFilter}>
           Filters
         </Button>

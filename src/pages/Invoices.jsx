@@ -14,6 +14,7 @@ import Button from "../components/Button";
 import StatCard from "../components/StatCard";
 import ConfirmModal from "../components/ConfirmModal";
 import useAuth from "../hooks/useAuth";
+import { deletePrototypeInvoice, savePrototypeInvoice } from "../utils/prototypeStorage";
 
 const toMillis = (value) => {
   if (!value) return 0;
@@ -92,6 +93,7 @@ export default function Invoices() {
   const handleInvoiceFormAction = async (payload) => {
     try {
       await createInvoice(payload);
+      savePrototypeInvoice(payload);
       showToast({ type: "success", message: "Invoice saved successfully" });
       await loadInvoices(pagination.currentPage, filters);
     } catch (err) {
@@ -154,6 +156,7 @@ export default function Invoices() {
     if (!deleteTarget) return;
     try {
       await deleteInvoice(deleteTarget._id);
+      deletePrototypeInvoice(deleteTarget);
       setDeleteTarget(null);
       const nextPage = invoices.length === 1 && pagination.currentPage > 1
         ? pagination.currentPage - 1
@@ -207,7 +210,13 @@ export default function Invoices() {
             onFilter={() => setIsFilterOpen(true)}
           />
 
-          <div ref={tableScrollRef} className="flex-1 overflow-auto">
+          <div className="grid gap-2 overflow-auto p-3 md:hidden">
+            {loading ? <div className="py-12 text-center text-sm text-gray-400">Loading invoices...</div> : invoices.length === 0 ? <div className="py-12 text-center text-sm text-gray-400">No invoices found.</div> : invoices.map((invoice) => (
+              <button key={invoice._id} type="button" onClick={() => handleOpenPreview(invoice._id)} className="rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm active:bg-teal-50"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-gray-900">{invoice.invoice_number || "Invoice"}</p><p className="mt-0.5 text-xs text-gray-500">{formatDate(invoice.invoice_date, "DD MMM yyyy")}</p></div><span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-sm font-bold text-emerald-700">{formatNumbers(invoice.total_amount, 2)}</span></div><p className="mt-3 truncate text-sm font-semibold text-gray-700">{invoice.customer_name || "Customer"}</p><div className="mt-3 flex items-center border-t border-gray-100 pt-3 text-xs text-gray-500"><span><strong className="text-gray-800">{formatNumbers(invoice.order_count, 0)}</strong> articles</span><span className="ml-auto font-semibold text-teal-700">View invoice →</span></div></button>
+            ))}
+          </div>
+
+          <div ref={tableScrollRef} className="hidden flex-1 overflow-auto md:block">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-20 bg-gray-100" style={{ boxShadow: "0 1px 0 0 rgba(209,213,219,1)" }}>
                 <tr className="text-sm tracking-wider text-gray-500">

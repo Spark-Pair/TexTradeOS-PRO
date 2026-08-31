@@ -23,6 +23,10 @@ export const normalizeBusinessUserRoles = (value = []) => {
 export const BUSINESS_ACCESS_ITEMS = [
   { key: "dashboard", label: "Dashboard", path: "/dashboard", default_roles: ["admin", "staff"], show_in_sidebar: true },
   { key: "users_manage", label: "Users", path: "/users", default_roles: ["admin"], show_in_sidebar: true },
+  { key: "customers", label: "Customers", path: "/customers", default_roles: ["admin", "staff"], show_in_sidebar: true },
+  { key: "suppliers", label: "Suppliers", path: "/suppliers", default_roles: ["admin", "staff"], show_in_sidebar: true },
+  { key: "purchases", label: "Purchases", path: "/purchases", default_roles: ["admin", "staff"], show_in_sidebar: true },
+  { key: "inventory", label: "Inventory", path: "/inventory", default_roles: ["admin", "staff"], show_in_sidebar: true },
   { key: "invoices", label: "Invoices", path: "/invoices", default_roles: ["admin", "staff"], show_in_sidebar: true },
   { key: "settings", label: "Settings", path: "/settings", default_roles: ["admin", "staff"], show_in_sidebar: false },
   { key: "keyboard_shortcuts", label: "Keyboard Shortcuts", path: "/keyboard-shortcuts", default_roles: ["admin", "staff"], show_in_sidebar: false },
