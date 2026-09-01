@@ -14,11 +14,13 @@ import { IS_DEVELOPMENT } from "../config/environment";
 import { useToast } from "../context/ToastContext";
 import {
   fetchSystemCommand,
+  downloadSystemBackup,
   fetchSystemDiagnostics,
   fetchSystemStatus,
   fetchSetupCommand,
   requestSystemCommand,
   requestUpdateInstall,
+  uploadSystemRestore,
   waitForCommand,
 } from "../api/system";
 import { handOffUpdateToLauncher } from "../utils/updateHandoff";
@@ -48,7 +50,7 @@ export default function SystemManagement() {
     setBusy(type);
     try {
       const { data } = await requestSystemCommand(type, payload);
-      if (type !== "restore") {
+      if (type !== "restore" || data.execution === "local") {
         await waitForCommand(fetchSystemCommand, data.id, 45000);
         await refresh();
       }
@@ -96,6 +98,44 @@ export default function SystemManagement() {
       handOffUpdateToLauncher();
     } catch (error) {
       showToast({ type: "error", message: error?.response?.data?.message || "Update failed" });
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const downloadBackup = async (backup) => {
+    setBusy(`download:${backup.name}`);
+    try {
+      const { data } = await downloadSystemBackup(backup.name);
+      const url = URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = backup.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      showToast({ type: "error", message: error?.response?.data?.message || "Backup download failed" });
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const restoreFromComputer = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !window.confirm(`Replace the current database with ${file.name}?`)) return;
+    setBusy("restore-upload");
+    try {
+      const { data } = await uploadSystemRestore(file);
+      if (data.execution === "local") {
+        await waitForCommand(fetchSystemCommand, data.id, 45000);
+        await refresh();
+      }
+      showToast({ type: "success", message: "Restore started. TexTradeOS PRO will reconnect automatically." });
+    } catch (error) {
+      showToast({ type: "error", message: error?.response?.data?.message || error.message });
     } finally {
       setBusy("");
     }
@@ -178,6 +218,11 @@ export default function SystemManagement() {
           <Button size="sm" loading={busy === "backup"} onClick={() => runCommand("backup")}>
             Create Backup
           </Button>
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-teal-700 hover:underline">
+            <Upload size={15} />
+            {busy === "restore-upload" ? "Uploading backup..." : "Restore backup from this computer"}
+            <input type="file" accept=".sqlite,.db,application/x-sqlite3" className="hidden" onChange={restoreFromComputer} disabled={Boolean(busy)} />
+          </label>
         </ActionPanel>
 
         <ActionPanel title="Network" icon={Shield}>
@@ -206,6 +251,16 @@ export default function SystemManagement() {
                 <p className="text-sm font-medium text-gray-700">{backup.name}</p>
                 <p className="text-xs text-gray-400">{formatBytes(backup.size)}</p>
               </div>
+              <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                outline
+                icon={Download}
+                loading={busy === `download:${backup.name}`}
+                onClick={() => downloadBackup(backup)}
+              >
+                Download
+              </Button>
               <Button
                 size="sm"
                 outline
@@ -220,6 +275,7 @@ export default function SystemManagement() {
               >
                 Restore
               </Button>
+              </div>
             </div>
           ))}
         </div>
