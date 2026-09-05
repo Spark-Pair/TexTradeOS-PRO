@@ -9,16 +9,16 @@ export default function ModuleActionCard({ module, onClick, prominent = false })
     <button
       type="button"
       onClick={onClick}
-      className={`group relative flex h-full w-full overflow-hidden rounded-lg border p-4 text-left transition-[transform,border-color,background-color] duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-[#127475]/20 focus:ring-offset-2 active:scale-[0.985] motion-reduce:transform-none motion-reduce:transition-none ${meta.card}`}
+      className={`group relative flex h-full w-full overflow-hidden rounded-xl border p-4 text-left transition-[transform,border-color,background-color] duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-[#127475]/20 focus:ring-offset-2 active:scale-[0.985] motion-reduce:transform-none motion-reduce:transition-none ${meta.card}`}
     >
       <span className="relative flex min-w-0 flex-1 flex-col">
         <span className="flex items-start justify-between gap-3">
-          <span className={`flex ${prominent ? "h-12 w-12" : "h-10 w-10"} shrink-0 items-center justify-center rounded-lg transition-transform duration-200 ease-out group-hover:-translate-y-0.5 group-hover:scale-105 ${meta.tint}`}>
-            <Icon size={prominent ? 22 : 19} strokeWidth={1.9} />
+          <span className={`flex ${prominent ? "h-14 w-14" : "h-12 w-12"} shrink-0 items-center justify-center rounded-xl transition-transform duration-200 ease-out group-hover:-translate-y-0.5 group-hover:scale-105 ${meta.tint}`}>
+            <Icon size={prominent ? 27 : 23} strokeWidth={1.85} />
           </span>
 
-          <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-[transform,background-color] duration-200 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 ${meta.action}`}>
-            <ArrowUpRight size={14} />
+          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-[transform,background-color] duration-200 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 ${meta.action}`}>
+            <ArrowUpRight size={15} />
           </span>
         </span>
 
