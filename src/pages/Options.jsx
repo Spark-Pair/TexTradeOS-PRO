@@ -11,19 +11,25 @@ import { useToast } from "../context/ToastContext";
 
 export default function OptionsPage() {
   const { showToast } = useToast();
-  const [referenceData, setReferenceData] = useState({});
+  const [referenceData, setReferenceData] = useState(null);
   const [drafts, setDrafts] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [savingKey, setSavingKey] = useState("");
   const groups = useMemo(() => Array.from(getOptionGroupsByModule().entries()), []);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError("");
     try {
       const response = await fetchMyReferenceData();
-      setReferenceData(response?.reference_data || {});
+      if (!response?.reference_data || typeof response.reference_data !== "object") throw new Error("Options response is incomplete");
+      setReferenceData(response.reference_data);
     } catch (error) {
-      showToast({ type: "error", message: error?.response?.data?.message || "Failed to load options" });
+      setReferenceData(null);
+      const message = error?.response?.data?.message || error?.message || "Failed to load options";
+      setLoadError(message);
+      showToast({ type: "error", message });
     } finally {
       setLoading(false);
     }
@@ -32,20 +38,23 @@ export default function OptionsPage() {
   useEffect(() => { load(); }, [load]);
 
   const persist = async (storageKey, values) => {
+    if (!referenceData) return;
     setSavingKey(storageKey);
     try {
       const next = { ...referenceData, [storageKey]: values };
       const response = await updateMyReferenceData(next);
-      setReferenceData(response?.reference_data || next);
+      if (!response?.reference_data || typeof response.reference_data !== "object") throw new Error("Updated options response is incomplete");
+      setReferenceData(response.reference_data);
       showToast({ type: "success", message: "Options updated" });
     } catch (error) {
-      showToast({ type: "error", message: error?.response?.data?.message || "Could not update options" });
+      showToast({ type: "error", message: error?.response?.data?.message || error?.message || "Could not update options" });
     } finally {
       setSavingKey("");
     }
   };
 
   const addValue = async (option) => {
+    if (!referenceData) return;
     const value = String(drafts[option.key] || "").trim();
     if (!value) return;
     const current = Array.isArray(referenceData[option.storageKey]) ? referenceData[option.storageKey] : [];
@@ -58,6 +67,7 @@ export default function OptionsPage() {
   };
 
   const removeValue = async (option, value) => {
+    if (!referenceData) return;
     const current = Array.isArray(referenceData[option.storageKey]) ? referenceData[option.storageKey] : [];
     await persist(option.storageKey, current.filter((item) => item !== value));
   };
@@ -65,13 +75,13 @@ export default function OptionsPage() {
   return <div className="relative z-10 mx-auto flex h-full min-h-0 max-w-7xl flex-col">
     <PageHeader title="Options & Configuration" subtitle="Manage reusable business options stored in the database." />
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-8">
-      {loading ? <div className="rounded-3xl border border-gray-300 bg-white py-16 text-center text-sm text-gray-400">Loading options from database...</div> : <div className="space-y-4">{groups.map(([moduleKey, options]) => {
+      {loading ? <div className="rounded-3xl border border-gray-300 bg-white py-16 text-center text-sm text-gray-400">Loading options from database...</div> : loadError ? <div className="rounded-3xl border border-gray-300 bg-white py-16 text-center"><p className="text-sm font-medium text-red-600">Options could not be loaded from the database.</p><p className="mt-1 text-xs text-gray-400">{loadError}</p><Button className="mt-4" size="sm" variant="secondary" outline onClick={load}>Retry</Button></div> : <div className="space-y-4">{groups.map(([moduleKey, options]) => {
         const module = BUSINESS_ACCESS_ITEMS_MAP.get(moduleKey);
         const Icon = getModuleMeta(moduleKey).icon || SlidersHorizontal;
         return <section key={moduleKey} className="overflow-hidden rounded-3xl border border-gray-300 bg-white">
           <div className="flex items-center gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4 sm:px-6"><span className="grid h-9 w-9 place-items-center rounded-xl border border-gray-200 bg-white text-gray-600"><Icon size={17} /></span><div><h2 className="text-sm font-semibold text-gray-800">{module?.label || moduleKey}</h2><p className="text-xs text-gray-400">Values below are loaded from and saved to business reference data.</p></div></div>
           <div className="divide-y divide-gray-200">{options.map((option) => {
-            const values = Array.isArray(referenceData[option.storageKey]) ? referenceData[option.storageKey] : [];
+            const values = Array.isArray(referenceData?.[option.storageKey]) ? referenceData[option.storageKey] : [];
             const saving = savingKey === option.storageKey;
             return <div key={option.key} className="px-5 py-5 sm:px-6">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
