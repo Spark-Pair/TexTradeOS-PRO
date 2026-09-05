@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from "react";
-import { CircleCheck, Edit3, MoreVertical, Plus, UserRoundCheck, Users2, XCircle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, CircleCheck, Edit3, Loader2, MoreVertical, Plus, RefreshCw, UserRoundCheck, Users2, XCircle } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import StatCard from "../components/StatCard";
 import TableToolbar from "../components/table/TableToolbar";
@@ -10,7 +10,7 @@ import StatusBadge from "../components/StatusBadge";
 import CustomerFormModal from "../components/User/CustomerFormModal";
 import PartyDetailsModal from "../components/User/PartyDetailsModal";
 import { useToast } from "../context/ToastContext";
-import { listCustomers, saveCustomer, toggleCustomerStatus } from "../utils/prototypeStorage";
+import { createCustomer, fetchCustomers, toggleCustomer, updateCustomer } from "../api/commerce";
 
 const PAGE_SIZE = 30;
 const errorMessage = (error, fallback) => error?.response?.data?.message || error?.message || fallback;
@@ -18,7 +18,9 @@ const errorMessage = (error, fallback) => error?.response?.data?.message || erro
 export default function Customers() {
   const { showToast } = useToast();
   const tableScrollRef = useRef(null);
-  const [customers, setCustomers] = useState(() => listCustomers());
+  const [customers, setCustomers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [activeMenu, setActiveMenu] = useState(null);
   const [detailsTarget, setDetailsTarget] = useState(null);
   const [formModal, setFormModal] = useState({ isOpen: false, customer: null });
@@ -28,12 +30,28 @@ export default function Customers() {
   const [filters, setFilters] = useState({ name: "", city: "", status: "" });
   const [isStatusChanging, setIsStatusChanging] = useState(false);
 
+  const loadCustomers = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+    try {
+      const data = await fetchCustomers();
+      setCustomers(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setCustomers([]);
+      setLoadError(errorMessage(error, "Could not load customers"));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadCustomers(); }, [loadCustomers]);
+
   const filteredCustomers = useMemo(() => {
     const name = filters.name.trim().toLowerCase();
     const city = filters.city.trim().toLowerCase();
     return customers.filter((customer) => {
-      const matchesName = !name || customer.customer_name.toLowerCase().includes(name) || customer.person_name.toLowerCase().includes(name);
-      const matchesCity = !city || customer.city.toLowerCase().includes(city);
+      const matchesName = !name || String(customer.customer_name || "").toLowerCase().includes(name) || String(customer.person_name || "").toLowerCase().includes(name);
+      const matchesCity = !city || String(customer.city || "").toLowerCase().includes(city);
       const matchesStatus = !filters.status || (filters.status === "active" ? customer.isActive : !customer.isActive);
       return matchesName && matchesCity && matchesStatus;
     });
@@ -42,7 +60,6 @@ export default function Customers() {
   const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / PAGE_SIZE));
   const pageCustomers = filteredCustomers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const stats = useMemo(() => ({ total: customers.length, active: customers.filter((customer) => customer.isActive).length, inactive: customers.filter((customer) => !customer.isActive).length }), [customers]);
-  const refresh = () => setCustomers(listCustomers());
 
   const handleSubmit = async (payload) => {
     if (!payload.customer_name.trim() || !payload.person_name.trim() || !payload.urdu_title.trim() || !payload.city.trim()) {
@@ -50,8 +67,8 @@ export default function Customers() {
       return;
     }
     try {
-      await saveCustomer(payload);
-      refresh();
+      const saved = payload._id ? await updateCustomer(payload._id, payload) : await createCustomer(payload);
+      setCustomers((current) => payload._id ? current.map((item) => item._id === saved._id ? saved : item) : [saved, ...current]);
       setFormModal({ isOpen: false, customer: null });
       showToast({ type: "success", message: payload._id ? "Customer updated successfully" : "Customer created successfully" });
     } catch (error) {
@@ -64,8 +81,8 @@ export default function Customers() {
     if (!statusTarget || isStatusChanging) return;
     setIsStatusChanging(true);
     try {
-      await toggleCustomerStatus(statusTarget._id);
-      refresh();
+      const saved = await toggleCustomer(statusTarget._id);
+      setCustomers((current) => current.map((item) => item._id === saved._id ? saved : item));
       showToast({ type: "success", message: "Customer status changed successfully" });
       setStatusTarget(null);
     } catch (error) {
@@ -81,6 +98,12 @@ export default function Customers() {
   const applyFilters = () => { setCurrentPage(1); setIsFilterOpen(false); tableScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" }); };
   const resetFilters = () => { setFilters({ name: "", city: "", status: "" }); setCurrentPage(1); setIsFilterOpen(false); };
 
+  const dataState = isLoading ? (
+    <div className="flex min-h-52 items-center justify-center gap-2 text-sm text-gray-500"><Loader2 size={18} className="animate-spin" /> Loading customers...</div>
+  ) : loadError ? (
+    <div className="flex min-h-52 flex-col items-center justify-center gap-3 px-6 text-center"><AlertTriangle size={24} className="text-amber-500" /><div><p className="text-sm font-semibold text-gray-800">Customers unavailable</p><p className="mt-1 text-sm text-gray-500">{loadError}</p></div><button type="button" onClick={loadCustomers} className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"><RefreshCw size={15} /> Retry</button></div>
+  ) : null;
+
   return (
     <>
       <div className="relative z-10 max-w-7xl mx-auto h-full flex flex-col">
@@ -88,8 +111,10 @@ export default function Customers() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6"><StatCard label="Total Customers" value={stats.total} icon={Users2} /><StatCard label="Active Customers" value={stats.active} icon={CircleCheck} variant="success" /><StatCard label="Inactive Customers" value={stats.inactive} icon={XCircle} variant="danger" /></div>
         <div className="rounded-3xl bg-white border border-gray-300 overflow-hidden flex-1 flex flex-col">
           <TableToolbar currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} onFilter={() => setIsFilterOpen(true)} />
-          <div className="grid gap-2 overflow-auto p-3 md:hidden">{pageCustomers.length === 0 ? <div className="py-12 text-center text-sm text-gray-400">No customers found.</div> : pageCustomers.map((customer) => <div key={customer._id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-bold text-gray-900">{customer.customer_name}</p><p className="mt-1 text-xs text-gray-500">{customer.person_name || "No contact person"} · {customer.city || "No city"}</p></div><StatusBadge active={customer.isActive} /></div><div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3"><a href={customer.phone_number ? `tel:${customer.phone_number}` : undefined} className="text-sm font-medium text-teal-700">{customer.phone_number || "No phone"}</a><div className="flex gap-2"><button type="button" onClick={() => setFormModal({ isOpen: true, customer })} className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700">Edit</button><button type="button" onClick={() => setStatusTarget(customer)} className={`rounded-lg px-3 py-2 text-xs font-semibold ${customer.isActive ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"}`}>{customer.isActive ? "Deactivate" : "Activate"}</button></div></div></div>)}</div>
-          <div ref={tableScrollRef} className="hidden flex-1 overflow-auto md:block"><table className="w-full text-left border-collapse"><thead className="sticky top-0 z-20 bg-gray-100" style={{ boxShadow: "0 1px 0 0 rgba(209,213,219,1)" }}><tr className="text-sm tracking-wider text-gray-500"><th className="px-5 py-3.5 font-medium">Id</th><th className="px-5 py-3.5 font-medium">Customer</th><th className="px-5 py-3.5 font-medium">Person</th><th className="px-5 py-3.5 font-medium">Urdu Title</th><th className="px-5 py-3.5 font-medium">Phone</th><th className="px-5 py-3.5 font-medium">City</th><th className="px-5 py-3.5 font-medium">Status</th><th className="px-5 py-3.5 font-medium text-right">Actions</th></tr></thead><tbody className="divide-y divide-gray-200">{pageCustomers.length === 0 ? <tr><td colSpan={8} className="px-7 py-16 text-center text-sm text-gray-400">No customers found.</td></tr> : pageCustomers.map((customer, index) => <tr key={customer._id} onClick={() => setDetailsTarget(customer)} className="cursor-pointer hover:bg-teal-50/40"><td className="px-5 py-4 text-sm font-medium text-gray-500">{(currentPage - 1) * PAGE_SIZE + index + 1}</td><td className="px-5 py-4 text-sm font-semibold text-gray-800">{customer.customer_name}</td><td className="px-5 py-4 text-sm text-gray-600">{customer.person_name}</td><td className="px-5 py-4 text-sm text-gray-700" dir="rtl" lang="ur">{customer.urdu_title}</td><td className="px-5 py-4 text-sm text-gray-600">{customer.phone_number || "-"}</td><td className="px-5 py-4 text-sm text-gray-600">{customer.city}</td><td className="px-5 py-4"><StatusBadge active={customer.isActive} /></td><td className="px-5 py-4 text-right relative"><button onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === customer._id ? null : customer._id); }} className="p-2 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100" aria-label="Open actions menu"><MoreVertical size={18} /></button><ContextMenu isOpen={activeMenu === customer._id}><button onClick={(e) => { e.stopPropagation(); setFormModal({ isOpen: true, customer }); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-gray-600 hover:bg-gray-200 cursor-pointer"><Edit3 size={16} strokeWidth={2.5} /> Edit Customer</button><div className="h-[1px] bg-gray-200 my-1.5" /><button onClick={(e) => { e.stopPropagation(); setStatusTarget(customer); setActiveMenu(null); }} className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl cursor-pointer ${customer.isActive ? "text-red-600 hover:bg-red-50" : "text-emerald-700 hover:bg-emerald-50"}`}><UserRoundCheck size={16} strokeWidth={2.5} /> {customer.isActive ? "Deactivate" : "Activate"}</button></ContextMenu></td></tr>)}</tbody></table></div>
+          {dataState || <>
+            <div className="grid gap-2 overflow-auto p-3 md:hidden">{pageCustomers.length === 0 ? <div className="py-12 text-center text-sm text-gray-400">No customers found.</div> : pageCustomers.map((customer) => <div key={customer._id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-bold text-gray-900">{customer.customer_name}</p><p className="mt-1 text-xs text-gray-500">{customer.person_name || "No contact person"} · {customer.city || "No city"}</p></div><StatusBadge active={customer.isActive} /></div><div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3"><a href={customer.phone_number ? `tel:${customer.phone_number}` : undefined} className="text-sm font-medium text-teal-700">{customer.phone_number || "No phone"}</a><div className="flex gap-2"><button type="button" onClick={() => setFormModal({ isOpen: true, customer })} className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700">Edit</button><button type="button" onClick={() => setStatusTarget(customer)} className={`rounded-lg px-3 py-2 text-xs font-semibold ${customer.isActive ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"}`}>{customer.isActive ? "Deactivate" : "Activate"}</button></div></div></div>)}</div>
+            <div ref={tableScrollRef} className="hidden flex-1 overflow-auto md:block"><table className="w-full text-left border-collapse"><thead className="sticky top-0 z-20 bg-gray-100" style={{ boxShadow: "0 1px 0 0 rgba(209,213,219,1)" }}><tr className="text-sm tracking-wider text-gray-500"><th className="px-5 py-3.5 font-medium">Id</th><th className="px-5 py-3.5 font-medium">Customer</th><th className="px-5 py-3.5 font-medium">Person</th><th className="px-5 py-3.5 font-medium">Urdu Title</th><th className="px-5 py-3.5 font-medium">Phone</th><th className="px-5 py-3.5 font-medium">City</th><th className="px-5 py-3.5 font-medium">Status</th><th className="px-5 py-3.5 font-medium text-right">Actions</th></tr></thead><tbody className="divide-y divide-gray-200">{pageCustomers.length === 0 ? <tr><td colSpan={8} className="px-7 py-16 text-center text-sm text-gray-400">No customers found.</td></tr> : pageCustomers.map((customer, index) => <tr key={customer._id} onClick={() => setDetailsTarget(customer)} className="cursor-pointer hover:bg-teal-50/40"><td className="px-5 py-4 text-sm font-medium text-gray-500">{(currentPage - 1) * PAGE_SIZE + index + 1}</td><td className="px-5 py-4 text-sm font-semibold text-gray-800">{customer.customer_name}</td><td className="px-5 py-4 text-sm text-gray-600">{customer.person_name}</td><td className="px-5 py-4 text-sm text-gray-700" dir="rtl" lang="ur">{customer.urdu_title}</td><td className="px-5 py-4 text-sm text-gray-600">{customer.phone_number || "-"}</td><td className="px-5 py-4 text-sm text-gray-600">{customer.city}</td><td className="px-5 py-4"><StatusBadge active={customer.isActive} /></td><td className="px-5 py-4 text-right relative"><button onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === customer._id ? null : customer._id); }} className="p-2 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100" aria-label="Open actions menu"><MoreVertical size={18} /></button><ContextMenu isOpen={activeMenu === customer._id}><button onClick={(e) => { e.stopPropagation(); setFormModal({ isOpen: true, customer }); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-gray-600 hover:bg-gray-200 cursor-pointer"><Edit3 size={16} strokeWidth={2.5} /> Edit Customer</button><div className="h-[1px] bg-gray-200 my-1.5" /><button onClick={(e) => { e.stopPropagation(); setStatusTarget(customer); setActiveMenu(null); }} className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl cursor-pointer ${customer.isActive ? "text-red-600 hover:bg-red-50" : "text-emerald-700 hover:bg-emerald-50"}`}><UserRoundCheck size={16} strokeWidth={2.5} /> {customer.isActive ? "Deactivate" : "Activate"}</button></ContextMenu></td></tr>)}</tbody></table></div>
+          </>}
         </div>
       </div>
       <PartyDetailsModal isOpen={Boolean(detailsTarget)} party={detailsTarget} type="customer" onClose={() => setDetailsTarget(null)} onEdit={(item) => { setDetailsTarget(null); setFormModal({ isOpen: true, customer: item }); }} onToggle={(item) => { setDetailsTarget(null); setStatusTarget(item); }} />
