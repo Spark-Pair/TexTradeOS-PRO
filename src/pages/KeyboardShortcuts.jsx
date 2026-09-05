@@ -65,7 +65,7 @@ export default function KeyboardShortcuts() {
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search shortcuts..." icon={Search} />
           </div>
           <div className="max-w-[60%] shrink-0 overflow-x-auto scrollbar-none">
-            <div className="relative flex w-max items-center gap-1 rounded-xl bg-gray-100/80 p-1.5">
+            <div className="relative flex h-[42px] w-max items-center gap-1 rounded-xl border border-gray-400 bg-gray-50 px-1.5">
               {cats.map((c) => {
                 const active = category === c;
                 return (
@@ -73,12 +73,12 @@ export default function KeyboardShortcuts() {
                     key={c}
                     type="button"
                     onClick={() => setCategory(c)}
-                    className={`relative z-0 shrink-0 rounded-lg px-4 py-2.5 text-[13px] font-medium transition-colors duration-200 ${active ? "text-[#1C7773]" : "text-gray-500 hover:text-gray-700"}`}
+                    className={`relative z-0 flex h-8 shrink-0 items-center rounded-lg px-4 text-[13px] font-medium transition-colors duration-200 ${active ? "text-[#1C7773]" : "text-gray-500 hover:text-gray-700"}`}
                   >
                     {active && (
                       <motion.span
                         layoutId="shortcut-category-active"
-                        className="absolute inset-0 -z-10 rounded-lg border border-gray-200 bg-white"
+                        className="absolute inset-0 -z-10 rounded-lg border border-teal-200 bg-white"
                         transition={{ type: "spring", stiffness: 430, damping: 34, mass: 0.7 }}
                       />
                     )}
