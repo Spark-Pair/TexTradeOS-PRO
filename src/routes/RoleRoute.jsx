@@ -6,13 +6,15 @@ import { hasAccessForRole } from "../utils/accessConfig";
 
 export default function RoleRoute({ allow, accessKey, children }) {
   const { user, loading } = useAuth();
-  const [referenceData, setReferenceData] = useState({});
-  const [ruleData, setRuleData] = useState({});
+  const [referenceData, setReferenceData] = useState(null);
+  const [ruleData, setRuleData] = useState(null);
   const [accessLoading, setAccessLoading] = useState(Boolean(accessKey));
+  const [accessFailed, setAccessFailed] = useState(false);
 
   useEffect(() => {
     if (!accessKey || !user || user.role === "developer") {
       setAccessLoading(false);
+      setAccessFailed(false);
       return;
     }
     let isMounted = true;
@@ -20,13 +22,19 @@ export default function RoleRoute({ allow, accessKey, children }) {
     const loadAccessData = async () => {
       try {
         setAccessLoading(true);
+        setAccessFailed(false);
         const [referenceRes, ruleRes] = await Promise.all([
-          fetchMyReferenceData().catch(() => ({ reference_data: {} })),
-          fetchMyRuleData().catch(() => ({ rule_data: {} })),
+          fetchMyReferenceData(),
+          fetchMyRuleData(),
         ]);
         if (!isMounted) return;
         setReferenceData(referenceRes?.reference_data || {});
         setRuleData(ruleRes?.rule_data || {});
+      } catch {
+        if (!isMounted) return;
+        setReferenceData(null);
+        setRuleData(null);
+        setAccessFailed(true);
       } finally {
         if (isMounted) setAccessLoading(false);
       }
@@ -44,7 +52,8 @@ export default function RoleRoute({ allow, accessKey, children }) {
   if (Array.isArray(allow) && allow.includes(user.role)) return children;
   if (!accessKey && !Array.isArray(allow)) return children;
   if (accessKey && user.role !== "developer") {
-    if (accessLoading) return children;
+    if (accessLoading) return null;
+    if (accessFailed || !referenceData || !ruleData) return <Navigate to="/dashboard" replace />;
     if (hasAccessForRole(ruleData, referenceData, accessKey, user.role)) return children;
   }
   if (!accessKey && Array.isArray(allow) && !allow.includes(user.role)) {
