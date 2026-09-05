@@ -17,3 +17,5 @@ export const fetchPurchase = async (id) => unwrap(await apiClient.get(`/purchase
 export const createPurchase = async (payload) => unwrap(await apiClient.post("/purchases", payload));
 export const updatePurchase = async (id, payload) => unwrap(await apiClient.put(`/purchases/${id}`, payload));
 export const removePurchase = async (id) => unwrap(await apiClient.delete(`/purchases/${id}`));
+
+export const fetchInventory = async () => unwrap(await apiClient.get("/inventory"));
