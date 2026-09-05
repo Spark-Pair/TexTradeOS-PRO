@@ -13,6 +13,7 @@ import { useToast } from "../context/ToastContext";
 import { listSuppliers, saveSupplier, toggleSupplierStatus } from "../utils/prototypeStorage";
 
 const PAGE_SIZE = 30;
+const errorMessage = (error, fallback) => error?.response?.data?.message || error?.message || fallback;
 
 export default function Suppliers() {
   const { showToast } = useToast();
@@ -25,6 +26,8 @@ export default function Suppliers() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({ name: "", city: "", status: "" });
+  const [isSaving, setIsSaving] = useState(false);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
 
   const filteredSuppliers = useMemo(() => {
     const name = filters.name.trim().toLowerCase();
@@ -51,23 +54,38 @@ export default function Suppliers() {
 
   const refresh = () => setSuppliers(listSuppliers());
 
-  const handleSubmit = (payload) => {
+  const handleSubmit = async (payload) => {
+    if (isSaving) return;
     if (!payload.supplier_name.trim() || !payload.person_name.trim() || !payload.urdu_title.trim() || !payload.city.trim()) {
       showToast({ type: "error", message: "Supplier name, person name, Urdu title, and city are required" });
       return;
     }
-    saveSupplier(payload);
-    refresh();
-    setFormModal({ isOpen: false, supplier: null });
-    showToast({ type: "success", message: payload._id ? "Supplier updated successfully" : "Supplier created successfully" });
+    setIsSaving(true);
+    try {
+      await saveSupplier(payload);
+      refresh();
+      setFormModal({ isOpen: false, supplier: null });
+      showToast({ type: "success", message: payload._id ? "Supplier updated successfully" : "Supplier created successfully" });
+    } catch (error) {
+      showToast({ type: "error", message: errorMessage(error, "Could not save supplier") });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleStatusChange = () => {
-    if (!statusTarget) return;
-    toggleSupplierStatus(statusTarget._id);
-    refresh();
-    showToast({ type: "success", message: "Supplier status changed successfully" });
-    setStatusTarget(null);
+  const handleStatusChange = async () => {
+    if (!statusTarget || isChangingStatus) return;
+    setIsChangingStatus(true);
+    try {
+      await toggleSupplierStatus(statusTarget._id);
+      refresh();
+      showToast({ type: "success", message: "Supplier status changed successfully" });
+      setStatusTarget(null);
+    } catch (error) {
+      showToast({ type: "error", message: errorMessage(error, "Could not change supplier status") });
+    } finally {
+      setIsChangingStatus(false);
+    }
   };
 
   const filterConfig = [
@@ -179,12 +197,14 @@ export default function Suppliers() {
       </div>
 
       <PartyDetailsModal isOpen={Boolean(detailsTarget)} party={detailsTarget} type="supplier" onClose={() => setDetailsTarget(null)} onEdit={(item) => { setDetailsTarget(null); setFormModal({ isOpen: true, supplier: item }); }} onToggle={(item) => { setDetailsTarget(null); setStatusTarget(item); }} />
-      <SupplierFormModal isOpen={formModal.isOpen} supplier={formModal.supplier} onClose={() => setFormModal({ isOpen: false, supplier: null })} onSubmit={handleSubmit} />
+      <SupplierFormModal isOpen={formModal.isOpen} supplier={formModal.supplier} onClose={() => { if (!isSaving) setFormModal({ isOpen: false, supplier: null }); }} onSubmit={handleSubmit} />
       <FilterDrawer isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} filters={filterConfig} onApply={applyFilters} onReset={resetFilters} />
       <ConfirmModal
         isOpen={Boolean(statusTarget)}
-        onClose={() => setStatusTarget(null)}
+        onClose={() => { if (!isChangingStatus) setStatusTarget(null); }}
         onConfirm={handleStatusChange}
+        isLoading={isChangingStatus}
+        closeOnConfirm={false}
         title={statusTarget?.isActive ? "Deactivate Supplier" : "Activate Supplier"}
         message={`Are you sure you want to ${statusTarget?.isActive ? "deactivate" : "activate"} "${statusTarget?.supplier_name || "this supplier"}"?`}
         confirmText={statusTarget?.isActive ? "Deactivate" : "Activate"}
