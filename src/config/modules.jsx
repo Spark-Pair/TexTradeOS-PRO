@@ -1,8 +1,6 @@
-import {
-  Boxes, FileText, Gauge, Keyboard, LayoutGrid, Settings, ShoppingCart,
-  RotateCcw, Undo2, Store, UserRound, Users2,
-} from "lucide-react";
+import { Boxes, FileText, Gauge, Keyboard, LayoutGrid, Settings, ShoppingCart, RotateCcw, Undo2, Store, UserRound, Users2, SlidersHorizontal } from "lucide-react";
 
+// Color fields are Menu/Home presentation metadata only. Other screens should consume icon/description only.
 export const MODULE_META = {
   dashboard: { icon: Gauge, description: "Business overview and key numbers", tint: "bg-teal-200/80 text-teal-800", card: "bg-teal-100/60 border-teal-200 hover:bg-teal-100 hover:border-teal-300", action: "bg-teal-200/70 text-teal-800 group-hover:bg-teal-200" },
   users_manage: { icon: Users2, description: "Team members, roles and access", tint: "bg-sky-200/80 text-sky-800", card: "bg-sky-100/60 border-sky-200 hover:bg-sky-100 hover:border-sky-300", action: "bg-sky-200/70 text-sky-800 group-hover:bg-sky-200" },
@@ -13,17 +11,9 @@ export const MODULE_META = {
   invoices: { icon: FileText, description: "Create, view and print invoices", tint: "bg-violet-200/80 text-violet-800", card: "bg-violet-100/60 border-violet-200 hover:bg-violet-100 hover:border-violet-300", action: "bg-violet-200/70 text-violet-800 group-hover:bg-violet-200" },
   sales_returns: { icon: RotateCcw, description: "Customer returns and adjustments", tint: "bg-rose-200/80 text-rose-800", card: "bg-rose-100/60 border-rose-200 hover:bg-rose-100 hover:border-rose-300", action: "bg-rose-200/70 text-rose-800 group-hover:bg-rose-200" },
   purchase_returns: { icon: Undo2, description: "Supplier returns and allowances", tint: "bg-yellow-200/80 text-yellow-800", card: "bg-yellow-100/60 border-yellow-200 hover:bg-yellow-100 hover:border-yellow-300", action: "bg-yellow-200/70 text-yellow-800 group-hover:bg-yellow-200" },
-  settings: { icon: Settings, description: "Access rules and system settings", tint: "bg-slate-200 text-slate-800", card: "bg-slate-100/80 border-slate-200 hover:bg-slate-200/70 hover:border-slate-300", action: "bg-slate-200 text-slate-800 group-hover:bg-slate-300/80" },
+  settings: { icon: Settings, description: "Access rules and application settings", tint: "bg-slate-200 text-slate-800", card: "bg-slate-100/80 border-slate-200 hover:bg-slate-200/70 hover:border-slate-300", action: "bg-slate-200 text-slate-800 group-hover:bg-slate-300/80" },
+  options: { icon: SlidersHorizontal, description: "Manage configurable field options", tint: "bg-indigo-200/80 text-indigo-800", card: "bg-indigo-100/60 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300", action: "bg-indigo-200/70 text-indigo-800 group-hover:bg-indigo-200" },
   keyboard_shortcuts: { icon: Keyboard, description: "Customize app shortcuts", tint: "bg-pink-200/80 text-pink-800", card: "bg-pink-100/60 border-pink-200 hover:bg-pink-100 hover:border-pink-300", action: "bg-pink-200/70 text-pink-800 group-hover:bg-pink-200" },
 };
-
-export const MENU_MODULE = {
-  key: "menu", label: "Menu", path: "/", icon: LayoutGrid,
-  description: "All modules and actions", tint: "bg-teal-50 text-teal-700",
-};
-
-export const getModuleMeta = (key) => MODULE_META[key] || {
-  icon: FileText, description: "Open module", tint: "bg-gray-200 text-gray-800",
-  card: "bg-gray-100/80 border-gray-200 hover:bg-gray-200/70 hover:border-gray-300",
-  action: "bg-gray-200 text-gray-800 group-hover:bg-gray-300/80",
-};
+export const MENU_MODULE = { key: "menu", label: "Menu", path: "/", icon: LayoutGrid, description: "All modules and actions", tint: "bg-teal-50 text-teal-700" };
+export const getModuleMeta = (key) => MODULE_META[key] || { icon: FileText, description: "Open module", tint: "bg-gray-200 text-gray-800", card: "bg-gray-100/80 border-gray-200 hover:bg-gray-200/70 hover:border-gray-300", action: "bg-gray-200 text-gray-800 group-hover:bg-gray-300/80" };
