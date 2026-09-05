@@ -1,4 +1,5 @@
 import {
+  ArchiveRestore,
   Database,
   Download,
   FileKey2,
@@ -138,6 +139,7 @@ export default function SystemManagement() {
     } finally { setBusy(""); }
   };
 
+  const backups = status?.backups || [];
   const update = status?.update?.update;
 
   return (
@@ -160,54 +162,32 @@ export default function SystemManagement() {
         {!IS_DEVELOPMENT && (
           <>
             <ActionPanel title="License" icon={FileKey2}>
-              <a href="/api/setup/fingerprint" download className="text-sm font-medium text-teal-700 hover:underline">
-                Download fingerprint request
-              </a>
+              <a href="/api/setup/fingerprint" download className="text-sm font-medium text-teal-700 hover:underline">Download fingerprint request</a>
               <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-teal-700 hover:underline">
-                <Upload size={15} />
-                {busy === "license" ? "Importing..." : "Import replacement license"}
+                <Upload size={15} />{busy === "license" ? "Importing..." : "Import replacement license"}
                 <input type="file" accept=".json" className="hidden" onChange={importLicense} />
               </label>
             </ActionPanel>
-
             <ActionPanel title="Updates" icon={Download}>
-              <p className="text-sm text-gray-600">
-                {update ? `TexTradeOS PRO ${update.version} is available.` : "TexTradeOS PRO is up to date."}
-              </p>
-              {update && (
-                <Button size="sm" loading={busy === "update"} onClick={installUpdate}>
-                  Install {update.version}
-                </Button>
-              )}
+              <p className="text-sm text-gray-600">{update ? `TexTradeOS PRO ${update.version} is available.` : "TexTradeOS PRO is up to date."}</p>
+              {update && <Button size="sm" loading={busy === "update"} onClick={installUpdate}>Install {update.version}</Button>}
             </ActionPanel>
           </>
         )}
 
         <ActionPanel title="Backup" icon={Database}>
           <p className="text-sm text-gray-600">Create a consistent SQLite snapshot.</p>
-          <Button size="sm" loading={busy === "backup"} onClick={() => runCommand("backup")}>
-            Create Backup
-          </Button>
+          <Button size="sm" loading={busy === "backup"} onClick={() => runCommand("backup")}>Create Backup</Button>
           <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-teal-700 hover:underline">
-            <Upload size={15} />
-            {busy === "restore-upload" ? "Uploading backup..." : "Restore backup from this computer"}
+            <Upload size={15} />{busy === "restore-upload" ? "Uploading backup..." : "Restore backup from this computer"}
             <input type="file" accept=".sqlite,.db,application/x-sqlite3" className="hidden" onChange={restoreFromComputer} disabled={Boolean(busy)} />
           </label>
         </ActionPanel>
 
         <ActionPanel title="Network" icon={Shield}>
           <p className="text-sm text-gray-600">Allow browser access on LAN port 8080.</p>
-          <Button size="sm" outline loading={busy === "firewall"} onClick={() => runCommand("firewall")}>
-            Configure Firewall
-          </Button>
-          <button
-            type="button"
-            onClick={downloadDiagnostics}
-            disabled={busy === "diagnostics"}
-            className="text-left text-sm font-medium text-teal-700 hover:underline disabled:opacity-60"
-          >
-            {busy === "diagnostics" ? "Preparing diagnostics..." : "Download diagnostics"}
-          </button>
+          <Button size="sm" outline loading={busy === "firewall"} onClick={() => runCommand("firewall")}>Configure Firewall</Button>
+          <button type="button" onClick={downloadDiagnostics} disabled={busy === "diagnostics"} className="text-left text-sm font-medium text-teal-700 hover:underline disabled:opacity-60">{busy === "diagnostics" ? "Preparing diagnostics..." : "Download diagnostics"}</button>
         </ActionPanel>
       </div>
 
@@ -217,34 +197,10 @@ export default function SystemManagement() {
           {backups.length === 0 && <p className="text-sm text-gray-400">No backups created yet.</p>}
           {backups.map((backup) => (
             <div key={backup.name} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 p-3">
-              <div>
-                <p className="text-sm font-medium text-gray-700">{backup.name}</p>
-                <p className="text-xs text-gray-400">{formatBytes(backup.size)}</p>
-              </div>
+              <div><p className="text-sm font-medium text-gray-700">{backup.name}</p><p className="text-xs text-gray-400">{formatBytes(backup.size)}</p></div>
               <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                outline
-                icon={Download}
-                loading={busy === `download:${backup.name}`}
-                onClick={() => downloadBackup(backup)}
-              >
-                Download
-              </Button>
-              <Button
-                size="sm"
-                outline
-                variant="warning"
-                icon={ArchiveRestore}
-                loading={busy === "restore"}
-                onClick={() => {
-                  if (window.confirm("Replace the current database with this backup?")) {
-                    runCommand("restore", { backup: backup.name });
-                  }
-                }}
-              >
-                Restore
-              </Button>
+                <Button size="sm" outline icon={Download} loading={busy === `download:${backup.name}`} onClick={() => downloadBackup(backup)}>Download</Button>
+                <Button size="sm" outline variant="warning" icon={ArchiveRestore} loading={busy === "restore"} onClick={() => { if (window.confirm("Replace the current database with this backup?")) runCommand("restore", { backup: backup.name }); }}>Restore</Button>
               </div>
             </div>
           ))}
