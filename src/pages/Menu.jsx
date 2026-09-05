@@ -80,13 +80,13 @@ export default function Menu() {
     <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col pb-6">
       <PageHeader title="Menu" subtitle="Quick access to your business actions." />
 
-      <div className="mb-4 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3">
+      <div className="mb-5 rounded-xl border border-gray-200 bg-white p-3">
         <ModuleSearch value={query} onChange={setQuery} inputRef={searchRef} />
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white p-3 sm:p-4">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
         {visibleModules.length ? (
-          <div className="grid auto-rows-[132px] grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid auto-rows-[138px] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {visibleModules.map((module) => (
               <ModuleActionCard key={module.key} module={module} prominent={PRIMARY_MODULES.has(module.key)} onClick={() => navigate(module.path)} />
             ))}
@@ -99,15 +99,15 @@ export default function Menu() {
         )}
 
         {totalPages > 1 && (
-          <div className="mt-3 flex items-center justify-end gap-2 border-t border-gray-100 pt-3">
+          <div className="mt-4 flex items-center justify-end gap-2 border-t border-gray-100 pt-4">
             {hasPrevious && (
-              <button type="button" onClick={() => setPage((current) => Math.max(0, current - 1))} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 transition-colors duration-200 hover:border-[#127475]/30 hover:bg-gray-50 hover:text-[#127475] focus:outline-none focus:ring-2 focus:ring-[#127475]/20">
+              <button type="button" onClick={() => setPage((current) => Math.max(0, current - 1))} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 transition-colors duration-200 hover:border-[#127475]/30 hover:bg-gray-50 hover:text-[#127475] focus:outline-none focus:ring-2 focus:ring-[#127475]/20">
                 <ChevronLeft size={14} /> Previous
               </button>
             )}
             <span className="px-1 text-[11px] text-gray-400">{safePage + 1} / {totalPages}</span>
             {hasNext && (
-              <button type="button" onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[#127475]/25 bg-[#127475]/5 px-3 text-xs font-semibold text-[#127475] transition-colors duration-200 hover:border-[#127475]/50 hover:bg-[#127475]/10 focus:outline-none focus:ring-2 focus:ring-[#127475]/20">
+              <button type="button" onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#127475]/25 bg-[#127475]/5 px-3 text-xs font-semibold text-[#127475] transition-colors duration-200 hover:border-[#127475]/50 hover:bg-[#127475]/10 focus:outline-none focus:ring-2 focus:ring-[#127475]/20">
                 More <ChevronRight size={14} />
               </button>
             )}
