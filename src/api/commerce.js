@@ -19,3 +19,7 @@ export const updatePurchase = async (id, payload) => unwrap(await apiClient.put(
 export const removePurchase = async (id) => unwrap(await apiClient.delete(`/purchases/${id}`));
 
 export const fetchInventory = async () => unwrap(await apiClient.get("/inventory"));
+export const fetchInventoryMovements = async (articleNo, purchaseNumber) => unwrap(await apiClient.get(
+  `/inventory/${encodeURIComponent(articleNo)}/movements`,
+  { params: { purchase_number: purchaseNumber } },
+));
