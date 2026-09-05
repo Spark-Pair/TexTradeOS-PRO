@@ -5,6 +5,11 @@ export const fetchMyReferenceData = async () => {
   return res.data;
 };
 
+export const updateMyReferenceData = async (reference_data) => {
+  const res = await apiClient.patch("/businesses/me/reference-data", { reference_data });
+  return res.data;
+};
+
 export const fetchMyRuleData = async () => {
   const res = await apiClient.get("/businesses/me/rule-data");
   return res.data;
