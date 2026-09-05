@@ -3,12 +3,7 @@ import { apiClient } from "../api/apiClient";
 
 // Transitional compatibility layer. Business records live on the backend only.
 // This cache is memory-only and is discarded on refresh; localStorage/demo data is intentionally not used.
-const cache = {
-  suppliers: [],
-  customers: [],
-  purchases: [],
-  invoices: [],
-};
+const cache = { suppliers: [], customers: [], purchases: [], invoices: [] };
 
 const nowIso = () => new Date().toISOString();
 const normalizeText = (value) => String(value || "").trim();
@@ -20,23 +15,17 @@ const newestFirst = (rows, dateFields = []) => [...rows].sort((left, right) => {
   }
   return 0;
 });
-
 const replaceCollection = (collection, records) => {
   cache[collection] = Array.isArray(records) ? records : [];
   return cache[collection];
 };
-
-const pushSharedCollection = async (collection) => {
-  const { data } = await apiClient.put(`/shared-data/${collection}`, { records: cache[collection] });
-  replaceCollection(collection, data?.data);
-  return cache[collection];
+const persistCollection = async (collection, records) => {
+  const { data } = await apiClient.put(`/shared-data/${collection}`, { records });
+  return replaceCollection(collection, data?.data);
 };
 
 export const syncPrototypeData = async () => {
-  const [{ data: sharedResponse }, invoiceResponse] = await Promise.all([
-    apiClient.get("/shared-data"),
-    apiClient.get("/invoices/shared-ledger"),
-  ]);
+  const [{ data: sharedResponse }, invoiceResponse] = await Promise.all([apiClient.get("/shared-data"), apiClient.get("/invoices/shared-ledger")]);
   const shared = sharedResponse?.data || {};
   replaceCollection("suppliers", shared.suppliers);
   replaceCollection("customers", shared.customers);
@@ -50,57 +39,35 @@ export const listCustomers = () => newestFirst(cache.customers);
 export const listPurchases = () => newestFirst(cache.purchases, ["purchase_date"]);
 export const listPrototypeInvoices = () => newestFirst(cache.invoices, ["invoice_date"]);
 
-export const saveSupplier = (payload) => {
+export const saveSupplier = async (payload) => {
   const rows = listSuppliers();
   const id = payload._id || uuidv4();
   const existing = rows.find((row) => row._id === id);
-  const record = {
-    _id: id,
-    supplier_name: normalizeText(payload.supplier_name),
-    person_name: normalizeText(payload.person_name),
-    urdu_title: normalizeText(payload.urdu_title),
-    phone_number: normalizeText(payload.phone_number),
-    address: normalizeText(payload.address),
-    city: normalizeText(payload.city),
-    isActive: payload.isActive ?? true,
-    createdAt: existing?.createdAt || nowIso(),
-    updatedAt: nowIso(),
-  };
-  replaceCollection("suppliers", existing ? rows.map((row) => row._id === id ? record : row) : [record, ...rows]);
-  void pushSharedCollection("suppliers");
-  return record;
+  const record = { _id: id, supplier_name: normalizeText(payload.supplier_name), person_name: normalizeText(payload.person_name), urdu_title: normalizeText(payload.urdu_title), phone_number: normalizeText(payload.phone_number), address: normalizeText(payload.address), city: normalizeText(payload.city), isActive: payload.isActive ?? true, createdAt: existing?.createdAt || nowIso(), updatedAt: nowIso() };
+  const nextRows = existing ? rows.map((row) => row._id === id ? record : row) : [record, ...rows];
+  await persistCollection("suppliers", nextRows);
+  return cache.suppliers.find((row) => row._id === id) || record;
 };
 
-export const toggleSupplierStatus = (id) => {
-  replaceCollection("suppliers", listSuppliers().map((row) => row._id === id ? { ...row, isActive: !row.isActive, updatedAt: nowIso() } : row));
-  void pushSharedCollection("suppliers");
+export const toggleSupplierStatus = async (id) => {
+  const nextRows = listSuppliers().map((row) => row._id === id ? { ...row, isActive: !row.isActive, updatedAt: nowIso() } : row);
+  await persistCollection("suppliers", nextRows);
   return cache.suppliers.find((row) => row._id === id) || null;
 };
 
-export const saveCustomer = (payload) => {
+export const saveCustomer = async (payload) => {
   const rows = listCustomers();
   const id = payload._id || uuidv4();
   const existing = rows.find((row) => row._id === id);
-  const record = {
-    _id: id,
-    customer_name: normalizeText(payload.customer_name),
-    person_name: normalizeText(payload.person_name),
-    urdu_title: normalizeText(payload.urdu_title),
-    phone_number: normalizeText(payload.phone_number),
-    address: normalizeText(payload.address),
-    city: normalizeText(payload.city),
-    isActive: payload.isActive ?? true,
-    createdAt: existing?.createdAt || nowIso(),
-    updatedAt: nowIso(),
-  };
-  replaceCollection("customers", existing ? rows.map((row) => row._id === id ? record : row) : [record, ...rows]);
-  void pushSharedCollection("customers");
-  return record;
+  const record = { _id: id, customer_name: normalizeText(payload.customer_name), person_name: normalizeText(payload.person_name), urdu_title: normalizeText(payload.urdu_title), phone_number: normalizeText(payload.phone_number), address: normalizeText(payload.address), city: normalizeText(payload.city), isActive: payload.isActive ?? true, createdAt: existing?.createdAt || nowIso(), updatedAt: nowIso() };
+  const nextRows = existing ? rows.map((row) => row._id === id ? record : row) : [record, ...rows];
+  await persistCollection("customers", nextRows);
+  return cache.customers.find((row) => row._id === id) || record;
 };
 
-export const toggleCustomerStatus = (id) => {
-  replaceCollection("customers", listCustomers().map((row) => row._id === id ? { ...row, isActive: !row.isActive, updatedAt: nowIso() } : row));
-  void pushSharedCollection("customers");
+export const toggleCustomerStatus = async (id) => {
+  const nextRows = listCustomers().map((row) => row._id === id ? { ...row, isActive: !row.isActive, updatedAt: nowIso() } : row);
+  await persistCollection("customers", nextRows);
   return cache.customers.find((row) => row._id === id) || null;
 };
 
@@ -117,7 +84,7 @@ export const nextArticleNumber = (_purchaseNumber, index = 0) => {
   return `ART-${String(highest + Number(index || 0) + 1).padStart(5, "0")}`;
 };
 
-export const savePurchase = (payload) => {
+export const savePurchase = async (payload) => {
   const rows = listPurchases();
   const id = payload._id || uuidv4();
   const existing = rows.find((row) => row._id === id);
@@ -128,25 +95,15 @@ export const savePurchase = (payload) => {
     const existingArticle = existing?.articles?.find((item) => item.article_no === articleNo);
     return { ...article, article_no: articleNo, qr_id: article.qr_id || existingArticle?.qr_id || uuidv4() };
   });
-  const record = {
-    ...payload,
-    _id: id,
-    purchase_number: purchaseNumber,
-    articles,
-    article_count: articles.length,
-    packet_count: articles.reduce((sum, article) => sum + Number(article.quantity_pkt || 0), 0),
-    total_amount: articles.reduce((sum, article) => sum + Number(article.amount || 0), 0),
-    createdAt: existing?.createdAt || nowIso(),
-    updatedAt: nowIso(),
-  };
-  replaceCollection("purchases", existing ? rows.map((row) => row._id === id ? record : row) : [record, ...rows]);
-  void pushSharedCollection("purchases");
-  return record;
+  const record = { ...payload, _id: id, purchase_number: purchaseNumber, articles, article_count: articles.length, packet_count: articles.reduce((sum, article) => sum + Number(article.quantity_pkt || 0), 0), total_amount: articles.reduce((sum, article) => sum + Number(article.amount || 0), 0), createdAt: existing?.createdAt || nowIso(), updatedAt: nowIso() };
+  const nextRows = existing ? rows.map((row) => row._id === id ? record : row) : [record, ...rows];
+  await persistCollection("purchases", nextRows);
+  return cache.purchases.find((row) => row._id === id) || record;
 };
 
-export const deletePurchase = (id) => {
-  replaceCollection("purchases", listPurchases().filter((row) => row._id !== id));
-  void pushSharedCollection("purchases");
+export const deletePurchase = async (id) => {
+  const nextRows = listPurchases().filter((row) => row._id !== id);
+  await persistCollection("purchases", nextRows);
 };
 
 // Invoices are persisted by /api/invoices. These helpers only keep the memory view used by inventory in sync.
@@ -157,10 +114,5 @@ export const savePrototypeInvoice = (payload) => {
   replaceCollection("invoices", existing ? rows.map((row) => row._id === existing._id ? record : row) : [record, ...rows]);
   return record;
 };
-
-export const deletePrototypeInvoice = (invoice) => {
-  replaceCollection("invoices", listPrototypeInvoices().filter((row) => row._id !== invoice?._id && row.invoice_number !== invoice?.invoice_number));
-};
-
-// Kept temporarily for import compatibility. It deliberately does not seed or migrate browser data.
+export const deletePrototypeInvoice = (invoice) => { replaceCollection("invoices", listPrototypeInvoices().filter((row) => row._id !== invoice?._id && row.invoice_number !== invoice?.invoice_number)); };
 export const ensurePrototypeDemoData = () => {};
