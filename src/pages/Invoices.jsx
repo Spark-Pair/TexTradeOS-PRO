@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eye, MoreVertical, Plus, Receipt, Wallet, Hash, Sigma, Trash2 } from "lucide-react";
+import { AlertCircle, Eye, MoreVertical, Plus, Receipt, Wallet, Hash, Sigma, Trash2 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import TableToolbar from "../components/table/TableToolbar";
 import TableSkeleton from "../components/table/TableLoader";
@@ -43,6 +43,7 @@ export default function Invoices() {
   const { user } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [formModal, setFormModal] = useState({ isOpen: false });
   const [previewModal, setPreviewModal] = useState({ isOpen: false, data: null });
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -56,11 +57,17 @@ export default function Invoices() {
   const loadInvoices = useCallback(async (page = 1, filterParams = {}) => {
     try {
       setLoading(true);
+      setLoadError("");
       const res = await fetchInvoices({ page, limit: 30, ...filterParams });
-      setInvoices(sortLatestFirst(res?.data || []));
-      if (res.pagination) setPagination(res.pagination);
+      const rows = Array.isArray(res?.data) ? res.data : [];
+      setInvoices(sortLatestFirst(rows));
+      setPagination(res?.pagination || { currentPage: page, totalPages: 1, totalItems: rows.length, itemsPerPage: 30 });
     } catch (err) {
-      showToast({ type: "error", message: err.response?.data?.message || "Failed to load invoices" });
+      const message = err.response?.data?.message || "Failed to load invoices";
+      setInvoices([]);
+      setPagination({ currentPage: page, totalPages: 1, totalItems: 0, itemsPerPage: 30 });
+      setLoadError(message);
+      showToast({ type: "error", message });
     } finally {
       setLoading(false);
     }
@@ -88,6 +95,7 @@ export default function Invoices() {
     const reset = { customer_name: "", date_from: "", date_to: "" };
     setFilters(reset); loadInvoices(1, reset); setIsFilterOpen(false);
   };
+  const handleRetry = () => loadInvoices(pagination.currentPage || 1, filters);
   const filterConfig = [
     { label: "Customer Name", placeholder: "Search by customer name", type: "text", value: filters.customer_name, onChange: (e) => setFilters((prev) => ({ ...prev, customer_name: e.target.value })) },
     { label: "Date From", type: "date", value: filters.date_from, onChange: (e) => setFilters((prev) => ({ ...prev, date_from: e.target.value })) },
@@ -125,18 +133,20 @@ export default function Invoices() {
     return { totalInvoices: pagination.totalItems || 0, currentPageInvoices: invoices.length, totalAmountCurrentPage, avgInvoiceAmount: invoices.length > 0 ? totalAmountCurrentPage / invoices.length : 0 };
   }, [invoices, pagination.totalItems]);
 
+  const errorState = loadError && !loading ? <div className="flex flex-1 items-center justify-center p-6"><div className="w-full max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-center"><div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-red-100 text-red-600"><AlertCircle size={22} /></div><h3 className="text-base font-bold text-gray-900">Invoices unavailable</h3><p className="mt-1.5 text-sm text-gray-600">{loadError}</p><button type="button" onClick={handleRetry} className="mt-4 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800">Retry</button></div></div> : null;
+
   return <>
     <div className="relative z-10 max-w-7xl mx-auto h-full flex flex-col">
       <PageHeader title="Invoices" subtitle="Create and manage customer invoices." actionLabel="Generate Invoice" actionIcon={Plus} onAction={() => setFormModal({ isOpen: true })} />
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+      {!loadError && <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <StatCard label="Total Invoices" value={formatNumbers(stats.totalInvoices, 0)} icon={Receipt} />
         <StatCard label="This Page Invoices" value={formatNumbers(stats.currentPageInvoices, 0)} icon={Hash} variant="warning" />
         <StatCard label="This Page Amount" value={formatNumbers(stats.totalAmountCurrentPage, 2)} icon={Wallet} variant="success" />
         <StatCard label="Avg Invoice (Page)" value={formatNumbers(stats.avgInvoiceAmount, 2)} icon={Sigma} variant="normal" />
-      </div>
+      </div>}
       <div className="rounded-3xl bg-white border border-gray-300 overflow-hidden flex-1 flex flex-col">
-        <TableToolbar currentPage={pagination.currentPage} totalPages={pagination.totalPages} onPageChange={handlePageChange} onFilter={() => setIsFilterOpen(true)} />
-        <div className="grid gap-2 overflow-auto p-3 md:hidden">
+        {!loadError && <TableToolbar currentPage={pagination.currentPage} totalPages={pagination.totalPages} onPageChange={handlePageChange} onFilter={() => setIsFilterOpen(true)} />}
+        {errorState || <><div className="grid gap-2 overflow-auto p-3 md:hidden">
           {loading ? <div className="py-12 text-center text-sm text-gray-400">Loading invoices...</div> : invoices.length === 0 ? <div className="py-12 text-center text-sm text-gray-400">No invoices found.</div> : invoices.map((invoice) => <button key={invoice._id} type="button" onClick={() => handleOpenPreview(invoice._id)} className="rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm active:bg-teal-50"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-gray-900">{invoice.invoice_number || "Invoice"}</p><p className="mt-0.5 text-xs text-gray-500">{formatDate(invoice.invoice_date, "DD MMM yyyy")}</p></div><span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-sm font-bold text-emerald-700">{formatNumbers(invoice.total_amount, 2)}</span></div><p className="mt-3 truncate text-sm font-semibold text-gray-700">{invoice.customer_name || "Customer"}</p><div className="mt-3 flex items-center border-t border-gray-100 pt-3 text-xs text-gray-500"><span><strong className="text-gray-800">{formatNumbers(invoice.order_count, 0)}</strong> articles</span><span className="ml-auto font-semibold text-teal-700">View invoice →</span></div></button>)}
         </div>
         <div ref={tableScrollRef} className="hidden flex-1 overflow-auto md:block">
@@ -144,7 +154,7 @@ export default function Invoices() {
             <thead className="sticky top-0 z-20 bg-gray-100" style={{ boxShadow: "0 1px 0 0 rgba(209,213,219,1)" }}><tr className="text-sm tracking-wider text-gray-500"><th className="px-5 py-3.5 font-medium">#</th><th className="px-5 py-3.5 font-medium">Invoice No</th><th className="px-5 py-3.5 font-medium">Invoice Date</th><th className="px-5 py-3.5 font-medium">Customer</th><th className="px-5 py-3.5 font-medium">Articles</th><th className="px-5 py-3.5 font-medium">Total Amount</th><th className="px-5 py-3.5 font-medium text-right">Actions</th></tr></thead>
             {loading ? <TableSkeleton rows={30} columns={7} /> : <tbody className="divide-y divide-gray-200">{invoices.length === 0 ? <tr><td colSpan={7} className="px-7 py-16 text-center text-sm text-gray-400">No invoices found.</td></tr> : invoices.map((invoice, index) => <tr key={invoice._id} className="cursor-pointer hover:bg-gray-50/80 transition-colors" onClick={() => handleOpenPreview(invoice._id)}><td className="px-5 py-4 font-medium text-gray-500">{(pagination.currentPage - 1) * pagination.itemsPerPage + index + 1}</td><td className="px-5 py-4 text-sm font-semibold text-gray-700">{invoice.invoice_number || "—"}</td><td className="px-5 py-4 text-sm text-gray-600">{formatDate(invoice.invoice_date, "DD MMM yyyy")}</td><td className="px-5 py-4 text-sm font-semibold text-gray-800">{invoice.customer_name}</td><td className="px-5 py-4 text-sm text-gray-600">{formatNumbers(invoice.order_count, 0)}</td><td className="px-5 py-4 text-sm font-semibold text-emerald-700">{formatNumbers(invoice.total_amount, 2)}</td><td className="px-5 py-4 text-right relative"><button onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === invoice._id ? null : invoice._id); }} className="p-2 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100" aria-label="Open actions menu"><MoreVertical size={18} /></button><ContextMenu isOpen={activeMenu === invoice._id}><button onClick={(e) => { e.stopPropagation(); handleOpenPreview(invoice._id); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-gray-600 hover:bg-gray-200 cursor-pointer"><Eye size={16} strokeWidth={2.5} />Preview Invoice</button>{canDeleteInvoices && <><div className="h-[1px] bg-gray-200 my-1.5" /><button onClick={(e) => { e.stopPropagation(); setDeleteTarget(invoice); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-red-600 hover:bg-red-50 cursor-pointer"><Trash2 size={16} strokeWidth={2.5} />Delete Invoice</button></>}</ContextMenu></td></tr>)}</tbody>}
           </table>
-        </div>
+        </div></>}
       </div>
     </div>
     <InvoiceFormModal isOpen={formModal.isOpen} onClose={() => setFormModal({ isOpen: false })} onAction={handleInvoiceFormAction} />
