@@ -9,32 +9,13 @@ import useAccessControl from "../hooks/useAccessControl";
 import { getModuleMeta } from "../config/modules";
 
 const DEVELOPER_MODULES = new Set(["dashboard", "users_manage", "settings", "keyboard_shortcuts"]);
+const PRIMARY_MODULES = new Set(["invoices", "purchases"]);
 
 const HUB_SECTIONS = [
-  {
-    key: "daily",
-    title: "Daily Operations",
-    description: "The actions your team uses to keep business moving.",
-    modules: ["invoices", "purchases", "sales_returns", "purchase_returns"],
-  },
-  {
-    key: "inventory",
-    title: "Inventory & Parties",
-    description: "Manage stock and the people you buy from and sell to.",
-    modules: ["inventory", "customers", "suppliers"],
-  },
-  {
-    key: "management",
-    title: "Management",
-    description: "Review performance and stay on top of the business.",
-    modules: ["dashboard"],
-  },
-  {
-    key: "system",
-    title: "System",
-    description: "Manage access, preferences and productivity tools.",
-    modules: ["users_manage", "settings", "keyboard_shortcuts"],
-  },
+  { key: "daily", title: "Daily Operations", modules: ["invoices", "purchases", "sales_returns", "purchase_returns"] },
+  { key: "inventory", title: "Inventory & Parties", modules: ["inventory", "customers", "suppliers"] },
+  { key: "management", title: "Management", modules: ["dashboard"] },
+  { key: "system", title: "System", modules: ["users_manage", "settings", "keyboard_shortcuts"] },
 ];
 
 const SEARCH_KEYWORDS = {
@@ -80,8 +61,7 @@ export default function Menu() {
     if (!term) return modules;
     return modules.filter((item) => {
       const meta = getModuleMeta(item.key);
-      const haystack = `${item.label} ${meta.description} ${SEARCH_KEYWORDS[item.key] || ""}`.toLowerCase();
-      return haystack.includes(term);
+      return `${item.label} ${meta.description} ${SEARCH_KEYWORDS[item.key] || ""}`.toLowerCase().includes(term);
     });
   }, [modules, query]);
 
@@ -95,49 +75,48 @@ export default function Menu() {
 
   return (
     <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col pb-8">
-      <PageHeader title="Business Hub" subtitle="Everything you need to run today's business, in one place." />
+      <PageHeader title="Business Hub" subtitle="Choose an action and get straight to work." />
 
-      <div className="mb-7 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm shadow-gray-100/70 sm:p-5">
-        <div className="mb-3 flex items-end justify-between gap-4 px-1">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#1C7773]">Quick access</p>
-            <p className="mt-1 text-sm text-gray-500">Search by module, action or business task.</p>
-          </div>
-          <span className="hidden text-xs text-gray-400 sm:block">{modules.length} actions available</span>
+      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-3 sm:flex-row sm:items-center sm:p-4">
+        <div className="min-w-0 flex-1">
+          <ModuleSearch value={query} onChange={setQuery} inputRef={searchRef} />
         </div>
-        <ModuleSearch value={query} onChange={setQuery} inputRef={searchRef} />
+        <div className="hidden shrink-0 border-l border-gray-200 pl-4 text-right lg:block">
+          <p className="text-xs font-semibold text-gray-700">Quick access</p>
+          <p className="text-[11px] text-gray-400">{modules.length} actions available</p>
+        </div>
       </div>
 
-      <div className="space-y-8">
-        {sections.map((section) => (
-          <section key={section.key} aria-labelledby={`hub-${section.key}`}>
-            <div className="mb-3 flex items-end justify-between gap-4 px-1">
-              <div>
-                <h2 id={`hub-${section.key}`} className="text-base font-semibold text-gray-900">{section.title}</h2>
-                <p className="mt-0.5 text-xs text-gray-500">{section.description}</p>
+      <div className="rounded-3xl border border-gray-200 bg-white p-4 sm:p-5 lg:p-6">
+        <div className="space-y-7">
+          {sections.map((section) => (
+            <section key={section.key} aria-labelledby={`hub-${section.key}`}>
+              <div className="mb-3 flex items-center gap-3">
+                <h2 id={`hub-${section.key}`} className="shrink-0 text-xs font-semibold uppercase tracking-[0.13em] text-gray-500">{section.title}</h2>
+                <div className="h-px flex-1 bg-gray-100" />
               </div>
-              <span className="text-xs text-gray-400">{section.items.length}</span>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {section.items.map((module) => (
-                <ModuleActionCard
-                  key={module.key}
-                  module={module}
-                  prominent={module.key === "invoices" || module.key === "purchases"}
-                  onClick={() => navigate(module.path)}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
 
-      {!filteredModules.length && (
-        <div className="rounded-3xl border border-dashed border-gray-300 bg-white px-6 py-14 text-center">
-          <p className="text-sm font-medium text-gray-700">No matching action found</p>
-          <p className="mt-1 text-xs text-gray-400">Try a module name or a task such as sale, barcode, stock or users.</p>
+              <div className="grid auto-rows-[148px] grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {section.items.map((module) => (
+                  <ModuleActionCard
+                    key={module.key}
+                    module={module}
+                    prominent={PRIMARY_MODULES.has(module.key)}
+                    onClick={() => navigate(module.path)}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
-      )}
+
+        {!filteredModules.length && (
+          <div className="py-16 text-center">
+            <p className="text-sm font-medium text-gray-700">No matching action found</p>
+            <p className="mt-1 text-xs text-gray-400">Try sale, purchase, stock, customer, supplier or users.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
