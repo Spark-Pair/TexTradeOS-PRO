@@ -64,8 +64,8 @@ export default function KeyboardShortcuts() {
           <div className="min-w-0 flex-1">
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search shortcuts..." icon={Search} />
           </div>
-          <div className="min-w-0 flex-1 overflow-x-auto scrollbar-none">
-            <div className="relative flex w-max min-w-full items-center gap-1 rounded-xl bg-gray-100/80 p-1">
+          <div className="max-w-[60%] shrink-0 overflow-x-auto scrollbar-none">
+            <div className="relative flex w-max items-center gap-1 rounded-xl bg-gray-100/80 p-1">
               {cats.map((c) => {
                 const active = category === c;
                 return (
