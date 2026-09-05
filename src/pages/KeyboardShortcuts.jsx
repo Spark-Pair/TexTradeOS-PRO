@@ -60,29 +60,33 @@ export default function KeyboardShortcuts() {
       <PageHeader title="Keyboard Shortcuts" subtitle="View, customize and restore keyboard controls across TexTradeOS." rightContent={<Button variant="secondary" outline icon={RotateCcw} onClick={resetAll}>Reset all defaults</Button>} />
 
       <div className="mb-4 rounded-3xl border border-gray-300 bg-white p-4">
-        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search shortcuts..." icon={Search} />
-        <div className="mt-3 overflow-x-auto scrollbar-none">
-          <div className="relative flex w-max min-w-full items-center gap-1 rounded-xl bg-gray-100/80 p-1">
-            {cats.map((c) => {
-              const active = category === c;
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCategory(c)}
-                  className={`relative z-0 shrink-0 rounded-lg px-3.5 py-2 text-xs font-medium transition-colors duration-200 ${active ? "text-[#1C7773]" : "text-gray-500 hover:text-gray-700"}`}
-                >
-                  {active && (
-                    <motion.span
-                      layoutId="shortcut-category-active"
-                      className="absolute inset-0 -z-10 rounded-lg border border-gray-200 bg-white"
-                      transition={{ type: "spring", stiffness: 430, damping: 34, mass: 0.7 }}
-                    />
-                  )}
-                  <span className="relative z-10">{c}</span>
-                </button>
-              );
-            })}
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search shortcuts..." icon={Search} />
+          </div>
+          <div className="min-w-0 flex-1 overflow-x-auto scrollbar-none">
+            <div className="relative flex w-max min-w-full items-center gap-1 rounded-xl bg-gray-100/80 p-1">
+              {cats.map((c) => {
+                const active = category === c;
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCategory(c)}
+                    className={`relative z-0 shrink-0 rounded-lg px-3.5 py-2 text-xs font-medium transition-colors duration-200 ${active ? "text-[#1C7773]" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="shortcut-category-active"
+                        className="absolute inset-0 -z-10 rounded-lg border border-gray-200 bg-white"
+                        transition={{ type: "spring", stiffness: 430, damping: 34, mass: 0.7 }}
+                      />
+                    )}
+                    <span className="relative z-10">{c}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
