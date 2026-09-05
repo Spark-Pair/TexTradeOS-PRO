@@ -37,7 +37,7 @@ export default function PageHeader({
   }, [actionLabel, onAction, primaryActionShortcut]);
 
   return (
-    <div className="mb-5 flex min-h-10 items-center justify-between gap-3 pl-13 sm:min-h-0 sm:items-start sm:pl-0">
+    <div className="sticky top-0 z-20 mb-5 flex min-h-10 shrink-0 items-center justify-between gap-3 bg-[#f1f6f5] pb-2 pl-13 sm:min-h-0 sm:items-start sm:pl-0">
       <div className="min-w-0">
         <h1 className="truncate text-xl font-medium tracking-tight sm:text-3xl">{title}</h1>
         {subtitle && <p className="hidden text-sm text-gray-400 sm:block">{subtitle}</p>}
