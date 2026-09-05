@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import SidebarNav from '../components/SidebarNav';
 import useAuth from '../hooks/useAuth';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Menu } from "lucide-react";
+import { AlertTriangle, Menu, RefreshCw } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 import UpdateManager from "../components/UpdateManager";
 import { syncPrototypeData } from "../utils/prototypeStorage";
@@ -17,13 +17,28 @@ export default function Layout({ children }) {
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sharedDataReady, setSharedDataReady] = useState(false);
+  const [sharedDataError, setSharedDataError] = useState("");
+  const [syncAttempt, setSyncAttempt] = useState(0);
+
+  const retrySharedData = useCallback(() => setSyncAttempt((attempt) => attempt + 1), []);
 
   useEffect(() => {
     let active = true;
     setSharedDataReady(false);
-    syncPrototypeData().catch(() => {}).finally(() => { if (active) setSharedDataReady(true); });
+    setSharedDataError("");
+
+    syncPrototypeData()
+      .then(() => {
+        if (active) setSharedDataReady(true);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setSharedDataReady(false);
+        setSharedDataError(error?.response?.data?.message || error?.message || "Could not load business data from the server.");
+      });
+
     return () => { active = false; };
-  }, [location.pathname, user?.businessId]);
+  }, [location.pathname, user?.businessId, syncAttempt]);
 
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
   const handleLogout = () => setLogoutConfirmOpen(true);
@@ -46,7 +61,23 @@ export default function Layout({ children }) {
           </div>
           <AnimatePresence mode="wait" initial>
             <motion.div key={location.pathname} initial={pageMotion.initial} animate={pageMotion.animate} exit={pageMotion.exit} transition={pageMotion.transition} className="no-default-transition min-h-0 flex-1 overflow-hidden">
-              {sharedDataReady ? (children || <Outlet />) : <motion.div initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="flex h-full items-center justify-center text-sm text-gray-400">Syncing shared business data...</motion.div>}
+              {sharedDataError ? (
+                <div className="flex h-full items-center justify-center p-6">
+                  <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white p-6 text-center shadow-sm">
+                    <AlertTriangle className="mx-auto h-8 w-8 text-red-500" />
+                    <h2 className="mt-3 text-base font-semibold text-gray-900">Business data unavailable</h2>
+                    <p className="mt-2 text-sm text-gray-500">{sharedDataError}</p>
+                    <p className="mt-1 text-xs text-gray-400">No cached or demo business data will be shown.</p>
+                    <button type="button" onClick={retrySharedData} className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#1C7773] px-4 text-sm font-medium text-white hover:bg-[#176864]">
+                      <RefreshCw className="h-4 w-4" /> Retry
+                    </button>
+                  </div>
+                </div>
+              ) : sharedDataReady ? (
+                children || <Outlet />
+              ) : (
+                <motion.div initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="flex h-full items-center justify-center text-sm text-gray-400">Syncing shared business data...</motion.div>
+              )}
             </motion.div>
           </AnimatePresence>
         </main>
