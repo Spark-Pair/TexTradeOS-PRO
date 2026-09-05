@@ -16,34 +16,43 @@ const INITIAL_STATE = {
 
 export default function SupplierFormModal({ isOpen, onClose, onSubmit, supplier = null, loading = false }) {
   const [formData, setFormData] = useState(INITIAL_STATE);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     setFormData(supplier ? { ...INITIAL_STATE, ...supplier } : INITIAL_STATE);
+    setIsSubmitting(false);
   }, [isOpen, supplier]);
 
   const update = (field, value) => setFormData((prev) => ({ ...prev, [field]: value }));
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    onSubmit(formData);
+  const handleSubmit = async (event) => {
+    event?.preventDefault?.();
+    if (loading || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isEditing = Boolean(supplier?._id);
+  const busy = loading || isSubmitting;
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={busy ? undefined : onClose}
       maxWidth="max-w-2xl"
       title={isEditing ? "Edit Supplier" : "Add Supplier"}
       subtitle={isEditing ? "Update supplier profile details" : "Create a supplier profile"}
       footer={
         <div className="flex gap-3">
-          <Button outline variant="secondary" onClick={onClose} className="w-1/3">
+          <Button outline variant="secondary" onClick={onClose} disabled={busy} className="w-1/3">
             Discard
           </Button>
-          <Button icon={Save} className="grow" onClick={handleSubmit} loading={loading}>
+          <Button icon={Save} className="grow" onClick={handleSubmit} loading={busy} disabled={busy}>
             {isEditing ? "Save Supplier" : "Create Supplier"}
           </Button>
         </div>
@@ -56,7 +65,7 @@ export default function SupplierFormModal({ isOpen, onClose, onSubmit, supplier 
         <Input label="Phone Number" value={formData.phone_number} onChange={(e) => update("phone_number", e.target.value)} placeholder="Optional" required={false} />
         <Input label="City" value={formData.city} onChange={(e) => update("city", e.target.value)} placeholder="City" capitalize />
         <Input label="Address" value={formData.address} onChange={(e) => update("address", e.target.value)} placeholder="Optional" required={false} className="md:col-span-2" />
-        <button type="submit" className="hidden" aria-hidden="true" />
+        <button type="submit" className="hidden" aria-hidden="true" disabled={busy} />
       </form>
     </Modal>
   );
