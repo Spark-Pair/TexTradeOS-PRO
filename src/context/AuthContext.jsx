@@ -1,6 +1,6 @@
 import { createContext, useCallback, useEffect, useState } from "react";
 import { AUTH_SESSION_EXPIRED_EVENT, storage } from "../api/apiClient";
-import { getMe } from "../api/auth.api";
+import { getMe, logoutUser } from "../api/auth.api";
 import { useToast } from "./ToastContext";
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -70,10 +70,18 @@ export default function AuthProvider({ children }) {
   }, [activateUser, showToast]);
 
   const logout = useCallback(async () => {
-    setUser(null);
-    storage.clearAuth();
-    showToast({ type: "success", message: "Logged out successfully" });
-    return { success: true };
+    setLoading(true);
+    try {
+      await logoutUser();
+      setUser(null);
+      showToast({ type: "success", message: "Logged out successfully" });
+      return { success: true };
+    } finally {
+      // logoutUser clears auth credentials even if the revoke request fails.
+      storage.clearAuth();
+      setUser(null);
+      setLoading(false);
+    }
   }, [showToast]);
 
   return (
