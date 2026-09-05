@@ -1,56 +1,58 @@
 import { createContext, useCallback, useEffect, useState } from "react";
 import { AUTH_SESSION_EXPIRED_EVENT, storage } from "../api/apiClient";
+import { getMe } from "../api/auth.api";
 import { useToast } from "./ToastContext";
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext();
 
-const readCachedUser = () => {
-  try {
-    const raw = localStorage.getItem("cachedUser");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
+const normalizeUser = (source) => source ? {
+  ...source,
+  _id: source._id || source.id,
+  id: source.id || source._id,
+  businessId: source.business?.id || source.businessId,
+} : null;
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
 
-  const activateUser = useCallback((nextUser) => {
-    if (!nextUser) return null;
+  const activateUser = useCallback((source) => {
+    const nextUser = normalizeUser(source);
     setUser(nextUser);
-    localStorage.setItem("cachedUser", JSON.stringify(nextUser));
     return nextUser;
   }, []);
 
-  useEffect(() => {
-    const cachedUser = readCachedUser();
+  const refreshUser = useCallback(async () => {
     const { accessToken, refreshToken, sessionId } = storage.getAuth();
-    const hasStoredSession = accessToken || (refreshToken && sessionId);
-    if (cachedUser && hasStoredSession) {
-      activateUser(cachedUser);
-      setLoading(false);
-      return;
+    if (!accessToken && !(refreshToken && sessionId)) {
+      setUser(null);
+      return null;
     }
-    if (cachedUser && !hasStoredSession) {
-      localStorage.removeItem("cachedUser");
-    }
-    setLoading(false);
+    const response = await getMe();
+    return activateUser(response?.user);
   }, [activateUser]);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    refreshUser()
+      .catch(() => {
+        if (active) {
+          setUser(null);
+          storage.clearAuth();
+        }
+      })
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, [refreshUser]);
 
   useEffect(() => {
     const handleSessionExpired = () => {
       setUser(null);
-      localStorage.removeItem("cachedUser");
-      showToast({
-        type: "error",
-        message: "Your session expired. Please log in again.",
-      });
+      showToast({ type: "error", message: "Your session expired. Please log in again." });
     };
-
     window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
     return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
   }, [showToast]);
@@ -58,21 +60,9 @@ export default function AuthProvider({ children }) {
   const login = useCallback(async (authData) => {
     setLoading(true);
     try {
-      const source = authData?.user;
-      const nextUser = source
-        ? {
-            ...source,
-            _id: source._id || source.id,
-            id: source.id || source._id,
-            businessId: source.business?.id || source.businessId,
-          }
-        : null;
-      const activeUser = activateUser(nextUser);
+      const activeUser = activateUser(authData?.user);
       if (!activeUser) return { success: false };
-      showToast({
-        type: "success",
-        message: `Welcome back, ${activeUser.name || activeUser.username}!`,
-      });
+      showToast({ type: "success", message: `Welcome back, ${activeUser.name || activeUser.username}!` });
       return { success: true };
     } finally {
       setLoading(false);
@@ -82,16 +72,9 @@ export default function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     setUser(null);
     storage.clearAuth();
-    localStorage.removeItem("cachedUser");
     showToast({ type: "success", message: "Logged out successfully" });
     return { success: true };
   }, [showToast]);
-
-  const refreshUser = useCallback(async () => {
-    const cachedUser = readCachedUser();
-    if (cachedUser) setUser(cachedUser);
-    return cachedUser;
-  }, []);
 
   return (
     <AuthContext.Provider value={{ user, login, logout, loading, refreshUser, setUser }}>
