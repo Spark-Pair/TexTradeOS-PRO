@@ -3,7 +3,7 @@ import { apiClient, storage } from "./apiClient";
 
 export const loginUser = async (data) => {
   const res = await apiClient.post("/auth/login", data);
-  
+
   if (res.data.accessToken) {
     storage.setAuth(
       res.data.accessToken,
@@ -21,10 +21,7 @@ export const logoutUser = async () => {
   try {
     await apiClient.post(
       "/auth/logout",
-      {
-        sessionId,
-        refreshToken,
-      },
+      { sessionId, refreshToken },
       {
         headers: {
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
@@ -33,7 +30,7 @@ export const logoutUser = async () => {
       }
     );
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error("Logout error:", error);
   } finally {
     storage.clearAuth();
   }
@@ -46,29 +43,17 @@ export const getMe = async () => {
 
 export const refreshAccessToken = async () => {
   const { refreshToken, sessionId } = storage.getAuth();
-  
+
   if (!refreshToken || !sessionId) {
-    throw new Error('No refresh credentials available');
+    throw new Error("No refresh credentials available");
   }
 
-  const res = await apiClient.post("/auth/refresh", {
-    refreshToken,
-    sessionId
-  });
-  
+  const res = await apiClient.post("/auth/refresh", { refreshToken, sessionId });
   storage.updateAccessToken(res.data.accessToken);
   return res.data;
 };
 
 export const updateMyShortcuts = async (shortcuts) => {
   const res = await apiClient.patch("/auth/shortcuts", { shortcuts });
-  try {
-    const cachedUser = JSON.parse(localStorage.getItem("cachedUser") || "null");
-    if (cachedUser) {
-      localStorage.setItem("cachedUser", JSON.stringify({ ...cachedUser, shortcuts: res.data.shortcuts }));
-    }
-  } catch {
-    // The backend remains the source of truth if local cache is unavailable.
-  }
   return res.data;
 };
