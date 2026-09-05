@@ -11,13 +11,14 @@ export default function Modal({
   children,
   footer,
   maxWidth = "max-w-md",
+  closeOnEscape = true,
 }) {
   const [visibleViewport, setVisibleViewport] = useState({ height: 0, top: 0 });
 
   // ✅ ESC key close + scroll lock
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && closeOnEscape) onClose();
     };
 
     if (isOpen) {
@@ -29,7 +30,7 @@ export default function Modal({
       document.removeEventListener("keydown", handleEsc);
       document.body.style.overflow = "";
     };
-  }, [isOpen, onClose]);
+  }, [closeOnEscape, isOpen, onClose]);
 
   useEffect(() => {
     if (!isOpen) return undefined;

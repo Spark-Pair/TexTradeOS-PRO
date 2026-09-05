@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { Printer, X } from "lucide-react";
 import Modal from "../Modal";
 import Button from "../Button";
@@ -409,7 +410,7 @@ const getPrintStyle = (printMode = "a5") => `
   .invoice-totals-panel {
     display: grid;
     gap: 0;
-    width: 56mm;
+    width: 64mm;
     max-width: 100%;
     padding: 0;
     border: var(--invoice-border-width) solid var(--invoice-border-color);
@@ -424,8 +425,8 @@ const getPrintStyle = (printMode = "a5") => `
     grid-template-columns: 1fr auto;
     align-items: center;
     gap: 8px;
-    font-size: 8.8px;
-    padding: 3.5px 4.5px;
+    font-size: 10px;
+    padding: 4.5px 6px;
     border-bottom: var(--invoice-border-width) solid var(--invoice-border-color);
   }
 
@@ -435,7 +436,7 @@ const getPrintStyle = (printMode = "a5") => `
 
   .invoice-totals-panel span {
     color: #111827;
-    font-size: 8.8px;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 0;
     text-transform: none;
@@ -443,7 +444,7 @@ const getPrintStyle = (printMode = "a5") => `
 
   .invoice-totals-panel strong {
     color: #000;
-    font-size: 9.3px;
+    font-size: 10.5px;
     font-weight: 850;
     text-align: right;
     white-space: nowrap;
@@ -462,7 +463,7 @@ const getPrintStyle = (printMode = "a5") => `
 
   .invoice-totals-panel .invoice-emphasis-row strong {
     font-weight: 800;
-    font-size: 9.7px;
+    font-size: 11px;
   }
 
   .invoice-totals-panel .invoice-total-row {
@@ -479,7 +480,7 @@ const getPrintStyle = (printMode = "a5") => `
 
   .invoice-totals-panel .invoice-total-row strong {
     font-weight: 800;
-    font-size: 9.8px;
+    font-size: 11px;
   }
 
   .invoice-paper-footer {
@@ -770,7 +771,6 @@ const getPrintStyle = (printMode = "a5") => `
   .thermal-summary-total {
     background: #f3f4f6;
   }
-
   .thermal-summary-strong span,
   .thermal-summary-strong strong,
   .thermal-summary-total span,
@@ -1147,6 +1147,58 @@ const getPrintStyle = (printMode = "a5") => `
       page-break-after: auto !important;
     }
   }
+
+  /* Two-panel totals: keeps the original invoice visual language while using horizontal space. */
+  .invoice-summary-two-column {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 64mm));
+    justify-content: end;
+    align-items: start;
+    gap: 6px;
+  }
+
+  .invoice-summary-two-column .invoice-totals-panel {
+    width: 100%;
+  }
+
+  .thermal-summary-two-column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 5px;
+  }
+
+  .thermal-summary-panel {
+    display: block !important;
+    min-width: 0;
+    overflow: hidden;
+    border: var(--invoice-border-width) solid var(--invoice-border-color);
+    border-radius: var(--invoice-radius);
+    background: #fff;
+  }
+
+  .thermal-summary-panel > div {
+    padding: 2px 4px;
+    gap: 3px;
+  }
+
+  .thermal-summary-panel > div:not(:last-child)::after {
+    left: 0;
+    right: 0;
+  }
+
+  .thermal-summary-panel span {
+    min-width: 0;
+    font-size: 8.6px;
+  }
+
+  .thermal-summary-panel strong {
+    font-size: 9.2px;
+  }
+
+  .thermal-summary-panel .thermal-summary-total strong {
+    font-size: 10px;
+  }
+
 `;
 
 function injectPrintStyle(printMode = "a5") {
@@ -1269,13 +1321,25 @@ export default function InvoicePreviewModal({
       maxWidth="max-w-5xl"
       footer={
         <div className="flex w-full flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex w-full rounded-xl border border-gray-300 bg-gray-100 p-1 sm:w-auto">
+          <div className="relative grid w-full grid-cols-2 rounded-xl border border-gray-300 bg-gray-100 p-1 sm:w-[270px]">
+            <motion.span
+              animate={{
+                x: printMode === "thermal" ? "100%" : "0%",
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 500,
+                damping: 36,
+              }}
+              className="absolute bottom-1 left-1 top-1 w-[calc(50%-4px)] rounded-lg bg-white shadow-sm ring-1 ring-gray-200"
+            />
+
             <button
               type="button"
               onClick={() => setPrintMode("a5")}
-              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${
+              className={`relative z-10 flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${
                 printMode === "a5"
-                  ? "bg-white text-gray-950 shadow-sm"
+                  ? "text-gray-950"
                   : "text-gray-500 hover:text-gray-800"
               }`}
             >
@@ -1285,9 +1349,9 @@ export default function InvoicePreviewModal({
             <button
               type="button"
               onClick={() => setPrintMode("thermal")}
-              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${
+              className={`relative z-10 flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${
                 printMode === "thermal"
-                  ? "bg-white text-gray-950 shadow-sm"
+                  ? "text-gray-950"
                   : "text-gray-500 hover:text-gray-800"
               }`}
             >

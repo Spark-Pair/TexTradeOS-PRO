@@ -28,6 +28,8 @@ export const BUSINESS_ACCESS_ITEMS = [
   { key: "purchases", label: "Purchases", path: "/purchases", default_roles: ["admin", "staff"], show_in_sidebar: true },
   { key: "inventory", label: "Inventory", path: "/inventory", default_roles: ["admin", "staff"], show_in_sidebar: true },
   { key: "invoices", label: "Invoices", path: "/invoices", default_roles: ["admin", "staff"], show_in_sidebar: true },
+  { key: "sales_returns", label: "Sales Returns", path: "/sales-returns", default_roles: ["admin", "staff"], show_in_sidebar: true },
+  { key: "purchase_returns", label: "Purchase Returns", path: "/purchase-returns", default_roles: ["admin", "staff"], show_in_sidebar: true },
   { key: "settings", label: "Settings", path: "/settings", default_roles: ["admin", "staff"], show_in_sidebar: false },
   { key: "keyboard_shortcuts", label: "Keyboard Shortcuts", path: "/keyboard-shortcuts", default_roles: ["admin", "staff"], show_in_sidebar: false },
 ];

@@ -436,7 +436,7 @@ export default function PurchaseFormModal({ isOpen, onClose, onSubmit, purchase 
       onClose={onClose}
       title={step === "entry" ? (purchase ? "Edit Purchase" : "Add Purchase") : "Print QR Labels"}
       subtitle={step === "entry" ? "Complete supplier details, then add purchased items" : "Choose articles and packet quantities"}
-      maxWidth="max-w-5xl"
+      maxWidth={step === "labels" ? "max-w-4xl" : "max-w-5xl"}
       footer={
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="min-h-4 text-xs font-medium text-red-600">{error}</p>
@@ -528,35 +528,61 @@ export default function PurchaseFormModal({ isOpen, onClose, onSubmit, purchase 
           </section>
         </div>
       ) : (
-        <div className="grid gap-4 p-0.5">
-          <div className="flex flex-col gap-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-bold text-gray-900">{selectedLabelCount} labels selected</p>
-              <p className="mt-0.5 text-xs text-gray-600">Up to {availableLabelCount} available packets can be printed.</p>
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700"><Printer size={16}/></div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">Select labels to print</p>
+                  <p className="text-xs text-gray-500">{selectedLabelCount} selected of {availableLabelCount} available packet labels</p>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex shrink-0 gap-2">
               <Button size="sm" outline variant="secondary" onClick={() => setLabelQuantities({})}>Clear</Button>
               <Button size="sm" outline onClick={selectAllLabels}>Select All</Button>
             </div>
           </div>
-          <Input value={labelSearch} onChange={(event) => setLabelSearch(event.target.value)} placeholder="Search article no, name, or supplier" />
-          <div className="grid gap-3 md:grid-cols-2">
-          {visibleLabelArticles.map((article) => (
-            <div key={article.article_no} className={`rounded-2xl border p-4 ${Number(labelQuantities[article.article_no] || 0) > 0 ? "border-teal-400 bg-teal-50/60 ring-1 ring-teal-200" : "border-gray-200 bg-white"}`}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0"><p className="truncate text-sm font-bold text-gray-900">{article.description || "Untitled Article"}</p><p className="mt-0.5 text-sm font-semibold text-teal-700">{article.article_no}</p></div>
-                <span className="shrink-0 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{maxStickerPackets(article)} available</span>
-              </div>
-              <p className="mt-2 truncate text-xs text-gray-500">{article.purchase_number || savedPurchase?.purchase_number} · {article.supplier_name || savedPurchase?.supplier_name || "Supplier"}</p>
-              <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
-                <span className="text-xs font-semibold text-gray-600">Labels to print</span>
-                <div className="flex items-center gap-2"><button type="button" onClick={() => setArticleLabelQuantity(article, numberValue(labelQuantities[article.article_no]) - 1)} className="h-9 w-9 rounded-lg border border-gray-300 bg-white text-lg text-gray-600">−</button><input type="number" min="0" max={maxStickerPackets(article)} value={labelQuantities[article.article_no] || 0} onChange={(event) => setArticleLabelQuantity(article, event.target.value)} className="h-9 w-14 rounded-lg border border-gray-300 bg-white text-center text-sm font-bold outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100" aria-label={`Sticker quantity for ${article.article_no}`} /><button type="button" onClick={() => setArticleLabelQuantity(article, numberValue(labelQuantities[article.article_no]) + 1)} className="h-9 w-9 rounded-lg border border-teal-300 bg-white text-lg text-teal-700">+</button></div>
-              </div>
+
+          <Input value={labelSearch} onChange={(event) => setLabelSearch(event.target.value)} placeholder="Search article no, name, or supplier" required={false} />
+
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <div className="hidden grid-cols-[minmax(0,1fr)_120px_170px] gap-4 border-b border-gray-200 bg-gray-50 px-4 py-2.5 text-xs font-semibold text-gray-500 sm:grid">
+              <span>Article</span><span>Available</span><span className="text-right">Labels to print</span>
             </div>
-          ))}
+            <div className="max-h-[48dvh] divide-y divide-gray-100 overflow-y-auto">
+              {visibleLabelArticles.map((article) => {
+                const quantity = Number(labelQuantities[article.article_no] || 0);
+                const selected = quantity > 0;
+                return (
+                  <div key={article.article_no} className={`grid gap-3 px-4 py-3 transition-colors sm:grid-cols-[minmax(0,1fr)_120px_170px] sm:items-center sm:gap-4 ${selected ? "bg-teal-50/60" : "bg-white hover:bg-gray-50"}`}>
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${selected ? "bg-teal-600" : "bg-gray-300"}`} />
+                        <p className="truncate text-sm font-semibold text-gray-900">{article.description || "Untitled Article"}</p>
+                      </div>
+                      <p className="ml-4 mt-0.5 truncate text-xs text-gray-500"><span className="font-semibold text-teal-700">{article.article_no}</span> · {article.purchase_number || savedPurchase?.purchase_number} · {article.supplier_name || savedPurchase?.supplier_name || "Supplier"}</p>
+                    </div>
+                    <div className="flex items-center justify-between sm:block">
+                      <span className="text-xs font-medium text-gray-500 sm:hidden">Available</span>
+                      <span className="text-sm font-semibold text-gray-700">{maxStickerPackets(article)} packets</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 sm:justify-end">
+                      <span className="text-xs font-medium text-gray-500 sm:hidden">Labels</span>
+                      <div className="inline-flex h-9 items-center overflow-hidden rounded-lg border border-gray-300 bg-white">
+                        <button type="button" onClick={() => setArticleLabelQuantity(article, quantity - 1)} disabled={quantity <= 0} className="flex h-full w-9 items-center justify-center text-lg text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300" aria-label={`Decrease labels for ${article.article_no}`}>−</button>
+                        <input type="number" min="0" max={maxStickerPackets(article)} value={quantity} onChange={(event) => setArticleLabelQuantity(article, event.target.value)} className="h-full w-12 border-x border-gray-200 bg-white text-center text-sm font-semibold text-gray-900 outline-none focus:bg-teal-50" aria-label={`Sticker quantity for ${article.article_no}`} />
+                        <button type="button" onClick={() => setArticleLabelQuantity(article, quantity + 1)} disabled={quantity >= maxStickerPackets(article)} className="flex h-full w-9 items-center justify-center text-lg text-teal-700 hover:bg-teal-50 disabled:cursor-not-allowed disabled:text-gray-300" aria-label={`Increase labels for ${article.article_no}`}>+</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {visibleLabelArticles.length === 0 && <div className="px-4 py-10 text-center"><p className="text-sm font-medium text-gray-600">No matching article found</p><p className="mt-1 text-xs text-gray-400">Try another article number, name, or supplier.</p></div>}
+            </div>
           </div>
-          {visibleLabelArticles.length === 0 && <div className="rounded-xl border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">No matching available article found.</div>}
-          {selectedLabelCount === 0 && <p className="px-1 text-xs text-amber-700">Select at least one article to print or download its permanent sticker.</p>}
+          {selectedLabelCount === 0 && <p className="text-xs text-amber-700">Select at least one packet label to print or download.</p>}
         </div>
       )}
       <PurchaseItemModal

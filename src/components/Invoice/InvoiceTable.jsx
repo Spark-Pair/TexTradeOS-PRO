@@ -58,7 +58,9 @@ export default function InvoiceTable({
     invoice?.net_amount ?? Math.max(0, grossAmount - totalDiscountAmount)
   );
 
-  const salesReturnAmount = Number(invoice?.sales_return_amount ?? 0);
+  const salesReturnAmount = Number(invoice?.sales_return?.total_amount ?? invoice?.sales_return_amount ?? 0);
+  const salesReturnPcs = Number(invoice?.sales_return?.total_pcs ?? 0);
+  const paymentMethod = String(invoice?.payment?.method || "").trim();
   const receivedAmount = Number(invoice?.received_amount ?? 0);
   const payableAmount = Number(invoice?.total_amount ?? totalAmount);
 
@@ -149,7 +151,7 @@ export default function InvoiceTable({
           </tfoot>
         </table>
       </div>
-
+      
       <div className="invoice-summary">
         <div className="invoice-totals-panel">
           <div className="summary-row">
@@ -175,6 +177,16 @@ export default function InvoiceTable({
           <div className="summary-row">
             <span>Sales Return</span>
             <strong>-{formatNumbers(salesReturnAmount, 1)}</strong>
+          </div>
+
+          <div className="summary-row">
+            <span>Sales Return (Pcs)</span>
+            <strong>-{formatNumbers(salesReturnPcs, 1)}</strong>
+          </div>
+
+          <div className="summary-row">
+            <span>Payment Method</span>
+            <strong>-{formatNumbers(paymentMethod, 1)}</strong>
           </div>
 
           <div className="summary-row">

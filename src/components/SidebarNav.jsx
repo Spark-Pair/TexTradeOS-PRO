@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutGrid, FileText, Users2, Settings, LogOut, ChevronDown, Keyboard, Boxes } from 'lucide-react';
+import { Settings, LogOut, ChevronDown, Keyboard } from 'lucide-react';
 import SidebarNavItem from './SidebarNavItem';
 import useAuth from '../hooks/useAuth';
 import { AnimatePresence } from "framer-motion";
 import { fetchMyInvoiceCounter, fetchMyReferenceData, fetchMyRuleData } from '../api/business';
 import { BUSINESS_ACCESS_ITEMS, hasAccessForRole } from '../utils/accessConfig';
+import { getModuleMeta, MENU_MODULE } from '../config/modules';
 
 // const developerNav = [
 //   { id: 'dashboard', icon: <LayoutGrid className="w-4.5 h-4.5" />, label: 'Dashboard', path: '/dashboard' },
@@ -27,15 +28,7 @@ import { BUSINESS_ACCESS_ITEMS, hasAccessForRole } from '../utils/accessConfig';
 //   { id: 'invoices', icon: <FileText className="w-4.5 h-4.5" />, label: 'Invoices', path: '/invoices' },
 // ];
 
-const iconMap = {
-  dashboard: <LayoutGrid className="w-4.5 h-4.5" />,
-  users_manage: <Users2 className="w-4.5 h-4.5" />,
-  customers: <Users2 className="w-4.5 h-4.5" />,
-  suppliers: <FileText className="w-4.5 h-4.5" />,
-  purchases: <FileText className="w-4.5 h-4.5" />,
-  inventory: <Boxes className="w-4.5 h-4.5" />,
-  invoices: <FileText className="w-4.5 h-4.5" />,
-};
+
 
 const SidebarNav = ({ currentPath, handleLogout, isMobileOpen = false, onCloseMobile }) => {
   const { user } = useAuth();
@@ -78,20 +71,28 @@ const SidebarNav = ({ currentPath, handleLogout, isMobileOpen = false, onCloseMo
     };
   }, [user]);
 
-  let navItems = [];
+  const MenuIcon = MENU_MODULE.icon;
+  let navItems = [{ id: 'menu', icon: <MenuIcon className="w-4.5 h-4.5" />, label: MENU_MODULE.label, path: MENU_MODULE.path }];
   // if (user.role === 'developer') navItems = developerNav;
   // if (user.role === 'admin') navItems = adminNav;
   // if (user.role === 'staff') navItems = staffNav;
   if (user.role !== "developer") {
-    navItems = BUSINESS_ACCESS_ITEMS
+    navItems = navItems.concat(BUSINESS_ACCESS_ITEMS
       .filter((item) => item.show_in_sidebar)
       .filter((item) => hasAccessForRole(ruleData, referenceData, item.key, user.role))
       .map((item) => ({
         id: item.key,
-        icon: iconMap[item.key],
+        icon: (() => { const Icon = getModuleMeta(item.key).icon; return <Icon className="w-4.5 h-4.5" />; })(),
         label: item.label,
         path: item.path,
-      }));
+      })));
+  } else {
+    navItems = navItems.concat([
+      ...BUSINESS_ACCESS_ITEMS.filter((item) => ['dashboard', 'users_manage'].includes(item.key)).map((item) => {
+        const Icon = getModuleMeta(item.key).icon;
+        return { id: item.key, icon: <Icon className="w-4.5 h-4.5" />, label: item.label, path: item.path };
+      }),
+    ]);
   }
   const canManagePersonalSettings = user.role === "developer" || hasAccessForRole(ruleData, referenceData, "settings", user.role);
   const canUseKeyboardShortcuts = user.role === "developer" || hasAccessForRole(ruleData, referenceData, "keyboard_shortcuts", user.role);
@@ -188,9 +189,9 @@ const SidebarNav = ({ currentPath, handleLogout, isMobileOpen = false, onCloseMo
 
   return (
     <aside className={`${mobileClasses} h-full lg:h-screen no-default-transition`}>
-      <div className="bg-white p-4 flex flex-col gap-4 h-full border border-gray-300 rounded-3xl">
+      <div className="bg-[#f8faf9] p-4 flex flex-col gap-4 h-full border border-gray-300 rounded-3xl shadow-[0_8px_30px_rgba(28,119,115,0.06)]">
         {/* Top */}
-        <div className="flex items-center gap-1.5 ps-3 pt-2.5 pb-5 border-b border-gray-300">
+        <div className="flex items-center gap-1.5 ps-3 pt-2.5 pb-5 border-b border-gray-200">
           <div className="h-9 w-9 shrink-0 overflow-hidden">
             <img
               src="/android-chrome-192x192.png"
@@ -225,11 +226,11 @@ const SidebarNav = ({ currentPath, handleLogout, isMobileOpen = false, onCloseMo
           </nav>
 
           {/* Profile Dropdown Section */}
-          <div className="pt-3 border-t border-gray-300" ref={dropdownRef}>
+          <div className="pt-3 border-t border-gray-200" ref={dropdownRef}>
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-200/70"
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-teal-50"
               >
                 <div className="w-8 h-8 rounded-full bg-[#1C7773] flex items-center justify-center text-white font-medium text-sm">
                   {getInitials(user.name)}

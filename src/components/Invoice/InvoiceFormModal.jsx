@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Edit3, Plus, Save, ScanLine, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Edit3, Plus, RotateCcw, Save, ScanLine, Trash2 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { Html5Qrcode } from "html5-qrcode";
 import Modal from "../Modal";
@@ -8,10 +8,16 @@ import Input from "../Input";
 import Select from "../Select";
 import { SectionHeader } from "../SectionHeader";
 import { fetchMyInvoiceCounter } from "../../api/business";
+import { fetchSalesReturnable } from "../../api/returns.api";
 import { useToast } from "../../context/ToastContext";
 import { InvoicePrintPreview } from "./InvoicePreviewModal";
-import { listCustomers, listPrototypeInvoices, listPurchases } from "../../utils/prototypeStorage";
-import { verifyArticleQr } from "../../api/qr.api";
+import { listCustomers, listPrototypeInvoices, listPurchases, listSalesReturns, saveCustomer } from "../../utils/prototypeStorage";
+import ReturnEditor, { returnTotals } from "../Returns/ReturnEditor";
+import PaymentEditor from "./PaymentEditor";
+import Checkbox from "../Checkbox";
+import CustomerFormModal from "../User/CustomerFormModal";
+import InvoiceScanModal, { unlockScanAudio } from "../Scanner/InvoiceScanModal";
+import { motion } from "framer-motion";
 
 const todayInput = () => {
   const date = new Date();
@@ -251,352 +257,6 @@ function InvoiceItemModal({ isOpen, onClose, onSubmit, article = null, inventory
   );
 }
 
-let scanAudioContext = null;
-
-const getScanAudioContext = () => {
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContext) return null;
-  if (!scanAudioContext || scanAudioContext.state === "closed") scanAudioContext = new AudioContext();
-  return scanAudioContext;
-};
-
-const unlockScanAudio = async () => {
-  const context = getScanAudioContext();
-  if (!context) return false;
-  if (context.state === "suspended") await context.resume();
-  return context.state === "running";
-};
-
-const playScanFeedback = (type) => {
-  try {
-    const context = getScanAudioContext();
-    if (!context || context.state !== "running") {
-      navigator.vibrate?.(type === "success" ? 45 : [80, 45, 80]);
-      return;
-    }
-    const tones = type === "success"
-      ? [
-          { frequency: 1850, start: 0, duration: 0.13 },
-          { frequency: 2350, start: 0.105, duration: 0.16 },
-        ]
-      : [
-          { frequency: 420, start: 0, duration: 0.2 },
-          { frequency: 320, start: 0.25, duration: 0.24 },
-        ];
-
-    tones.forEach(({ frequency, start, duration }) => {
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-      oscillator.type = type === "success" ? "square" : "sawtooth";
-      oscillator.frequency.value = frequency;
-      gain.gain.setValueAtTime(0.0001, context.currentTime + start);
-      gain.gain.exponentialRampToValueAtTime(type === "success" ? 0.72 : 0.78, context.currentTime + start + 0.008);
-      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + start + duration);
-      oscillator.connect(gain);
-      gain.connect(context.destination);
-      oscillator.start(context.currentTime + start);
-      oscillator.stop(context.currentTime + start + duration);
-    });
-
-    navigator.vibrate?.(type === "success" ? 45 : [80, 45, 80]);
-  } catch {
-    // Audio/vibration feedback is optional when a browser blocks it.
-  }
-};
-
-function InvoiceScanModal({ isOpen, onClose, onApply, inventory = [] }) {
-  const scannerRef = useRef(null);
-  const scanLockRef = useRef({ value: "", lastSeenAt: 0 });
-  const hardwareBufferRef = useRef({ value: "", lastKeyAt: 0 });
-  const addScannedArticleRef = useRef(null);
-  const scannerId = useMemo(() => `invoice-qr-reader-${uuidv4()}`, []);
-  const [rows, setRows] = useState([]);
-  const [cameraError, setCameraError] = useState("");
-  const [scanError, setScanError] = useState("");
-  const [manualCode, setManualCode] = useState("");
-  const [lastScanned, setLastScanned] = useState(null);
-  const [scanningPhoto, setScanningPhoto] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(false);
-  const [manualEntryOpen, setManualEntryOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    let stopped = false;
-    setRows([]);
-    setCameraError("");
-    setScanError("");
-    setManualCode("");
-    setLastScanned(null);
-    setScanningPhoto(false);
-    setSoundEnabled(scanAudioContext?.state === "running");
-    setManualEntryOpen(false);
-    scanLockRef.current = { value: "", lastSeenAt: 0 };
-
-    if (!window.isSecureContext) {
-      setCameraError("Live camera requires HTTPS. Use Take QR Photo below on this device.");
-      return undefined;
-    }
-
-    const scanner = new Html5Qrcode(scannerId);
-    scannerRef.current = scanner;
-    scanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 240, height: 240 } },
-      (decodedText) => {
-        const now = Date.now();
-        if (scanLockRef.current.value === decodedText) {
-          scanLockRef.current.lastSeenAt = now;
-          return;
-        }
-        scanLockRef.current = { value: decodedText, lastSeenAt: now };
-        addScannedArticleRef.current?.(decodedText);
-      },
-      () => {
-        const lock = scanLockRef.current;
-        if (lock.value && Date.now() - lock.lastSeenAt > 1000) {
-          scanLockRef.current = { value: "", lastSeenAt: 0 };
-        }
-      }
-    )
-      .catch(() => {
-        if (!stopped) setCameraError("Camera scanner unavailable. Please allow camera access and reopen this modal.");
-      })
-      .then(() => {});
-
-    return () => {
-      stopped = true;
-      const activeScanner = scannerRef.current;
-      scannerRef.current = null;
-      if (activeScanner?.isScanning) {
-        activeScanner.stop().then(() => activeScanner.clear()).catch(() => {});
-      } else {
-        activeScanner?.clear?.();
-      }
-    };
-  }, [isOpen, scannerId]);
-
-  const addScannedArticle = async (code, { manual = false } = {}) => {
-    let articleNo = String(code || "").trim();
-    let verifiedQrId = "";
-    if (!manual) {
-      if (!/^(T1|TTO1)\./.test(articleNo)) {
-        setScanError("Rejected: scan a genuine TexTradeOS secure QR sticker.");
-        playScanFeedback("error");
-        return;
-      }
-      try {
-        const verified = await verifyArticleQr(articleNo);
-        articleNo = verified.articleNo;
-        verifiedQrId = verified.qrId;
-      } catch {
-        setScanError("Invalid or altered QR code. Only TexTradeOS stickers are accepted.");
-        playScanFeedback("error");
-        return;
-      }
-    }
-    const match = inventory.find((item) => item.article_no === articleNo);
-    if (!match) {
-      setScanError("Article not found or no stock is available.");
-      playScanFeedback("error");
-      return;
-    }
-    if (!manual && match.qr_id && verifiedQrId !== match.qr_id) {
-      setScanError("This is an older label for this article. Print its latest QR label and scan again.");
-      playScanFeedback("error");
-      return;
-    }
-    setScanError("");
-    setRows((prev) => {
-      const existing = prev.find((row) => row.article_no === articleNo);
-      const nextPcs = numberValue(existing?.pcs) + numberValue(match.unit);
-      if (nextPcs > numberValue(match.stock_pcs)) {
-        setScanError(`Stock limit reached: only ${numberValue(match.stock_pcs)} pieces are available.`);
-        playScanFeedback("error");
-        return prev;
-      }
-      setLastScanned({ article_no: match.article_no, description: match.description || "Article" });
-      playScanFeedback("success");
-      if (existing) {
-        return prev.map((row) =>
-          row.article_no === articleNo
-            ? calculateArticle(syncQuantity(row, "quantity_pkt", String(numberValue(row.quantity_pkt) + 1)))
-            : row
-        );
-      }
-      return [...prev, calculateArticle(syncQuantity(newInvoiceArticle(match), "quantity_pkt", "1"))];
-    });
-  };
-  addScannedArticleRef.current = addScannedArticle;
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const captureHardwareScanner = (event) => {
-      const now = Date.now();
-      const buffer = hardwareBufferRef.current;
-      if (now - buffer.lastKeyAt > 120) buffer.value = "";
-      buffer.lastKeyAt = now;
-      if (event.key === "Enter") {
-        const scanned = buffer.value.trim();
-        buffer.value = "";
-        if (scanned.length >= 8) {
-          event.preventDefault();
-          addScannedArticleRef.current?.(scanned);
-        }
-        return;
-      }
-      if (event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) buffer.value += event.key;
-    };
-    window.addEventListener("keydown", captureHardwareScanner, true);
-    return () => window.removeEventListener("keydown", captureHardwareScanner, true);
-  }, [isOpen]);
-
-  const updateRow = (key, field, value) => {
-    setRows((prev) => prev.map((row) =>
-      row._key === key ? (() => {
-        const next = syncQuantity(row, field, value);
-        const availablePcs = numberValue(inventory.find((item) => item.article_no === row.article_no)?.stock_pcs);
-        if (numberValue(next.pcs) > availablePcs) {
-          setScanError(`Only ${availablePcs} pieces are available for ${row.article_no}.`);
-          return calculateArticle(syncQuantity(row, "pcs", String(availablePcs)));
-        }
-        setScanError("");
-        return calculateArticle(next);
-      })() : row
-    ));
-  };
-
-  const applyRows = () => {
-    onApply(rows.filter((row) => numberValue(row.pcs) > 0).map(calculateArticle));
-  };
-
-  const submitManualCode = (event) => {
-    event.preventDefault();
-    if (!manualCode.trim()) return;
-    addScannedArticle(manualCode, { manual: true });
-    setManualCode("");
-  };
-
-  const scanQrPhoto = async (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    setScanningPhoto(true);
-    setScanError("");
-    let photoScanner = null;
-    try {
-      try { scannerRef.current?.clear(); } catch { /* camera scanner may not have started */ }
-      scannerRef.current = null;
-      photoScanner = new Html5Qrcode(scannerId);
-      const decodedText = await photoScanner.scanFile(file, true);
-      addScannedArticle(decodedText);
-    } catch {
-      setScanError("QR was not clear in the photo. Move closer, keep it straight, and try again.");
-      playScanFeedback("error");
-    } finally {
-      try { photoScanner?.clear(); } catch { /* scanner may already be clear */ }
-      setScanningPhoto(false);
-    }
-  };
-
-  const totalPackets = rows.reduce((sum, row) => sum + numberValue(row.quantity_pkt), 0);
-
-  const enableSound = async () => {
-    try {
-      const enabled = await unlockScanAudio();
-      setSoundEnabled(enabled);
-      if (enabled) playScanFeedback("success");
-      else setScanError("Sound is blocked by this browser. Check media volume and browser permissions.");
-    } catch {
-      setScanError("Sound could not be enabled. Check media volume and browser permissions.");
-    }
-  };
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      maxWidth="max-w-6xl"
-      title="Scan QR Labels"
-      subtitle="Each successful scan adds 1 packet; repeat scans increase the same row"
-      footer={
-        <div className="grid w-full gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-          <div className="min-w-0"><p className="text-xs font-medium text-gray-700">{rows.length} articles · {totalPackets} packets ready</p>{scanError && <p role="alert" className="mt-1 rounded-lg bg-red-50 px-2 py-1.5 text-xs font-medium leading-4 text-red-700">{scanError}</p>}</div>
-          <div className="flex w-full gap-2 sm:w-auto sm:gap-3">
-            <Button outline variant="secondary" onClick={onClose}>Close</Button>
-            <Button icon={Plus} onClick={applyRows} disabled={rows.length === 0}>Add {totalPackets} Packets</Button>
-          </div>
-        </div>
-      }
-    >
-      <div className="grid min-w-0 gap-4 p-0.5 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <div className="grid min-w-0 content-start gap-3">
-          <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5"><p className="text-xs font-semibold text-sky-900">POS scanner ready</p><p className="mt-0.5 text-xs text-sky-700">Connect a 2D USB/wireless scanner and scan directly. No field selection is needed.</p></div>
-          {!cameraError ? <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-gray-300 bg-gray-950 p-3">
-          <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black sm:aspect-[4/3]">
-            <div id={scannerId} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover [&_button]:hidden [&_select]:hidden" />
-            <div className="pointer-events-none absolute inset-[18%] rounded-xl border-2 border-white/80 shadow-[0_0_0_999px_rgba(0,0,0,0.25)]" />
-          </div>
-            <div className="mt-2 flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2"><span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-400" /><p className="truncate text-xs text-gray-300">Camera ready — hold one QR inside the box</p></div><button type="button" onClick={enableSound} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold ${soundEnabled ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-white hover:bg-white/20"}`}>{soundEnabled ? "Sound On" : "Enable Sound"}</button></div>
-        </div> : <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4"><div id={scannerId} className="hidden" /><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-amber-900">Photo scan mode</p><p className="mt-1 text-xs leading-5 text-amber-700">Live camera is blocked by the browser on HTTP. Take a clear QR photo or enter the article number.</p></div><button type="button" onClick={enableSound} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold ${soundEnabled ? "bg-emerald-100 text-emerald-700" : "bg-white text-gray-700 ring-1 ring-gray-200"}`}>{soundEnabled ? "Sound On" : "Sound"}</button></div></div>}
-        {lastScanned && !scanError && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5"><p className="text-xs font-semibold text-emerald-700">✓ Scan successful</p><p className="mt-0.5 text-sm font-semibold text-gray-800">{lastScanned.article_no}</p><p className="text-xs text-gray-500">{lastScanned.description}</p></div>}
-        <div className="min-w-0 rounded-xl border border-gray-200 bg-gray-50 p-3">
-          {cameraError && (
-            <label className="mb-3 flex w-full cursor-pointer items-center justify-center rounded-xl bg-[#127475] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#0f6465]">
-              {scanningPhoto ? "Reading QR…" : "Take QR Photo"}
-              <input type="file" accept="image/*" capture="environment" onClick={(event) => event.stopPropagation()} onChange={scanQrPhoto} disabled={scanningPhoto} className="hidden" />
-            </label>
-          )}
-          <button type="button" onClick={() => setManualEntryOpen((open) => !open)} className="flex w-full items-center justify-between rounded-lg px-1 py-1.5 text-left text-xs font-semibold text-gray-700"><span>Enter article number manually</span><span className="text-base text-gray-400">{manualEntryOpen ? "−" : "+"}</span></button>
-          {manualEntryOpen && <form onSubmit={submitManualCode} className="mt-2">
-            <label className="text-xs font-semibold text-gray-700">Camera not working? Enter article number</label>
-            <div className="mt-2 flex gap-2"><input value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="P-2026-0001-A01" className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100" /><Button type="submit" size="sm" disabled={!manualCode.trim()}>Add</Button></div>
-          </form>}
-        </div>
-        </div>
-
-        <div className="grid min-w-0 gap-2 md:hidden">
-          {rows.length === 0 ? <div className="rounded-xl border border-dashed border-gray-300 px-4 py-10 text-center"><p className="text-sm font-semibold text-gray-700">Ready to scan</p><p className="mt-1 text-xs text-gray-400">One accepted scan adds one packet.</p></div> : rows.map((row) => <div key={row._key} className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm"><div className="flex justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-semibold text-gray-900">{row.description}</p><p className="text-xs font-medium text-teal-700">{row.article_no}</p></div><button type="button" onClick={() => setRows((current) => current.filter((item) => item._key !== row._key))} className="rounded-lg p-2 text-red-500"><Trash2 className="h-4 w-4" /></button></div><div className="mt-3 flex items-center justify-between gap-3 border-t border-gray-100 pt-3"><div><p className="text-[10px] uppercase tracking-wide text-gray-400">Packet quantity</p><div className="mt-1 flex items-center rounded-xl border border-gray-200 bg-gray-50"><button type="button" onClick={() => updateRow(row._key, "quantity_pkt", String(Math.max(0, numberValue(row.quantity_pkt) - 1)))} className="h-9 w-10 text-lg font-semibold text-gray-600">−</button><strong className="min-w-10 text-center text-sm text-gray-900">{row.quantity_pkt}</strong><button type="button" onClick={() => updateRow(row._key, "quantity_pkt", String(numberValue(row.quantity_pkt) + 1))} className="h-9 w-10 text-lg font-semibold text-teal-700">+</button></div></div><div className="grid grid-cols-2 gap-4 text-right text-xs"><div><span className="text-gray-400">Pieces</span><p className="mt-1 font-semibold text-gray-800">{row.pcs}</p></div><div><span className="text-gray-400">Available</span><p className="mt-1 font-semibold text-emerald-700">{numberValue(inventory.find((item) => item.article_no === row.article_no)?.stock_pcs)}</p></div></div></div></div>)}
-        </div>
-
-        <div className="hidden min-w-0 overflow-x-auto rounded-xl border border-gray-300 md:block">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-gray-300 bg-gray-50 text-xs font-semibold text-gray-500">
-                <th className="px-3 py-2.5 text-left">Article No</th>
-                <th className="px-3 py-2.5 text-left">Description</th>
-                <th className="px-3 py-2.5 text-left">Pckt</th>
-                <th className="px-3 py-2.5 text-left">Dzn</th>
-                <th className="px-3 py-2.5 text-left">Pieces</th>
-                <th className="px-3 py-2.5 text-left">Available</th>
-                <th className="w-12 px-3 py-2.5" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {rows.length === 0 ? (
-                <tr><td colSpan={7} className="px-7 py-12 text-center"><p className="text-sm font-semibold text-gray-700">Ready to scan</p><p className="mt-1 text-xs text-gray-400">Scanned packets appear here. One scan equals one packet.</p></td></tr>
-              ) : rows.map((row) => (
-                <tr key={row._key}>
-                  <td className="px-3 py-2.5 text-sm font-semibold text-gray-800">{row.article_no}</td>
-                  <td className="px-3 py-2.5 text-sm text-gray-600">{row.description}</td>
-                  {["quantity_pkt", "dzn", "pcs"].map((field) => (
-                    <td key={field} className="px-3 py-2.5">
-                      <input type="number" min="0" value={row[field]} onChange={(e) => updateRow(row._key, field, e.target.value)} className="w-full rounded-lg border border-gray-400/85 bg-gray-50 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
-                    </td>
-                  ))}
-                  <td className="px-3 py-2.5 text-xs text-gray-500">{numberValue(inventory.find((item) => item.article_no === row.article_no)?.stock_pcs)} pcs</td>
-                  <td className="px-2 py-2.5"><button type="button" onClick={() => setRows((current) => current.filter((item) => item._key !== row._key))} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600" aria-label={`Remove ${row.article_no}`}><Trash2 className="h-4 w-4" /></button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
 export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
   const { showToast } = useToast();
   const customerInputRef = useRef(null);
@@ -608,6 +268,9 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
   const [step, setStep] = useState("entry");
   const [entryStage, setEntryStage] = useState(1);
   const [customerId, setCustomerId] = useState("");
+  const [customerMode, setCustomerMode] = useState("registered");
+  const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
+  const [walkIn, setWalkIn] = useState({ customer_name: "Walk-in Customer", person_name: "", urdu_title: "", phone_number: "", address: "", city: "" });
   const [customerName, setCustomerName] = useState("");
   const [customerUrduTitle, setCustomerUrduTitle] = useState("");
   const [customers, setCustomers] = useState([]);
@@ -618,8 +281,10 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
   const [inventory, setInventory] = useState([]);
   const [itemModal, setItemModal] = useState({ isOpen: false, article: null });
   const [scanModalOpen, setScanModalOpen] = useState(false);
-  const [salesReturnAmount, setSalesReturnAmount] = useState("");
-  const [receivedAmount, setReceivedAmount] = useState("");
+  const [salesReturnRows, setSalesReturnRows] = useState([]);
+  const [includeSalesReturn, setIncludeSalesReturn] = useState(false);
+  const [returnAdjustment, setReturnAdjustment] = useState({ type: "none", value: "" });
+  const [payment, setPayment] = useState({ received_now: false, amount: "", method: "cash" });
   const [previousCustomers] = useState([]);
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -632,11 +297,16 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
     const activeCustomers = listCustomers().filter((customer) => customer.isActive);
     setCustomers(activeCustomers);
     setCustomerId("");
+    setCustomerMode("registered");
+    setQuickCustomerOpen(false);
+    setWalkIn({ customer_name: "Walk-in Customer", person_name: "", urdu_title: "", phone_number: "", address: "", city: "" });
     setSalesmanName("");
     setArticles([]);
     setInventory(purchasedArticles());
-    setSalesReturnAmount("");
-    setReceivedAmount("");
+    setSalesReturnRows([]);
+    setIncludeSalesReturn(false);
+    setReturnAdjustment({ type: "none", value: "" });
+    setPayment({ received_now: false, amount: "", method: "cash" });
     setError("");
 
     fetchMyInvoiceCounter({ year: new Date().getFullYear() }).then((counterRes) => {
@@ -659,15 +329,42 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
     const usedPcs = articles.reduce((sum, row) => row.article_no === item.article_no ? sum + numberValue(row.pcs) : sum, 0);
     return { ...item, stock_pcs: Math.max(0, numberValue(item.stock_pcs) - usedPcs) };
   }).filter((item) => item.stock_pcs > 0), [articles, inventory]);
+  const [salesReturnInventory, setSalesReturnInventory] = useState([]);
+  const [salesReturnLoading, setSalesReturnLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!customerId || customerMode !== "registered") {
+      setSalesReturnInventory([]);
+      return undefined;
+    }
+    setSalesReturnLoading(true);
+    fetchSalesReturnable(customerId)
+      .then((items) => {
+        if (!cancelled) setSalesReturnInventory(Array.isArray(items) ? items : []);
+      })
+      .catch((requestError) => {
+        if (!cancelled) {
+          setSalesReturnInventory([]);
+          setError(requestError?.response?.data?.message || "Could not load returnable articles for this customer.");
+        }
+      })
+      .finally(() => { if (!cancelled) setSalesReturnLoading(false); });
+    return () => { cancelled = true; };
+  }, [customerId, customerMode]);
+
+  const salesReturnTotals = useMemo(() => returnTotals(salesReturnRows, returnAdjustment), [salesReturnRows, returnAdjustment]);
   const invoiceTotals = useMemo(
-    () => calculateInvoiceTotals(calculatedArticles, salesReturnAmount, receivedAmount),
-    [calculatedArticles, receivedAmount, salesReturnAmount]
+    () => calculateInvoiceTotals(calculatedArticles, salesReturnTotals.amount, payment.received_now ? payment.amount : 0),
+    [calculatedArticles, payment.amount, payment.received_now, salesReturnTotals.amount]
   );
 
-  const selectedCustomer = useMemo(
-    () => customers.find((customer) => customer._id === customerId) || null,
-    [customerId, customers]
-  );
+  const selectedCustomer = useMemo(() => {
+    if (customerMode === "walkin") {
+      return { _id: "", ...walkIn, customer_name: walkIn.customer_name.trim() || "Walk-in Customer", isWalkIn: true };
+    }
+    return customers.find((customer) => customer._id === customerId) || null;
+  }, [customerId, customerMode, customers, walkIn]);
 
   const customerOptions = useMemo(
     () => customers.map((customer) => ({
@@ -687,10 +384,26 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
     customer_phone: selectedCustomer?.phone_number || "",
     customer_address: selectedCustomer?.address || "",
     articles: calculatedArticles,
+    sales_return: { articles: salesReturnRows, adjustment: returnAdjustment, total_pcs: salesReturnTotals.pcs, gross_amount: salesReturnTotals.gross, adjustment_amount: salesReturnTotals.adjustment, total_amount: salesReturnTotals.amount },
+    payment: { ...payment, amount: payment.received_now ? numberValue(payment.amount) : 0 },
     ...invoiceTotals,
-  }), [calculatedArticles, invoiceNumber, invoiceTotals, salesmanName, selectedCustomer]);
+  }), [calculatedArticles, invoiceNumber, invoiceTotals, payment, returnAdjustment, salesmanName, salesReturnRows, salesReturnTotals, selectedCustomer]);
 
   const chooseCustomer = (name) => setCustomerName(name);
+
+  const handleQuickCustomerCreate = (payload) => {
+    if (!payload.customer_name?.trim() || !payload.person_name?.trim() || !payload.urdu_title?.trim() || !payload.city?.trim()) {
+      showToast({ type: "error", message: "Customer name, person name, Urdu title and city are required." });
+      return;
+    }
+    const created = saveCustomer(payload);
+    const activeCustomers = listCustomers().filter((customer) => customer.isActive);
+    setCustomers(activeCustomers);
+    setCustomerMode("registered");
+    setCustomerId(created._id);
+    setQuickCustomerOpen(false);
+    showToast({ type: "success", message: `${created.customer_name} added and selected.` });
+  };
 
   const focusAndSelect = (element) => {
     if (!element) return;
@@ -829,6 +542,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
       title={step === "entry" ? "New Sales Invoice" : "Review Sales Invoice"}
       subtitle={step === "entry" ? `Invoice ${invoiceNumber || "..."} · Complete the 3 simple sections below` : "Check customer, items and payment before saving"}
       maxWidth="max-w-5xl"
+      closeOnEscape={!quickCustomerOpen}
       footer={
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="min-h-4 text-xs font-medium text-red-600">{error}</p>
@@ -858,10 +572,72 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
           <section className={entryStage === 1 ? "block" : "hidden"}>
             <SectionHeader step="1" title="Who is buying?" subtitle="Select the customer and salesperson handling this sale" />
             <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
-              <Select label="Customer *" value={customerId} onChange={setCustomerId} options={customerOptions} placeholder="Choose customer" />
+              <div className="md:col-span-2">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="relative grid w-full grid-cols-2 rounded-xl border border-gray-300 bg-gray-100 p-1 sm:w-[270px]">
+                    <motion.span
+                      animate={{
+                        x: customerMode === "walkin" ? "100%" : "0%",
+                      }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 36,
+                      }}
+                      className="absolute bottom-1 left-1 top-1 w-[calc(50%-4px)] rounded-lg bg-white shadow-sm ring-1 ring-gray-200"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomerMode("registered");
+                        setError("");
+                      }}
+                      className={`relative z-10 flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                        customerMode === "registered"
+                          ? "text-gray-950"
+                          : "text-gray-500 hover:text-gray-800"
+                      }`}
+                    >
+                      Registered
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomerMode("walkin");
+                        setCustomerId("");
+                        setIncludeSalesReturn(false);
+                        setSalesReturnRows([]);
+                        setError("");
+                      }}
+                      className={`relative z-10 flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                        customerMode === "walkin"
+                          ? "text-gray-950"
+                          : "text-gray-500 hover:text-gray-800"
+                      }`}
+                    >
+                      Walk-in
+                    </button>
+                  </div>
+                  {customerMode === "registered" && <Button size="sm" outline icon={Plus} onClick={() => setQuickCustomerOpen(true)}>Quick Add Customer</Button>}
+                </div>
+              </div>
+              {customerMode === "registered" ? (
+                <Select label="Customer *" value={customerId} onChange={setCustomerId} options={customerOptions} placeholder="Choose customer" />
+              ) : (
+                <Input label="Customer Name" value={walkIn.customer_name} onChange={(e) => setWalkIn((current) => ({ ...current, customer_name: e.target.value }))} placeholder="Walk-in Customer" required={false} />
+              )}
               <Input ref={salesmanInputRef} label="Salesperson *" value={salesmanName} onChange={(e) => setSalesmanName(capitalizeWords(e.target.value))} placeholder="Who made this sale?" required={false} />
             </div>
-            {selectedCustomer && (
+            {customerMode === "walkin" && (
+              <div className="mt-3 grid grid-cols-1 gap-3.5 rounded-xl border border-gray-200 bg-gray-50 p-3 md:grid-cols-3">
+                <Input label="Phone" value={walkIn.phone_number} onChange={(e) => setWalkIn((current) => ({ ...current, phone_number: e.target.value }))} placeholder="Optional" required={false} />
+                <Input label="Person Name" value={walkIn.person_name} onChange={(e) => setWalkIn((current) => ({ ...current, person_name: e.target.value }))} placeholder="Optional" required={false} />
+                <Input label="Address" value={walkIn.address} onChange={(e) => setWalkIn((current) => ({ ...current, address: e.target.value }))} placeholder="Optional" required={false} />
+              </div>
+            )}
+            {selectedCustomer && customerMode === "registered" && (
               <div className="mt-3 grid gap-2 rounded-xl border border-gray-300 bg-gray-50 p-3 text-xs text-gray-600 md:grid-cols-4">
                 <p><span className="font-semibold text-gray-800">Person:</span> {selectedCustomer.person_name || "-"}</p>
                 <p lang="ur"><span className="font-semibold text-gray-800">Urdu:</span> {selectedCustomer.urdu_title || "-"}</p>
@@ -959,17 +735,22 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
           </section>
 
           <section className={entryStage === 3 ? "block" : "hidden"}>
-            <SectionHeader step="3" title="Payment Details" subtitle="Enter received cash; balance will calculate automatically" />
-            <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
-              <Input label="Returned Goods Amount" type="number" min="0" step="0.01" value={salesReturnAmount} onChange={(e) => setSalesReturnAmount(e.target.value)} placeholder="0.00" required={false} />
-              <Input label="Cash Received Now" type="number" min="0" step="0.01" value={receivedAmount} onChange={(e) => setReceivedAmount(e.target.value)} placeholder="0.00" required={false} />
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-gray-300 bg-gray-50 p-3 text-sm md:grid-cols-5">
-              <div><span className="text-gray-500">Items Total</span><p className="font-semibold tabular-nums">{invoiceTotals.gross_amount.toFixed(2)}</p></div>
-              <div><span className="text-gray-500">Discount</span><p className="font-semibold tabular-nums text-amber-700">-{invoiceTotals.total_discount_amount.toFixed(2)}</p></div>
-              <div><span className="text-gray-500">Net Bill</span><p className="font-semibold tabular-nums text-emerald-700">{invoiceTotals.total_amount.toFixed(2)}</p></div>
-              <div><span className="text-gray-500">Cash Received</span><p className="font-semibold tabular-nums text-sky-700">{invoiceTotals.received_amount.toFixed(2)}</p></div>
-              <div className="rounded-lg bg-white px-3 py-2 ring-1 ring-gray-200"><span className="text-gray-500">Balance Due</span><p className="text-base font-bold tabular-nums text-red-600">{invoiceTotals.balance_amount.toFixed(2)}</p></div>
+            <SectionHeader step="3" title="Return & Payment" subtitle="Record any sales return and the payment received with this invoice" />
+            <div className="grid gap-5">
+              <div className="overflow-hidden rounded-xl border border-gray-300 bg-white">
+                <div className="flex items-center justify-between gap-3 bg-gray-50 px-4 py-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600"><RotateCcw className="h-4 w-4" /></div>
+                    <div className="min-w-0"><p className="text-sm font-semibold text-gray-800">Sales Return with this Invoice</p><p className="mt-0.5 text-xs text-gray-400">Optional — return previously sold goods and adjust this invoice payable.</p></div>
+                  </div>
+                  {customerMode === "registered" ? <Checkbox checked={includeSalesReturn} onChange={(checked) => { setIncludeSalesReturn(checked); if (!checked) { setSalesReturnRows([]); setReturnAdjustment({ type: "none", value: "" }); } }} label="Add return" /> : <span className="text-xs font-medium text-gray-400">Not available for walk-in sale</span>}
+                </div>
+                {customerMode === "registered" && includeSalesReturn && <div className="border-t border-gray-200 p-4"><ReturnEditor title="Returned Articles" subtitle={salesReturnLoading ? "Loading customer sold articles..." : "Search from this customer's sold articles, scan a label, then enter the actual returned PCs."} inventory={salesReturnInventory} rows={salesReturnRows} onChange={setSalesReturnRows} adjustment={returnAdjustment} onAdjustmentChange={setReturnAdjustment} /></div>}
+              </div>
+              <div className="border-t border-gray-200 pt-4"><SectionHeader title="Payment Received" subtitle="Record payment received against the final payable amount" /><PaymentEditor payment={payment} onChange={setPayment} /></div>
+              <div className="grid grid-cols-2 gap-2 rounded-xl border border-gray-300 bg-gray-50 p-3 text-sm md:grid-cols-6">
+                <div><span className="text-gray-500">Sale</span><p className="font-semibold tabular-nums">{invoiceTotals.net_amount.toFixed(2)}</p></div><div><span className="text-gray-500">Return PCs</span><p className="font-semibold tabular-nums">{salesReturnTotals.pcs}</p></div><div><span className="text-gray-500">Return</span><p className="font-semibold tabular-nums text-red-600">-{salesReturnTotals.amount.toFixed(2)}</p></div><div><span className="text-gray-500">Payable</span><p className="font-semibold tabular-nums text-emerald-700">{invoiceTotals.total_amount.toFixed(2)}</p></div><div><span className="text-gray-500">Received</span><p className="font-semibold tabular-nums text-sky-700">{invoiceTotals.received_amount.toFixed(2)}</p></div><div className="rounded-lg bg-white px-3 py-2 ring-1 ring-gray-200"><span className="text-gray-500">{invoiceTotals.return_amount > 0 ? "Change / Advance" : "Balance Due"}</span><p className={`text-base font-bold tabular-nums ${invoiceTotals.return_amount > 0 ? "text-emerald-700" : "text-red-600"}`}>{(invoiceTotals.return_amount || invoiceTotals.balance_amount).toFixed(2)}</p></div>
+              </div>
             </div>
           </section>
         </div>
@@ -979,6 +760,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
 
       <InvoiceItemModal isOpen={itemModal.isOpen} article={itemModal.article} inventory={itemInventory} onClose={() => setItemModal({ isOpen: false, article: null })} onSubmit={upsertArticle} />
       <InvoiceScanModal isOpen={scanModalOpen} inventory={scanInventory} onClose={() => setScanModalOpen(false)} onApply={mergeScannedRows} />
+      <CustomerFormModal isOpen={quickCustomerOpen} onClose={() => setQuickCustomerOpen(false)} onSubmit={handleQuickCustomerCreate} />
     </Modal>
   );
 }

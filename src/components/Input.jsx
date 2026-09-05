@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { forwardRef, useEffect } from 'react';
+import { createElement, forwardRef, isValidElement, useEffect } from 'react';
 
 const Input = forwardRef(
   (
@@ -23,6 +23,11 @@ const Input = forwardRef(
     },
     ref
   ) => {
+
+    const renderIcon = () => {
+      if (!icon) return null;
+      return isValidElement(icon) ? icon : createElement(icon, { size: 16, 'aria-hidden': true });
+    };
 
     // Handle change
     const handleLocalChange = (e) => {
@@ -95,7 +100,7 @@ const Input = forwardRef(
         <div className="relative">
           {icon && iconPosition === 'left' && (
             <div className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-              {icon}
+              {renderIcon()}
             </div>
           )}
 
@@ -130,13 +135,13 @@ const Input = forwardRef(
                   <X className="h-4 w-4" />
                 </button>
 
-              {icon}
+              {renderIcon()}
             </div>
           )}
 
           {icon && iconPosition === 'right' && (
             <div className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-              {icon}
+              {renderIcon()}
             </div>
           )}
         </div>

@@ -12,6 +12,7 @@ import {
 } from "../utils/accessConfig";
 import useAuth from "../hooks/useAuth";
 import SystemManagement from "../components/SystemManagement";
+import Checkbox from "../components/Checkbox";
 
 const emptyReferenceData = () => ({
   user_roles: normalizeBusinessUserRoles([]),
@@ -21,18 +22,8 @@ const emptyRuleData = () => ({
   access_rules: defaultAccessRules(),
 });
 
-function RuleCheckbox({ checked, onChange, label }) {
-  return (
-    <label className="inline-flex items-center gap-2 text-xs text-gray-700">
-      <input
-        type="checkbox"
-        checked={Boolean(checked)}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-400"
-      />
-      <span>{label}</span>
-    </label>
-  );
+function RuleCheckbox({ checked, onChange, label, id }) {
+  return <Checkbox id={id} checked={checked} onChange={onChange} label={label} />;
 }
 
 export default function SettingsPage() {
@@ -116,13 +107,13 @@ export default function SettingsPage() {
     <div className="relative z-10 max-w-7xl mx-auto">
       <PageHeader
         title="Settings"
-        subtitle="Access Rules"
+        subtitle="Manage access rules and system preferences."
         actionLabel="Save Access Rules"
         actionIcon={ShieldCheck}
         onAction={handleSave}
       />
 
-      <div className="rounded-3xl bg-white border border-gray-300 overflow-hidden">
+      <div className="rounded-3xl bg-white border border-gray-300 overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-300 bg-gray-100">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-white border border-gray-200">
@@ -140,7 +131,7 @@ export default function SettingsPage() {
           </Button>
         </div>
 
-        <div className="p-6">
+        <div className="bg-gray-50/50 p-4 sm:p-6">
           {loading ? (
             <div className="py-10 text-center text-sm text-gray-400">Loading access rules...</div>
           ) : (
@@ -148,7 +139,7 @@ export default function SettingsPage() {
               {rules.map((rule, index) => {
                 const item = BUSINESS_ACCESS_ITEMS.find((entry) => entry.key === rule.key);
                 return (
-                  <div key={`access-rule-${rule.key}`} className="rounded-2xl border border-gray-300 bg-white p-4">
+                  <div key={`access-rule-${rule.key}`} className="rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-teal-200 hover:shadow-sm">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div>
                         <p className="text-sm font-semibold text-gray-800">
@@ -160,6 +151,7 @@ export default function SettingsPage() {
                         checked={rule.show_in_sidebar !== false}
                         onChange={(value) => updateAccessRule(index, { show_in_sidebar: value })}
                         label="Show in sidebar"
+                        id={`sidebar-${rule.key}`}
                       />
                     </div>
                     <div className="mt-3 flex flex-wrap gap-4">
@@ -174,6 +166,7 @@ export default function SettingsPage() {
                             updateAccessRule(index, { roles: Array.from(current) });
                           }}
                           label={role}
+                          id={`role-${rule.key}-${role}`}
                         />
                       ))}
                     </div>

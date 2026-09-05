@@ -8,6 +8,7 @@ import ContextMenu from "../components/ContextMenu";
 import ConfirmModal from "../components/ConfirmModal";
 import StatusBadge from "../components/StatusBadge";
 import SupplierFormModal from "../components/User/SupplierFormModal";
+import PartyDetailsModal from "../components/User/PartyDetailsModal";
 import { useToast } from "../context/ToastContext";
 import { listSuppliers, saveSupplier, toggleSupplierStatus } from "../utils/prototypeStorage";
 
@@ -18,6 +19,7 @@ export default function Suppliers() {
   const tableScrollRef = useRef(null);
   const [suppliers, setSuppliers] = useState(() => listSuppliers());
   const [activeMenu, setActiveMenu] = useState(null);
+  const [detailsTarget, setDetailsTarget] = useState(null);
   const [formModal, setFormModal] = useState({ isOpen: false, supplier: null });
   const [statusTarget, setStatusTarget] = useState(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -146,7 +148,7 @@ export default function Suppliers() {
                 {pageSuppliers.length === 0 ? (
                   <tr><td colSpan={8} className="px-7 py-16 text-center text-sm text-gray-400">No suppliers found.</td></tr>
                 ) : pageSuppliers.map((supplier, index) => (
-                  <tr key={supplier._id} className="hover:bg-gray-50/80">
+                  <tr key={supplier._id} onClick={() => setDetailsTarget(supplier)} className="cursor-pointer hover:bg-teal-50/40">
                     <td className="px-5 py-4 text-sm font-medium text-gray-500">{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
                     <td className="px-5 py-4 text-sm font-semibold text-gray-800">{supplier.supplier_name}</td>
                     <td className="px-5 py-4 text-sm text-gray-600">{supplier.person_name}</td>
@@ -155,15 +157,15 @@ export default function Suppliers() {
                     <td className="px-5 py-4 text-sm text-gray-600">{supplier.city}</td>
                     <td className="px-5 py-4"><StatusBadge active={supplier.isActive} /></td>
                     <td className="px-5 py-4 text-right relative">
-                      <button onClick={() => setActiveMenu(activeMenu === supplier._id ? null : supplier._id)} className="p-2 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100" aria-label="Open actions menu">
+                      <button onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === supplier._id ? null : supplier._id); }} className="p-2 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100" aria-label="Open actions menu">
                         <MoreVertical size={18} />
                       </button>
                       <ContextMenu isOpen={activeMenu === supplier._id}>
-                        <button onClick={() => { setFormModal({ isOpen: true, supplier }); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-gray-600 hover:bg-gray-200 cursor-pointer">
+                        <button onClick={(e) => { e.stopPropagation(); setFormModal({ isOpen: true, supplier }); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-gray-600 hover:bg-gray-200 cursor-pointer">
                           <Edit3 size={16} strokeWidth={2.5} /> Edit Supplier
                         </button>
                         <div className="h-[1px] bg-gray-200 my-1.5" />
-                        <button onClick={() => { setStatusTarget(supplier); setActiveMenu(null); }} className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl cursor-pointer ${supplier.isActive ? "text-red-600 hover:bg-red-50" : "text-emerald-700 hover:bg-emerald-50"}`}>
+                        <button onClick={(e) => { e.stopPropagation(); setStatusTarget(supplier); setActiveMenu(null); }} className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl cursor-pointer ${supplier.isActive ? "text-red-600 hover:bg-red-50" : "text-emerald-700 hover:bg-emerald-50"}`}>
                           <UserRoundCheck size={16} strokeWidth={2.5} /> {supplier.isActive ? "Deactivate" : "Activate"}
                         </button>
                       </ContextMenu>
@@ -176,6 +178,7 @@ export default function Suppliers() {
         </div>
       </div>
 
+      <PartyDetailsModal isOpen={Boolean(detailsTarget)} party={detailsTarget} type="supplier" onClose={() => setDetailsTarget(null)} onEdit={(item) => { setDetailsTarget(null); setFormModal({ isOpen: true, supplier: item }); }} onToggle={(item) => { setDetailsTarget(null); setStatusTarget(item); }} />
       <SupplierFormModal isOpen={formModal.isOpen} supplier={formModal.supplier} onClose={() => setFormModal({ isOpen: false, supplier: null })} onSubmit={handleSubmit} />
       <FilterDrawer isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} filters={filterConfig} onApply={applyFilters} onReset={resetFilters} />
       <ConfirmModal

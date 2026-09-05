@@ -4,6 +4,7 @@ import { X, RotateCcw } from "lucide-react";
 import Button from "./Button";
 import Input from "./Input";
 import Select from "./Select";
+import Checkbox from "./Checkbox";
 
 export default function FilterDrawer({ isOpen, onClose, filters = [], onApply, onReset }) {
   return (
@@ -60,16 +61,12 @@ export default function FilterDrawer({ isOpen, onClose, filters = [], onApply, o
                     {/* Include/Exclude toggle */}
                     {f.include !== undefined && (
                       <div className="flex items-center gap-2 mt-1">
-                        <input
-                          type="checkbox"
-                          checked={f.include}
-                          onChange={(e) => f.onIncludeChange(e.target.checked)}
+                        <Checkbox
                           id={`include-${i}`}
-                          className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-2 focus:ring-teal-500"
+                          checked={f.include}
+                          onChange={f.onIncludeChange}
+                          label="Include in filter"
                         />
-                        <label htmlFor={`include-${i}`} className="text-xs text-gray-500">
-                          Include in filter
-                        </label>
                       </div>
                     )}
                   </div>

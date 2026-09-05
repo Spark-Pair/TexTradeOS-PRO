@@ -32,7 +32,9 @@ export default function ThermalInvoicePaper({ invoice, businessName = "Akhlaq Ga
   const rupeeDiscountAmount = Number(invoice?.rupee_discount_amount ?? 0);
   const totalDiscountAmount = Number(invoice?.total_discount_amount ?? (percentDiscountAmount + rupeeDiscountAmount));
   const netAmount = Number(invoice?.net_amount ?? Math.max(0, grossAmount - totalDiscountAmount));
-  const salesReturnAmount = Number(invoice?.sales_return_amount ?? 0);
+  const salesReturnAmount = Number(invoice?.sales_return?.total_amount ?? invoice?.sales_return_amount ?? 0);
+  const salesReturnPcs = Number(invoice?.sales_return?.total_pcs ?? 0);
+  const paymentMethod = String(invoice?.payment?.method || "").trim();
   const receivedAmount = Number(invoice?.received_amount ?? 0);
   const payableAmount = Number(invoice?.total_amount ?? 0);
   const balanceAmount = Number(invoice?.balance_amount ?? Math.max(0, payableAmount - receivedAmount));
@@ -88,13 +90,15 @@ export default function ThermalInvoicePaper({ invoice, businessName = "Akhlaq Ga
           <span>Total Pieces: {formatNumbers(totalPcs, 0)}</span>
         </div>
       </section>
-
+      
       <section className="thermal-summary">
         <div><span>Gross Amount</span><strong>{formatNumbers(grossAmount, 1)}</strong></div>
         <div><span>Percent Discount</span><strong>-{formatNumbers(percentDiscountAmount, 1)}</strong></div>
         <div><span>Rs Discount</span><strong>-{formatNumbers(rupeeDiscountAmount, 1)}</strong></div>
         <div className="thermal-summary-strong"><span>Net Amount</span><strong>{formatNumbers(netAmount, 1)}</strong></div>
         <div><span>Sales Return</span><strong>-{formatNumbers(salesReturnAmount, 1)}</strong></div>
+        <div><span>Sales Return (Pcs)</span><strong>-{formatNumbers(salesReturnPcs, 1)}</strong></div>
+        <div><span>Payment Method</span><strong>-{formatNumbers(paymentMethod, 1)}</strong></div>
         <div><span>Received</span><strong>{formatNumbers(receivedAmount, 1)}</strong></div>
         <div className="thermal-summary-total"><span>Payable</span><strong>{formatNumbers(payableAmount, 1)}</strong></div>
         <div className="thermal-summary-total">

@@ -10,6 +10,7 @@ import { ensurePrototypeDemoData } from './utils/prototypeStorage';
 // Pages
 import Login from './pages/Login';
 
+const MenuPage = lazy(() => import("./pages/Menu"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Customers = lazy(() => import("./pages/Customers"));
 const Suppliers = lazy(() => import("./pages/Suppliers"));
@@ -20,6 +21,7 @@ const Users = lazy(() => import("./pages/Users"));
 const Settings = lazy(() => import("./pages/Settings"));
 const KeyboardShortcuts = lazy(() => import("./pages/KeyboardShortcuts"));
 const Setup = lazy(() => import("./pages/Setup"));
+const Returns = lazy(() => import("./pages/Returns"));
 
 const NEGATIVE_NUMBER_REGEX = /^\(?\s*(?:PKR|RS\.?)?\s*-\s*\d[\d,]*(?:\.\d+)?\s*\)?$/i;
 const NEGATIVE_NUMBER_CLASS = "is-negative-number";
@@ -195,7 +197,7 @@ export default function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/" element={<MenuPage />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route
                   path="/users"
@@ -217,6 +219,8 @@ export default function App() {
                 <Route path="/suppliers" element={<RoleRoute accessKey="suppliers"><Suppliers /></RoleRoute>} />
                 <Route path="/purchases" element={<RoleRoute accessKey="purchases"><Purchases /></RoleRoute>} />
                 <Route path="/inventory" element={<RoleRoute accessKey="inventory"><Inventory /></RoleRoute>} />
+                <Route path="/sales-returns" element={<RoleRoute accessKey="sales_returns"><Returns type="sales" /></RoleRoute>} />
+                <Route path="/purchase-returns" element={<RoleRoute accessKey="purchase_returns"><Returns type="purchase" /></RoleRoute>} />
                 <Route path="/invoices" element={<RoleRoute accessKey="invoices"><Invoices /></RoleRoute>} />
                 <Route
                   path="/keyboard-shortcuts"

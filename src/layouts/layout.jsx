@@ -7,6 +7,7 @@ import { Menu } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 import UpdateManager from "../components/UpdateManager";
 import { syncPrototypeData } from "../utils/prototypeStorage";
+import GlobalKeyboardShortcuts from "../components/GlobalKeyboardShortcuts";
 
 export default function Layout({ children }) {
   const { logout, user } = useAuth();
@@ -44,7 +45,9 @@ export default function Layout({ children }) {
   };
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-gray-50">
+    <>
+    <GlobalKeyboardShortcuts />
+    <div className="flex h-[100dvh] overflow-hidden bg-[#f1f6f5]">
       {/* Sidebar (Desktop) */}
       <div className="hidden lg:block">
         <SidebarNav
@@ -69,7 +72,7 @@ export default function Layout({ children }) {
         <div className="absolute left-3 top-3 z-20 lg:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-300 bg-white text-gray-700 shadow-sm active:bg-gray-100"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-teal-200 bg-white text-[#1C7773] shadow-sm active:bg-teal-50"
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
@@ -115,5 +118,6 @@ export default function Layout({ children }) {
       />
       <UpdateManager />
     </div>
+    </>
   );
 }

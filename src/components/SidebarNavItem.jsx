@@ -16,8 +16,8 @@ const SidebarNavItem = ({
   `;
   
   const activeClasses = isActive
-    ? 'bg-teal-100/60 text-teal-700 rounded-xl'
-    : 'text-gray-700 hover:bg-gray-200/70 rounded-xl';
+    ? 'bg-[#dcefed] text-[#176b68] rounded-xl font-medium'
+    : 'text-gray-700 hover:bg-teal-50 hover:text-[#176b68] rounded-xl';
 
   return (
     <button

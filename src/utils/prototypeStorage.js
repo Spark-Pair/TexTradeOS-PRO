@@ -302,3 +302,13 @@ export const ensurePrototypeDemoData = () => {
   migratePurchaseLinkedArticleNumbers();
   window.localStorage.setItem(DEMO_SEEDED_KEY, "true");
 };
+
+const SALES_RETURNS_KEY = "textradeos_prototype_sales_returns";
+const PURCHASE_RETURNS_KEY = "textradeos_prototype_purchase_returns";
+export const listSalesReturns = () => newestFirst(readJson(SALES_RETURNS_KEY), ["return_date"]);
+export const listPurchaseReturns = () => newestFirst(readJson(PURCHASE_RETURNS_KEY), ["return_date"]);
+const saveReturnRecord = (key, prefix, payload) => { const rows=readJson(key); const id=payload._id||uuidv4(); const existing=rows.find(r=>r._id===id); const year=new Date(payload.return_date||Date.now()).getFullYear(); const seq=rows.filter(r=>String(r.return_number||"").startsWith(`${prefix}-${year}-`)).length+1; const next={...payload,_id:id,return_number:existing?.return_number||`${prefix}-${year}-${String(seq).padStart(4,"0")}`,createdAt:existing?.createdAt||nowIso(),updatedAt:nowIso()}; writeJson(key,existing?rows.map(r=>r._id===id?next:r):[next,...rows]); return next; };
+export const saveSalesReturn = payload => saveReturnRecord(SALES_RETURNS_KEY,"SR",payload);
+export const savePurchaseReturn = payload => saveReturnRecord(PURCHASE_RETURNS_KEY,"PR",payload);
+export const deleteSalesReturn = id => writeJson(SALES_RETURNS_KEY,listSalesReturns().filter(r=>r._id!==id));
+export const deletePurchaseReturn = id => writeJson(PURCHASE_RETURNS_KEY,listPurchaseReturns().filter(r=>r._id!==id));
