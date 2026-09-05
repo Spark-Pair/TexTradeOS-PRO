@@ -77,16 +77,16 @@ export default function Menu() {
   const hasNext = safePage < totalPages - 1;
 
   return (
-    <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col pb-6">
+    <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col pb-8">
       <PageHeader title="Menu" subtitle="Quick access to your business actions." />
 
-      <div className="mb-5 rounded-xl border border-gray-200 bg-white p-3">
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-3 sm:p-4">
         <ModuleSearch value={query} onChange={setQuery} inputRef={searchRef} />
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+      <div className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 lg:p-7">
         {visibleModules.length ? (
-          <div className="grid auto-rows-[138px] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid auto-rows-[156px] grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
             {visibleModules.map((module) => (
               <ModuleActionCard key={module.key} module={module} prominent={PRIMARY_MODULES.has(module.key)} onClick={() => navigate(module.path)} />
             ))}
@@ -99,7 +99,7 @@ export default function Menu() {
         )}
 
         {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-end gap-2 border-t border-gray-100 pt-4">
+          <div className="mt-5 flex items-center justify-end gap-2 border-t border-gray-100 pt-4">
             {hasPrevious && (
               <button type="button" onClick={() => setPage((current) => Math.max(0, current - 1))} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 transition-colors duration-200 hover:border-[#127475]/30 hover:bg-gray-50 hover:text-[#127475] focus:outline-none focus:ring-2 focus:ring-[#127475]/20">
                 <ChevronLeft size={14} /> Previous
