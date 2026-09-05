@@ -7,6 +7,15 @@ export const fetchSetupCommand = (id) => apiClient.get(`/setup/commands/${id}`);
 export const fetchSystemStatus = () => apiClient.get("/system/status");
 export const fetchSystemDiagnostics = () =>
   apiClient.get("/system/diagnostics", { responseType: "blob" });
+export const downloadSystemBackup = (name) =>
+  apiClient.get(`/system/backups/${encodeURIComponent(name)}/download`, { responseType: "blob" });
+export const uploadSystemRestore = (file) =>
+  apiClient.post("/system/restore-upload", file, {
+    headers: {
+      "Content-Type": "application/octet-stream",
+      "x-file-name": encodeURIComponent(file.name),
+    },
+  });
 export const requestSystemCommand = (type, payload = {}) =>
   apiClient.post("/system/commands", { type, ...payload });
 export const fetchSystemCommand = (id) => apiClient.get(`/system/commands/${id}`);
