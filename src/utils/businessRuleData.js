@@ -1,9 +1,9 @@
-import { defaultAccessRules, normalizeAccessRules } from "./accessConfig";
+import { normalizeAccessRules } from "./accessConfig";
 
 export const normalizeRuleData = (raw = {}, referenceData = {}) => ({
   access_rules: normalizeAccessRules(
-    raw?.access_rules || defaultAccessRules(referenceData?.user_roles || []),
-    referenceData?.user_roles || []
+    Array.isArray(raw?.access_rules) ? raw.access_rules : [],
+    Array.isArray(referenceData?.user_roles) ? referenceData.user_roles : []
   ),
 });
 
