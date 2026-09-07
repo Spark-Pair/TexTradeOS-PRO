@@ -53,6 +53,42 @@
     transform:none!important;
     zoom:1!important;
     overflow:visible!important;
+    break-inside:auto!important;
+    page-break-inside:auto!important;
+  }
+  #invoice-print-clone-root .invoice-paper-header,
+  #invoice-print-clone-root .billed-to-section{
+    break-after:avoid!important;
+    page-break-after:avoid!important;
+  }
+  #invoice-print-clone-root .invoice-line-items,
+  #invoice-print-clone-root .invoice-table-wrap,
+  #invoice-print-clone-root .invoice-table,
+  #invoice-print-clone-root .invoice-table tbody{
+    break-inside:auto!important;
+    page-break-inside:auto!important;
+    overflow:visible!important;
+  }
+  #invoice-print-clone-root .invoice-table{
+    border-collapse:collapse!important;
+  }
+  #invoice-print-clone-root .invoice-table thead{
+    display:table-header-group!important;
+  }
+  #invoice-print-clone-root .invoice-table tfoot{
+    display:table-row-group!important;
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
+  }
+  #invoice-print-clone-root .invoice-table tbody tr,
+  #invoice-print-clone-root .invoice-table tfoot tr{
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
+  }
+  #invoice-print-clone-root .invoice-summary,
+  #invoice-print-clone-root .invoice-paper-footer{
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
   }
   #invoice-print-clone-root .invoice-summary-two-column{
     display:grid!important;

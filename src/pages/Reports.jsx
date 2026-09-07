@@ -51,8 +51,30 @@ export default function Reports() {
   };
 
   const clearPreview = () => setData(null);
-  const print = () => data && window.print();
-  const exportPdf = () => data && window.print();
+  useEffect(() => () => removeStatementPrintClone(), []);
+
+  const print = () => {
+    if (!data) return;
+    const source = document.querySelector(".statement-sheet");
+    if (!source) {
+      window.print();
+      return;
+    }
+    removeStatementPrintClone();
+    const printContainer = document.createElement("div");
+    printContainer.id = "statement-print-clone-root";
+    printContainer.appendChild(source.cloneNode(true));
+    document.body.appendChild(printContainer);
+    document.body.classList.add("printing-statement");
+    const cleanup = () => {
+      removeStatementPrintClone();
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.setTimeout(() => window.print(), 0);
+    window.setTimeout(cleanup, 2000);
+  };
+  const exportPdf = () => print();
 
   return <div className="reports-page relative z-10 mx-auto flex h-full max-w-7xl flex-col">
     <PageHeader title="Reporting" subtitle="Generate, review and print detailed account statements." />
@@ -66,8 +88,9 @@ export default function Reports() {
       {loading && <div className="mt-5 flex min-h-64 items-center justify-center gap-2 rounded-3xl border border-gray-200 bg-white text-sm text-gray-500"><Loader2 size={18} className="animate-spin"/> Preparing detailed account statement...</div>}
       {data && <section className="mt-5 overflow-hidden rounded-3xl border border-gray-300 bg-white"><div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-5 py-4 sm:px-6"><div className="min-w-0"><div className="flex items-center gap-2"><span className="rounded-lg bg-teal-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#127475]">{category}</span><p className="truncate text-sm font-bold text-gray-900">{selectedName}</p></div><p className="mt-1 flex items-center gap-1.5 text-xs text-gray-500"><CalendarRange size={13}/>{data.period?.full_statement ? "Full account statement" : `${data.period?.date_from || "Beginning"} to ${data.period?.date_to || "Present"}`} · {data.rows?.length || 0} transactions</p></div><div className="flex flex-wrap gap-2"><Button outline icon={Printer} onClick={print}>Print</Button><Button icon={FileDown} onClick={exportPdf}>Save PDF</Button></div></div><div className="grid grid-cols-2 gap-px border-b border-gray-200 bg-gray-200 lg:grid-cols-4"><Summary label="Opening Balance" value={data.opening_balance}/><Summary label="Total Debit" value={data.totals?.debit}/><Summary label="Total Credit" value={data.totals?.credit}/><Summary label="Closing Balance" value={data.closing_balance} highlight/></div><div className="statement-preview-stage overflow-auto bg-[#e9eeed] p-4 sm:p-5 lg:p-6"><div className="statement-sheet mx-auto min-h-[297mm] w-[210mm] max-w-none bg-white px-[7mm] py-[6mm] shadow-[0_12px_40px_rgba(15,23,42,0.14)]"><StatementPaper data={data} type={category}/></div></div></section>}
     </div>
-    <style>{`@media print{@page{size:A4 portrait;margin:0}html,body,#root{width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;overflow:visible!important;background:#fff!important}body *{visibility:hidden!important}.statement-sheet,.statement-sheet *{visibility:visible!important}.statement-preview-stage{position:static!important;box-sizing:border-box!important;width:auto!important;max-width:none!important;margin:0!important;padding:0!important;overflow:visible!important;background:#fff!important}.statement-sheet{position:absolute!important;left:3mm!important;right:3mm!important;top:3mm!important;box-sizing:border-box!important;width:auto!important;max-width:none!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;background:#fff!important;box-shadow:none!important;overflow:visible!important}.statement-paper{box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:0!important;background:#fff!important;color:#111827!important;overflow:visible!important}.statement-paper .statement-head,.statement-paper .party-block,.statement-paper .statement-final,.statement-paper .statement-footer{box-sizing:border-box!important;max-width:100%!important}.statement-paper table{box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;table-layout:fixed!important}.statement-paper thead{display:table-header-group!important}.statement-paper th,.statement-paper td{box-sizing:border-box!important;min-width:0!important}.statement-row{break-inside:avoid!important;page-break-inside:avoid!important}.statement-head,.party-block{break-after:avoid!important;page-break-after:avoid!important}.statement-final,.statement-footer{break-inside:avoid!important;page-break-inside:avoid!important}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}`}</style>
+    <style>{`@media print{@page{size:A4 portrait;margin:6mm}html,body,#root{width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;overflow:visible!important;background:#fff!important}body.printing-statement>*:not(#statement-print-clone-root){display:none!important}#statement-print-clone-root{display:block!important;width:100%!important;margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important}#statement-print-clone-root,#statement-print-clone-root *{visibility:visible!important}.statement-preview-stage{display:block!important;position:static!important;box-sizing:border-box!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;overflow:visible!important;background:#fff!important}.statement-sheet{display:block!important;position:static!important;box-sizing:border-box!important;width:100%!important;max-width:none!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;background:#fff!important;box-shadow:none!important;overflow:visible!important}.statement-paper{box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:0!important;background:#fff!important;color:#111827!important;overflow:visible!important;break-inside:auto!important;page-break-inside:auto!important}.statement-paper .statement-head,.statement-paper .party-block,.statement-paper .statement-final,.statement-paper .statement-footer{box-sizing:border-box!important;max-width:100%!important}.statement-paper table{box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:separate!important}.statement-paper thead{display:table-header-group!important}.statement-paper tbody{break-inside:auto!important;page-break-inside:auto!important}.statement-paper th,.statement-paper td{box-sizing:border-box!important;min-width:0!important}.statement-row{break-inside:avoid!important;page-break-inside:avoid!important}.statement-head,.party-block{break-after:avoid!important;page-break-after:avoid!important}.statement-final,.statement-footer{break-inside:avoid!important;page-break-inside:avoid!important}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}`}</style>
   </div>;
 }
+function removeStatementPrintClone() { document.getElementById("statement-print-clone-root")?.remove(); document.body.classList.remove("printing-statement"); }
 function DateField({ label, value, onChange }) { return <label className="block"><span className="mb-1.5 block text-sm text-gray-700">{label}</span><input type="date" value={value} onChange={(e) => onChange(e.target.value)} className="h-[42px] w-full rounded-xl border border-gray-400 bg-gray-50 px-3 text-sm text-gray-800 outline-none transition hover:border-gray-500 focus:border-teal-400 focus:ring-2 focus:ring-teal-300" /></label>; }
 function Summary({ label, value, highlight }) { return <div className="bg-white px-5 py-4"><div className="flex items-center gap-2"><UsersRound size={13} className={highlight ? "text-[#127475]" : "text-gray-400"}/><p className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">{label}</p></div><p className={`mt-1.5 text-base font-black tabular-nums ${highlight ? "text-[#127475]" : "text-gray-800"}`}>{money(value)}</p></div>; }
