@@ -1,99 +1,75 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-const VIEWPORT_GAP = 10;
+const VIEWPORT_GAP = 8;
 const TRIGGER_GAP = 6;
 
-export default function ContextMenu({ isOpen, children, onClose }) {
+export default function ContextMenu({ isOpen, children, onClose, anchorEl }) {
   const menuRef = useRef(null);
-  const anchorRef = useRef(null);
+  const triggerRef = useRef(null);
   const closeRef = useRef(onClose);
   const [position, setPosition] = useState(null);
-  const [mounted, setMounted] = useState(false);
 
   closeRef.current = onClose;
 
-  useEffect(() => {
-    setMounted(Boolean(isOpen));
-    if (!isOpen) {
-      anchorRef.current = null;
-      setPosition(null);
-    }
-  }, [isOpen]);
-
-  const dismiss = () => {
-    // Remove the portal from the DOM immediately. Parent state is then reset as well,
-    // so the next trigger click creates a fresh menu instance.
-    setMounted(false);
-    setPosition(null);
-    anchorRef.current = null;
-    closeRef.current?.();
-  };
+  const close = () => closeRef.current?.();
 
   useLayoutEffect(() => {
-    if (!isOpen || !mounted) return undefined;
+    if (!isOpen) {
+      triggerRef.current = null;
+      setPosition(null);
+      return undefined;
+    }
 
     const active = document.activeElement;
-    const anchor = active instanceof HTMLElement ? active.closest("button") : null;
-    if (!anchor) return undefined;
-    anchorRef.current = anchor;
+    const trigger = anchorEl || (active instanceof HTMLElement ? active.closest("button") : null);
+    if (!trigger) return undefined;
+    triggerRef.current = trigger;
 
     const frame = requestAnimationFrame(() => {
-      if (!anchorRef.current || !menuRef.current) return;
-      const a = anchorRef.current.getBoundingClientRect();
-      const m = menuRef.current.getBoundingClientRect();
-      const left = Math.max(VIEWPORT_GAP, Math.min(a.right - m.width, window.innerWidth - m.width - VIEWPORT_GAP));
-      const below = window.innerHeight - a.bottom - VIEWPORT_GAP;
-      const above = a.top - VIEWPORT_GAP;
-      const openAbove = below < m.height + TRIGGER_GAP && above > below;
-      const desiredTop = openAbove ? a.top - m.height - TRIGGER_GAP : a.bottom + TRIGGER_GAP;
-      const top = Math.max(VIEWPORT_GAP, Math.min(desiredTop, window.innerHeight - m.height - VIEWPORT_GAP));
-      setPosition({ top, left });
+      if (!triggerRef.current || !menuRef.current) return;
+      const triggerRect = triggerRef.current.getBoundingClientRect();
+      const menuRect = menuRef.current.getBoundingClientRect();
+      const roomBelow = window.innerHeight - triggerRect.bottom - VIEWPORT_GAP;
+      const roomAbove = triggerRect.top - VIEWPORT_GAP;
+      const openAbove = roomBelow < menuRect.height + TRIGGER_GAP && roomAbove >= menuRect.height + TRIGGER_GAP;
+      const rawTop = openAbove
+        ? triggerRect.top - menuRect.height - TRIGGER_GAP
+        : triggerRect.bottom + TRIGGER_GAP;
+      const rawLeft = triggerRect.right - menuRect.width;
+      setPosition({
+        top: Math.max(VIEWPORT_GAP, Math.min(rawTop, window.innerHeight - menuRect.height - VIEWPORT_GAP)),
+        left: Math.max(VIEWPORT_GAP, Math.min(rawLeft, window.innerWidth - menuRect.width - VIEWPORT_GAP)),
+      });
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [isOpen, mounted]);
+  }, [isOpen, anchorEl]);
 
   useEffect(() => {
-    if (!isOpen || !mounted) return undefined;
+    if (!isOpen) return undefined;
 
-    const keyDown = (event) => {
-      if (event.key !== "Escape" && event.key !== "Esc" && event.code !== "Escape") return;
-      event.preventDefault();
-      dismiss();
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") close();
     };
-
-    const pointerDown = (event) => {
-      if (menuRef.current?.contains(event.target) || anchorRef.current?.contains(event.target)) return;
-      dismiss();
+    const onPointerDown = (event) => {
+      if (menuRef.current?.contains(event.target) || triggerRef.current?.contains(event.target)) return;
+      close();
     };
+    const onScroll = () => close();
 
-    const scrollOrWheel = () => dismiss();
-
-    window.addEventListener("keydown", keyDown, true);
-    document.addEventListener("keydown", keyDown, true);
-    document.addEventListener("pointerdown", pointerDown, true);
-    document.addEventListener("mousedown", pointerDown, true);
-    document.addEventListener("scroll", scrollOrWheel, true);
-    window.addEventListener("scroll", scrollOrWheel, true);
-    document.addEventListener("wheel", scrollOrWheel, true);
-    window.addEventListener("wheel", scrollOrWheel, true);
-    document.addEventListener("touchmove", scrollOrWheel, true);
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("scroll", onScroll, true);
 
     return () => {
-      window.removeEventListener("keydown", keyDown, true);
-      document.removeEventListener("keydown", keyDown, true);
-      document.removeEventListener("pointerdown", pointerDown, true);
-      document.removeEventListener("mousedown", pointerDown, true);
-      document.removeEventListener("scroll", scrollOrWheel, true);
-      window.removeEventListener("scroll", scrollOrWheel, true);
-      document.removeEventListener("wheel", scrollOrWheel, true);
-      window.removeEventListener("wheel", scrollOrWheel, true);
-      document.removeEventListener("touchmove", scrollOrWheel, true);
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("scroll", onScroll, true);
     };
-  }, [isOpen, mounted]);
+  }, [isOpen]);
 
-  if (typeof document === "undefined" || !isOpen || !mounted) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
   return createPortal(
     <div
@@ -101,14 +77,11 @@ export default function ContextMenu({ isOpen, children, onClose }) {
       role="menu"
       style={{
         position: "fixed",
-        top: position?.top ?? -10000,
-        left: position?.left ?? -10000,
+        top: position?.top ?? 0,
+        left: position?.left ?? 0,
         visibility: position ? "visible" : "hidden",
-        transition: "none",
-        animation: "none",
-        transform: "none",
       }}
-      className="z-[9999] w-50 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 text-left shadow-xl !transition-none !duration-0 !animate-none"
+      className="z-[9999] w-52 overflow-hidden rounded-xl border border-gray-200 bg-white p-1.5 text-left shadow-lg"
     >
       {children}
     </div>,
