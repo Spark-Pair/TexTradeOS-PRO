@@ -1,5 +1,4 @@
-/* Keep the original invoice sizing/spacing and balanced font weights.
-   Laser invoices can print on A5 or A4 without forcing a page size. */
+/* Keep the original A5 invoice sizing/spacing and balanced font weights. */
 .invoice-paper .invoice-brand h1{font-weight:700!important}
 .invoice-paper .urdu-inline{font-weight:600!important}
 .invoice-paper .invoice-business-details{font-weight:400!important}
@@ -28,8 +27,49 @@
 .invoice-paper .invoice-agency-credit{font-weight:400!important}
 
 @media print{
-  @page{size:auto!important;margin:0!important}
-  #invoice-print-clone-root .invoice-paper{width:min(136mm,100%)!important;max-width:100%!important}
+  @page{size:A5 portrait!important;margin:0!important}
+  #invoice-print-clone-root,
+  #invoice-print-clone-root #invoice-print-root,
+  #invoice-print-clone-root .invoice-preview-stage,
+  #invoice-print-clone-root .invoice-scale-shell{
+    box-sizing:border-box!important;
+    width:148mm!important;
+    max-width:148mm!important;
+    min-width:148mm!important;
+    margin:0!important;
+    padding:0!important;
+    transform:none!important;
+    zoom:1!important;
+    overflow:visible!important;
+  }
+  #invoice-print-clone-root .invoice-scale-shell{display:block!important}
+  #invoice-print-clone-root .invoice-paper{
+    box-sizing:border-box!important;
+    width:148mm!important;
+    max-width:148mm!important;
+    min-width:148mm!important;
+    margin:0!important;
+    padding:5mm!important;
+    transform:none!important;
+    zoom:1!important;
+    overflow:visible!important;
+  }
+  #invoice-print-clone-root .invoice-summary-two-column{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    width:100%!important;
+    margin-top:7px!important;
+    gap:6px!important;
+    justify-content:stretch!important;
+    align-items:start!important;
+  }
+  #invoice-print-clone-root .invoice-summary-two-column .invoice-totals-panel{
+    box-sizing:border-box!important;
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    margin:0!important;
+  }
   #invoice-print-clone-root .invoice-paper .invoice-brand h1{font-weight:700!important}
   #invoice-print-clone-root .invoice-paper .urdu-inline{font-weight:600!important}
   #invoice-print-clone-root .invoice-paper .invoice-business-details{font-weight:400!important}
