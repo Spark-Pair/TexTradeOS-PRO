@@ -1,5 +1,5 @@
-/* Keep the original A5 invoice sizing/spacing and only align font weights
-   with the reporting statement. Scoped to .invoice-paper; thermal is unchanged. */
+/* Keep the original invoice sizing/spacing and balanced font weights.
+   Laser invoices can print on A5 or A4 without forcing a page size. */
 .invoice-paper .invoice-brand h1{font-weight:700!important}
 .invoice-paper .urdu-inline{font-weight:600!important}
 .invoice-paper .invoice-business-details{font-weight:400!important}
@@ -28,6 +28,8 @@
 .invoice-paper .invoice-agency-credit{font-weight:400!important}
 
 @media print{
+  @page{size:auto!important;margin:0!important}
+  #invoice-print-clone-root .invoice-paper{width:min(136mm,100%)!important;max-width:100%!important}
   #invoice-print-clone-root .invoice-paper .invoice-brand h1{font-weight:700!important}
   #invoice-print-clone-root .invoice-paper .urdu-inline{font-weight:600!important}
   #invoice-print-clone-root .invoice-paper .invoice-business-details{font-weight:400!important}
