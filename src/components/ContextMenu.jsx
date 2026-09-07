@@ -51,7 +51,6 @@ export default function ContextMenu({ isOpen, children, onClose }) {
 
   useEffect(() => {
     if (!isOpen) return undefined;
-
     window.dispatchEvent(new CustomEvent(MENU_OPEN_EVENT, { detail: menuId }));
     const close = () => closeRef.current?.();
     const closeOther = (event) => { if (event.detail !== menuId) close(); };
@@ -70,7 +69,6 @@ export default function ContextMenu({ isOpen, children, onClose }) {
     document.addEventListener("wheel", close, true);
     document.addEventListener("touchmove", close, true);
     window.addEventListener("resize", close);
-
     return () => {
       window.removeEventListener(MENU_OPEN_EVENT, closeOther);
       document.removeEventListener("pointerdown", pointerDown, true);
@@ -96,8 +94,11 @@ export default function ContextMenu({ isOpen, children, onClose }) {
         top: position?.top ?? -10000,
         left: position?.left ?? -10000,
         visibility: position ? "visible" : "hidden",
+        transition: "none",
+        animation: "none",
+        transform: "none",
       }}
-      className="z-[9999] w-50 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 text-left shadow-xl"
+      className="z-[9999] w-50 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 text-left shadow-xl !transition-none !duration-0 !animate-none"
     >
       {children}
     </div>,
