@@ -35,7 +35,7 @@ export default function Layout({ children }) {
           <div className="absolute left-3 top-3 z-30 lg:hidden">
             <button onClick={() => setSidebarOpen(true)} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-teal-200 bg-white text-[#1C7773] shadow-sm active:bg-teal-50" aria-label="Open menu"><Menu className="w-5 h-5" /></button>
           </div>
-          <AnimatePresence mode="wait" initial>
+          <AnimatePresence mode="sync" initial={false}>
             <motion.div key={location.pathname} initial={pageMotion.initial} animate={pageMotion.animate} exit={pageMotion.exit} transition={pageMotion.transition} className="no-default-transition min-h-0 flex-1 overflow-hidden">
               {children || <Outlet />}
             </motion.div>
