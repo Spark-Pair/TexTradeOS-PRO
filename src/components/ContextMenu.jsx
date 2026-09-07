@@ -5,6 +5,18 @@ const MENU_OPEN_EVENT = "textradeos:context-menu-open";
 const VIEWPORT_GAP = 10;
 const TRIGGER_GAP = 6;
 
+function getScrollableAncestors(element) {
+  const ancestors = [];
+  let node = element?.parentElement;
+  while (node && node !== document.body) {
+    const style = window.getComputedStyle(node);
+    const overflow = `${style.overflow} ${style.overflowX} ${style.overflowY}`;
+    if (/(auto|scroll|overlay)/.test(overflow)) ancestors.push(node);
+    node = node.parentElement;
+  }
+  return ancestors;
+}
+
 export default function ContextMenu({ isOpen, children, onClose }) {
   const menuId = useId();
   const menuRef = useRef(null);
@@ -20,22 +32,16 @@ export default function ContextMenu({ isOpen, children, onClose }) {
       setPosition(null);
       return undefined;
     }
-
     const active = document.activeElement;
     const anchor = active instanceof HTMLElement ? active.closest("button") : null;
-    if (!anchor) {
-      closeRef.current?.();
-      return undefined;
-    }
+    if (!anchor) { closeRef.current?.(); return undefined; }
     anchorRef.current = anchor;
-
     let cancelled = false;
     const place = () => {
       if (cancelled || !anchorRef.current || !menuRef.current) return;
       const anchorRect = anchorRef.current.getBoundingClientRect();
       const menuRect = menuRef.current.getBoundingClientRect();
-      const width = menuRect.width;
-      const height = menuRect.height;
+      const width = menuRect.width, height = menuRect.height;
       const left = Math.max(VIEWPORT_GAP, Math.min(anchorRect.right - width, window.innerWidth - width - VIEWPORT_GAP));
       const below = window.innerHeight - anchorRect.bottom - VIEWPORT_GAP;
       const above = anchorRect.top - VIEWPORT_GAP;
@@ -44,7 +50,6 @@ export default function ContextMenu({ isOpen, children, onClose }) {
       const top = Math.max(VIEWPORT_GAP, Math.min(desiredTop, window.innerHeight - height - VIEWPORT_GAP));
       setPosition({ top, left });
     };
-
     const frame = requestAnimationFrame(place);
     return () => { cancelled = true; cancelAnimationFrame(frame); };
   }, [isOpen]);
@@ -59,6 +64,7 @@ export default function ContextMenu({ isOpen, children, onClose }) {
       close();
     };
     const keyDown = (event) => { if (event.key === "Escape") close(); };
+    const scrollParents = getScrollableAncestors(anchorRef.current);
 
     window.addEventListener(MENU_OPEN_EVENT, closeOther);
     document.addEventListener("pointerdown", pointerDown, true);
@@ -69,6 +75,8 @@ export default function ContextMenu({ isOpen, children, onClose }) {
     document.addEventListener("wheel", close, true);
     document.addEventListener("touchmove", close, true);
     window.addEventListener("resize", close);
+    scrollParents.forEach((element) => element.addEventListener("scroll", close, { passive: true }));
+
     return () => {
       window.removeEventListener(MENU_OPEN_EVENT, closeOther);
       document.removeEventListener("pointerdown", pointerDown, true);
@@ -79,29 +87,10 @@ export default function ContextMenu({ isOpen, children, onClose }) {
       document.removeEventListener("wheel", close, true);
       document.removeEventListener("touchmove", close, true);
       window.removeEventListener("resize", close);
+      scrollParents.forEach((element) => element.removeEventListener("scroll", close));
     };
   }, [isOpen, menuId]);
 
   if (typeof document === "undefined" || !isOpen) return null;
-
-  return createPortal(
-    <div
-      ref={menuRef}
-      role="menu"
-      onClick={(event) => event.stopPropagation()}
-      style={{
-        position: "fixed",
-        top: position?.top ?? -10000,
-        left: position?.left ?? -10000,
-        visibility: position ? "visible" : "hidden",
-        transition: "none",
-        animation: "none",
-        transform: "none",
-      }}
-      className="z-[9999] w-50 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 text-left shadow-xl !transition-none !duration-0 !animate-none"
-    >
-      {children}
-    </div>,
-    document.body,
-  );
+  return createPortal(<div ref={menuRef} role="menu" onClick={(event)=>event.stopPropagation()} style={{position:"fixed",top:position?.top??-10000,left:position?.left??-10000,visibility:position?"visible":"hidden",transition:"none",animation:"none",transform:"none"}} className="z-[9999] w-50 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 text-left shadow-xl !transition-none !duration-0 !animate-none">{children}</div>,document.body);
 }
