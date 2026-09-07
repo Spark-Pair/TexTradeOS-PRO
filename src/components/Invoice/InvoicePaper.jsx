@@ -1,5 +1,6 @@
 import { formatDate } from "../../utils";
 import InvoiceTable from "./InvoiceTable";
+import "./invoiceTypography.css";
 
 export default function InvoicePaper({
   invoice,
