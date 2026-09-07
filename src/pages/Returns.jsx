@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Banknote, PackageCheck, Plus, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
+import { AlertTriangle, Banknote, Eye, PackageCheck, Plus, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
 import Modal from "../components/Modal";
 import Button from "../components/Button";
 import Select from "../components/Select";
@@ -8,13 +8,14 @@ import PageHeader from "../components/PageHeader";
 import StatCard from "../components/StatCard";
 import ReturnEditor, { returnTotals } from "../components/Returns/ReturnEditor";
 import TableToolbar from "../components/table/TableToolbar";
-import { createReturn, fetchReturns, fetchSalesReturnable, removeReturn } from "../api/returns.api";
+import { createReturn, fetchReturn, fetchReturns, fetchSalesReturnable, removeReturn } from "../api/returns.api";
 import { fetchCustomers, fetchInventory, fetchSuppliers } from "../api/commerce";
 import { useToast } from "../context/ToastContext";
 
 const PAGE_SIZE = 12;
 const today = () => new Date().toISOString().slice(0, 10);
 const n = (value) => Number(value || 0) || 0;
+const money = (value) => n(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const message = (error, fallback) => error?.response?.data?.message || error?.message || fallback;
 
 export default function Returns({ type = "sales" }) {
@@ -36,161 +37,33 @@ export default function Returns({ type = "sales" }) {
   const [inventoryError, setInventoryError] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [details, setDetails] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
   const loadData = useCallback(async () => {
-    setLoading(true);
-    setLoadError("");
+    setLoading(true); setLoadError("");
     try {
-      const [returnRows, partyRows, inventoryRows] = await Promise.all([
-        fetchReturns(type),
-        sales ? fetchCustomers() : fetchSuppliers(),
-        sales ? Promise.resolve([]) : fetchInventory(),
-      ]);
-      setRecords(Array.isArray(returnRows) ? returnRows : []);
-      setParties(Array.isArray(partyRows) ? partyRows : []);
-      setPurchaseInventory(Array.isArray(inventoryRows) ? inventoryRows : []);
-    } catch (error) {
-      setRecords([]);
-      setParties([]);
-      setPurchaseInventory([]);
-      setLoadError(message(error, "Could not load returns from the server."));
-    } finally {
-      setLoading(false);
-    }
+      const [returnRows, partyRows, inventoryRows] = await Promise.all([fetchReturns(type), sales ? fetchCustomers() : fetchSuppliers(), sales ? Promise.resolve([]) : fetchInventory()]);
+      setRecords(Array.isArray(returnRows) ? returnRows : []); setParties(Array.isArray(partyRows) ? partyRows : []); setPurchaseInventory(Array.isArray(inventoryRows) ? inventoryRows : []);
+    } catch (error) { setRecords([]); setParties([]); setPurchaseInventory([]); setLoadError(message(error, "Could not load returns from the server.")); }
+    finally { setLoading(false); }
   }, [sales, type]);
-
   useEffect(() => { loadData(); }, [loadData]);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!sales || !party) {
-      setReturnable([]);
-      setInventoryError("");
-      return undefined;
-    }
-    setInventoryLoading(true);
-    setInventoryError("");
-    fetchSalesReturnable(party)
-      .then((items) => { if (!cancelled) setReturnable(Array.isArray(items) ? items : []); })
-      .catch((error) => {
-        if (!cancelled) {
-          setReturnable([]);
-          setInventoryError(message(error, "Could not load this customer's returnable articles."));
-        }
-      })
-      .finally(() => { if (!cancelled) setInventoryLoading(false); });
-    return () => { cancelled = true; };
-  }, [party, sales, records]);
-
-  const partyOptions = useMemo(() => parties
-    .filter((item) => item.isActive !== false)
-    .map((item) => ({ value: item._id, label: sales ? item.customer_name : item.supplier_name })), [parties, sales]);
-
-  const inventory = useMemo(() => {
-    if (sales) return returnable;
-    if (!party) return [];
-    return purchaseInventory
-      .filter((article) => article.supplier_id === party && n(article.stock_pcs) > 0)
-      .map((article) => ({
-        ...article,
-        available_pcs: n(article.stock_pcs),
-        pcs: n(article.stock_pcs),
-        rate: n(article.purchase_rate),
-        source_id: article.purchase_id,
-      }));
-  }, [party, purchaseInventory, returnable, sales]);
-
-  const totals = returnTotals(rows, adjustment);
-  const totalPages = Math.max(1, Math.ceil(records.length / PAGE_SIZE));
-  const pageRecords = records.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const totalAmount = records.reduce((sum, record) => sum + n(record.total_amount), 0);
-  const totalPcs = records.reduce((sum, record) => sum + n(record.total_pcs), 0);
-
-  useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages); }, [currentPage, totalPages]);
-
-  const resetForm = () => {
-    setParty("");
-    setRows([]);
-    setAdjustment({ type: "none", value: "" });
-    setDate(today());
-    setReturnable([]);
-    setInventoryError("");
-  };
-  const close = () => { if (!saving) { setOpen(false); resetForm(); } };
-
-  const save = async () => {
-    if (!party || !rows.length || saving) return;
-    const partyObj = parties.find((item) => item._id === party);
-    setSaving(true);
-    try {
-      await createReturn(type, {
-        return_date: date,
-        party_id: party,
-        party_name: sales ? partyObj?.customer_name : partyObj?.supplier_name,
-        articles: rows,
-        adjustment,
-        stock_action: String(adjustment.type || "").startsWith("keep_") ? "keep_goods" : "return_stock",
-      });
-      setOpen(false);
-      resetForm();
-      await loadData();
-      showToast({ type: "success", message: sales ? "Sales return saved" : "Purchase return saved" });
-    } catch (error) {
-      const text = message(error, "Could not save return.");
-      setInventoryError(text);
-      showToast({ type: "error", message: text });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteRecord = async (record) => {
-    const id = record.id ?? record._id;
-    if (!id || deletingId) return;
-    setDeletingId(id);
-    try {
-      await removeReturn(type, id);
-      await loadData();
-      showToast({ type: "success", message: "Return deleted" });
-    } catch (error) {
-      showToast({ type: "error", message: message(error, "Could not delete return.") });
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  return (
-    <>
-      <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col">
-        <PageHeader title={sales ? "Sales Returns" : "Purchase Returns"} subtitle={sales ? "Manage customer returns and return settlements." : "Manage supplier returns, stock returns and allowances."} actionLabel={sales ? "Add Sales Return" : "Add Purchase Return"} actionIcon={Plus} onAction={() => setOpen(true)} />
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <StatCard label="Total Returns" value={records.length} icon={RotateCcw} />
-          <StatCard label="Returned Pieces" value={totalPcs} icon={PackageCheck} variant="warning" />
-          <StatCard label="Return Amount" value={totalAmount.toFixed(2)} icon={Banknote} variant="success" />
-        </div>
-        <div className="flex flex-1 flex-col overflow-hidden rounded-3xl border border-gray-300 bg-white">
-          <TableToolbar currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-          {loading ? (
-            <div className="flex flex-1 items-center justify-center text-sm text-gray-500">Loading returns…</div>
-          ) : loadError ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center"><AlertTriangle size={28} className="text-amber-500" /><div><p className="font-semibold text-gray-800">Return data unavailable</p><p className="mt-1 text-sm text-gray-500">{loadError}</p><p className="mt-1 text-xs text-gray-400">No local, cached, or demo business data will be shown.</p></div><Button outline icon={RefreshCw} onClick={loadData}>Retry</Button></div>
-          ) : (
-            <>
-              <div className="grid gap-2 overflow-auto p-3 md:hidden">
-                {pageRecords.length === 0 ? <div className="py-12 text-center text-sm text-gray-400">No returns found.</div> : pageRecords.map((record) => { const id = record.id ?? record._id; return <div key={id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-gray-900">{record.return_number}</p><p className="mt-0.5 text-xs text-gray-500">{record.return_date}</p></div><span className="rounded-lg bg-red-50 px-2.5 py-1 text-sm font-bold text-red-600">-{n(record.total_amount).toFixed(2)}</span></div><p className="mt-3 truncate text-sm font-semibold text-gray-700">{record.party_name}</p><div className="mt-3 flex items-center gap-4 border-t border-gray-100 pt-3 text-xs text-gray-500"><span><strong className="text-gray-800">{record.total_pcs}</strong> pcs</span><button type="button" disabled={deletingId === id} onClick={() => deleteRecord(record)} className="ml-auto rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40"><Trash2 className="h-4 w-4" /></button></div></div>; })}
-              </div>
-              <div className="hidden flex-1 overflow-auto md:block"><table className="w-full border-collapse text-left"><thead className="sticky top-0 z-20 bg-gray-100"><tr className="text-sm tracking-wider text-gray-500"><th className="px-5 py-3.5 font-medium">#</th><th className="px-5 py-3.5 font-medium">Return No</th><th className="px-5 py-3.5 font-medium">Date</th><th className="px-5 py-3.5 font-medium">{sales ? "Customer" : "Supplier"}</th><th className="px-5 py-3.5 font-medium">Pieces</th><th className="px-5 py-3.5 font-medium">Amount</th><th className="px-5 py-3.5 font-medium text-right">Actions</th></tr></thead><tbody className="divide-y divide-gray-200">{pageRecords.length === 0 ? <tr><td colSpan={7} className="px-7 py-16 text-center text-sm text-gray-400">No returns found.</td></tr> : pageRecords.map((record, index) => { const id = record.id ?? record._id; return <tr key={id} className="hover:bg-teal-50/50"><td className="px-5 py-4 text-sm text-gray-500">{(currentPage - 1) * PAGE_SIZE + index + 1}</td><td className="px-5 py-4 text-sm font-semibold text-gray-700">{record.return_number}</td><td className="px-5 py-4 text-sm text-gray-600">{record.return_date}</td><td className="px-5 py-4 text-sm font-semibold text-gray-800">{record.party_name}</td><td className="px-5 py-4 text-sm text-gray-600">{record.total_pcs}</td><td className="px-5 py-4 text-sm font-semibold text-red-600">-{n(record.total_amount).toFixed(2)}</td><td className="px-5 py-4 text-right"><button type="button" disabled={deletingId === id} onClick={() => deleteRecord(record)} className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40" aria-label="Delete return"><Trash2 className="h-4 w-4" /></button></td></tr>; })}</tbody></table></div>
-            </>
-          )}
-        </div>
-      </div>
-
-      <Modal isOpen={open} onClose={close} maxWidth="max-w-5xl" title={sales ? "Add Sales Return" : "Add Purchase Return"} subtitle={sales ? "Select the customer, then add the goods being returned." : "Select the supplier, then return stock or record an allowance."} footer={<div className="flex w-full justify-end gap-3"><Button outline variant="secondary" onClick={close} disabled={saving}>Discard</Button><Button onClick={save} disabled={!party || !rows.length || saving} loading={saving}>Save Return</Button></div>}>
-        <div className="grid gap-5">
-          <section><div className="mb-3 flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#127475] text-xs font-bold text-white">1</span><div><p className="text-xs font-semibold uppercase tracking-wider text-gray-600">Return Details</p><p className="text-[11px] text-gray-400">Choose who this return belongs to and the return date.</p></div></div><div className="grid gap-3 md:grid-cols-2"><Select label={sales ? "Customer" : "Supplier"} value={party} onChange={(value) => { setParty(value); setRows([]); setAdjustment({ type: "none", value: "" }); }} options={partyOptions} placeholder={`Choose ${sales ? "customer" : "supplier"}`} /><Input label="Return Date" type="date" value={date} onChange={(event) => setDate(event.target.value)} /></div></section>
-          <section className={!party ? "pointer-events-none opacity-45" : ""}><div className="mb-3 flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#127475] text-xs font-bold text-white">2</span><div><p className="text-xs font-semibold uppercase tracking-wider text-gray-600">Returned Articles</p><p className="text-[11px] text-gray-400">Add actual pieces and choose how the return amount should be settled.</p></div></div>{inventoryError && <p className="mb-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">{inventoryError}</p>}<ReturnEditor title={sales ? "Customer Sold Articles" : "Purchased Articles"} subtitle={inventoryLoading ? "Loading returnable articles..." : sales ? "Search this customer's sold articles or scan a label." : "Search current DB stock received from this supplier."} inventory={inventory} rows={rows} onChange={setRows} adjustment={adjustment} onAdjustmentChange={setAdjustment} allowKeepGoods={!sales} /></section>
-        </div>
-      </Modal>
-    </>
-  );
+  useEffect(() => { let cancelled=false;if(!sales||!party){setReturnable([]);setInventoryError("");return undefined;}setInventoryLoading(true);setInventoryError("");fetchSalesReturnable(party).then((items)=>{if(!cancelled)setReturnable(Array.isArray(items)?items:[]);}).catch((error)=>{if(!cancelled){setReturnable([]);setInventoryError(message(error,"Could not load this customer's returnable articles."));}}).finally(()=>{if(!cancelled)setInventoryLoading(false);});return()=>{cancelled=true;};}, [party,sales,records]);
+  const partyOptions=useMemo(()=>parties.filter((item)=>item.isActive!==false).map((item)=>({value:item._id,label:sales?item.customer_name:item.supplier_name})),[parties,sales]);
+  const inventory=useMemo(()=>{if(sales)return returnable;if(!party)return[];return purchaseInventory.filter((article)=>article.supplier_id===party&&n(article.stock_pcs)>0).map((article)=>({...article,available_pcs:n(article.stock_pcs),pcs:n(article.stock_pcs),rate:n(article.purchase_rate),source_id:article.purchase_id}));},[party,purchaseInventory,returnable,sales]);
+  const totalPages=Math.max(1,Math.ceil(records.length/PAGE_SIZE));const pageRecords=records.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);const totalAmount=records.reduce((sum,record)=>sum+n(record.total_amount),0);const totalPcs=records.reduce((sum,record)=>sum+n(record.total_pcs),0);
+  useEffect(()=>{if(currentPage>totalPages)setCurrentPage(totalPages);},[currentPage,totalPages]);
+  const resetForm=()=>{setParty("");setRows([]);setAdjustment({type:"none",value:""});setDate(today());setReturnable([]);setInventoryError("");};
+  const close=()=>{if(!saving){setOpen(false);resetForm();}};
+  const save=async()=>{if(!party||!rows.length||saving)return;const partyObj=parties.find((item)=>item._id===party);setSaving(true);try{await createReturn(type,{return_date:date,party_id:party,party_name:sales?partyObj?.customer_name:partyObj?.supplier_name,articles:rows,adjustment,stock_action:String(adjustment.type||"").startsWith("keep_")?"keep_goods":"return_stock"});setOpen(false);resetForm();await loadData();showToast({type:"success",message:sales?"Sales return saved":"Purchase return saved"});}catch(error){const text=message(error,"Could not save return.");setInventoryError(text);showToast({type:"error",message:text});}finally{setSaving(false);}};
+  const openDetails=async(record)=>{const id=record.id??record._id;if(!id)return;setDetailsLoading(true);try{setDetails(await fetchReturn(type,id));}catch(error){showToast({type:"error",message:message(error,"Could not load return details.")});}finally{setDetailsLoading(false);}};
+  const deleteRecord=async(record)=>{const id=record.id??record._id;if(!id||deletingId)return;setDeletingId(id);try{await removeReturn(type,id);if(details&&(details.id??details._id)===id)setDetails(null);await loadData();showToast({type:"success",message:"Return deleted"});}catch(error){showToast({type:"error",message:message(error,"Could not delete return.")});}finally{setDeletingId(null);}};
+  return <>
+    <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col"><PageHeader title={sales?"Sales Returns":"Purchase Returns"} subtitle={sales?"Manage customer returns and return settlements.":"Manage supplier returns, stock returns and allowances."} actionLabel={sales?"Add Sales Return":"Add Purchase Return"} actionIcon={Plus} onAction={()=>setOpen(true)}/><div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3"><StatCard label="Total Returns" value={records.length} icon={RotateCcw}/><StatCard label="Returned Pieces" value={totalPcs} icon={PackageCheck} variant="warning"/><StatCard label="Return Amount" value={totalAmount.toFixed(2)} icon={Banknote} variant="success"/></div><div className="flex flex-1 flex-col overflow-hidden rounded-3xl border border-gray-300 bg-white"><TableToolbar currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage}/>{loading?<div className="flex flex-1 items-center justify-center text-sm text-gray-500">Loading returns…</div>:loadError?<div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center"><AlertTriangle size={28} className="text-amber-500"/><div><p className="font-semibold text-gray-800">Return data unavailable</p><p className="mt-1 text-sm text-gray-500">{loadError}</p></div><Button outline icon={RefreshCw} onClick={loadData}>Retry</Button></div>:<><div className="grid gap-2 overflow-auto p-3 md:hidden">{pageRecords.length===0?<div className="py-12 text-center text-sm text-gray-400">No returns found.</div>:pageRecords.map((record)=>{const id=record.id??record._id;return <button type="button" onClick={()=>openDetails(record)} key={id} className="rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-gray-900">{record.return_number}</p><p className="mt-0.5 text-xs text-gray-500">{record.return_date}</p></div><span className="rounded-lg bg-red-50 px-2.5 py-1 text-sm font-bold text-red-600">-{money(record.total_amount)}</span></div><p className="mt-3 truncate text-sm font-semibold text-gray-700">{record.party_name}</p><p className="mt-3 border-t border-gray-100 pt-3 text-xs text-gray-500"><strong className="text-gray-800">{record.total_pcs}</strong> pcs · Tap for full details</p></button>;})}</div><div className="hidden flex-1 overflow-auto md:block"><table className="w-full border-collapse text-left"><thead className="sticky top-0 z-20 bg-gray-100"><tr className="text-sm tracking-wider text-gray-500"><th className="px-5 py-3.5 font-medium">#</th><th className="px-5 py-3.5 font-medium">Return No</th><th className="px-5 py-3.5 font-medium">Date</th><th className="px-5 py-3.5 font-medium">{sales?"Customer":"Supplier"}</th><th className="px-5 py-3.5 font-medium">Pieces</th><th className="px-5 py-3.5 font-medium">Amount</th><th className="px-5 py-3.5 font-medium text-right">Actions</th></tr></thead><tbody className="divide-y divide-gray-200">{pageRecords.length===0?<tr><td colSpan={7} className="px-7 py-16 text-center text-sm text-gray-400">No returns found.</td></tr>:pageRecords.map((record,index)=>{const id=record.id??record._id;return <tr key={id} onClick={()=>openDetails(record)} className="cursor-pointer hover:bg-teal-50/50"><td className="px-5 py-4 text-sm text-gray-500">{(currentPage-1)*PAGE_SIZE+index+1}</td><td className="px-5 py-4 text-sm font-semibold text-gray-700">{record.return_number}</td><td className="px-5 py-4 text-sm text-gray-600">{record.return_date}</td><td className="px-5 py-4 text-sm font-semibold text-gray-800">{record.party_name}</td><td className="px-5 py-4 text-sm text-gray-600">{record.total_pcs}</td><td className="px-5 py-4 text-sm font-semibold text-red-600">-{money(record.total_amount)}</td><td className="px-5 py-4 text-right"><div className="flex justify-end gap-1"><button type="button" onClick={(e)=>{e.stopPropagation();openDetails(record);}} className="rounded-lg p-2 text-gray-400 hover:bg-teal-50 hover:text-teal-700" aria-label="View return"><Eye className="h-4 w-4"/></button><button type="button" disabled={deletingId===id} onClick={(e)=>{e.stopPropagation();deleteRecord(record);}} className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40" aria-label="Delete return"><Trash2 className="h-4 w-4"/></button></div></td></tr>;})}</tbody></table></div></>}</div></div>
+    <Modal isOpen={open} onClose={close} maxWidth="max-w-5xl" title={sales?"Add Sales Return":"Add Purchase Return"} subtitle={sales?"Select the customer, then add the goods being returned.":"Select the supplier, then return stock or record an allowance."} footer={<div className="flex w-full justify-end gap-3"><Button outline variant="secondary" onClick={close} disabled={saving}>Discard</Button><Button onClick={save} disabled={!party||!rows.length||saving} loading={saving}>Save Return</Button></div>}><div className="grid gap-5"><section><div className="mb-3 flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#127475] text-xs font-bold text-white">1</span><div><p className="text-xs font-semibold uppercase tracking-wider text-gray-600">Return Details</p><p className="text-[11px] text-gray-400">Choose who this return belongs to and the return date.</p></div></div><div className="grid gap-3 md:grid-cols-2"><Select label={sales?"Customer":"Supplier"} value={party} onChange={(value)=>{setParty(value);setRows([]);setAdjustment({type:"none",value:""});}} options={partyOptions} placeholder={`Choose ${sales?"customer":"supplier"}`}/><Input label="Return Date" type="date" value={date} onChange={(event)=>setDate(event.target.value)}/></div></section><section className={!party?"pointer-events-none opacity-45":""}><div className="mb-3 flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#127475] text-xs font-bold text-white">2</span><div><p className="text-xs font-semibold uppercase tracking-wider text-gray-600">Returned Articles</p><p className="text-[11px] text-gray-400">Add actual pieces and choose how the return amount should be settled.</p></div></div>{inventoryError&&<p className="mb-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">{inventoryError}</p>}<ReturnEditor title={sales?"Customer Sold Articles":"Purchased Articles"} subtitle={inventoryLoading?"Loading returnable articles...":sales?"Search this customer's sold articles or scan a label.":"Search current DB stock received from this supplier."} inventory={inventory} rows={rows} onChange={setRows} adjustment={adjustment} onAdjustmentChange={setAdjustment} allowKeepGoods={!sales}/></section></div></Modal>
+    <Modal isOpen={Boolean(details)||detailsLoading} onClose={()=>{if(!detailsLoading)setDetails(null);}} maxWidth="max-w-5xl" title={details?.return_number||"Return Details"} subtitle={detailsLoading?"Loading complete return details...":`${sales?"Sales":"Purchase"} return · ${details?.return_date||""}`} footer={details?<div className="flex w-full justify-end"><Button outline onClick={()=>setDetails(null)}>Close</Button></div>:null}>{detailsLoading&&!details?<div className="py-16 text-center text-sm text-gray-500">Loading return details…</div>:details?<ReturnDetails record={details} sales={sales}/>:null}</Modal>
+  </>;
 }
+function ReturnDetails({record,sales}){const articles=Array.isArray(record.articles)?record.articles:[];const keepGoods=!sales&&record.stock_action==="keep_goods";return <div className="grid gap-5"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Detail label="Return No" value={record.return_number}/><Detail label="Date" value={record.return_date}/><Detail label={sales?"Customer":"Supplier"} value={record.party_name}/><Detail label="Settlement" value={sales?"Goods returned by customer":keepGoods?"Goods kept · supplier allowance":"Goods returned to supplier"}/>{record.linked_invoice_id&&<Detail label="Linked Invoice" value={`#${record.linked_invoice_id}`}/>} {record.linked_purchase_id&&<Detail label="Linked Purchase" value={`#${record.linked_purchase_id}`}/>}<Detail label="Total PCs" value={record.total_pcs}/><Detail label={keepGoods?"Supplier Less":"Return Amount"} value={`Rs ${money(record.total_amount)}`}/></div><div className="overflow-hidden rounded-2xl border border-gray-300"><div className="border-b border-gray-200 bg-gray-50 px-4 py-3"><p className="text-sm font-semibold text-gray-800">Articles</p></div><div className="overflow-auto"><table className="w-full min-w-[800px] text-left text-sm"><thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500"><tr><th className="px-4 py-3">Article</th><th className="px-4 py-3">Purchase No</th><th className="px-4 py-3">Description</th><th className="px-4 py-3 text-right">PCs</th><th className="px-4 py-3 text-right">Rate</th><th className="px-4 py-3 text-right">Gross</th><th className="px-4 py-3 text-right">Discount</th><th className="px-4 py-3 text-right">Amount</th></tr></thead><tbody className="divide-y divide-gray-200">{articles.map((item,index)=><tr key={item.id||`${item.article_no}-${index}`}><td className="px-4 py-3 font-semibold text-teal-700">{item.article_no||"-"}</td><td className="px-4 py-3 text-gray-600">{item.purchase_number||"-"}</td><td className="px-4 py-3 text-gray-700">{item.description||"-"}</td><td className="px-4 py-3 text-right tabular-nums">{n(item.pcs)}</td><td className="px-4 py-3 text-right tabular-nums">{money(item.rate)}</td><td className="px-4 py-3 text-right tabular-nums">{money(item.gross_amount)}</td><td className="px-4 py-3 text-right">{item.discount||"-"}</td><td className="px-4 py-3 text-right font-semibold tabular-nums">{money(item.amount)}</td></tr>)}</tbody></table></div></div><div className="grid gap-3 md:grid-cols-4"><Detail label="Gross Amount" value={`Rs ${money(record.gross_amount)}`}/><Detail label={keepGoods?"Allowance / Less":"Adjustment / Discount"} value={record.adjustment_input||record.adjustment_value?`${record.adjustment_input||record.adjustment_value}`:"-"}/><Detail label="Adjustment Amount" value={`Rs ${money(record.adjustment_amount)}`}/><Detail label={keepGoods?"Supplier Less":"Final Return Amount"} value={`Rs ${money(record.total_amount)}`} strong/></div>{record.notes&&<div className="rounded-2xl border border-gray-200 bg-gray-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Notes</p><p className="mt-1 text-sm text-gray-700">{record.notes}</p></div>}</div>;}
+function Detail({label,value,strong=false}){return <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3"><p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">{label}</p><p className={`mt-1 break-words text-sm ${strong?"font-bold text-gray-900":"font-semibold text-gray-700"}`}>{value??"-"}</p></div>;}
