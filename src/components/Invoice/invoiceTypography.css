@@ -1,0 +1,51 @@
+/* A5 invoice typography aligned with the reporting statement.
+   Scoped to .invoice-paper so the 80mm thermal layout is unchanged. */
+.invoice-paper{font-size:11.1px!important;line-height:1.38!important}
+.invoice-paper .invoice-brand h1{font-size:27px!important;font-weight:700!important;letter-spacing:-.45px!important;line-height:1!important}
+.invoice-paper .urdu-inline{font-weight:600!important}
+.invoice-paper .invoice-business-details{font-size:10px!important;font-weight:400!important;line-height:1.38!important}
+.invoice-paper .invoice-salesman-line{font-size:10.5px!important;font-weight:600!important}
+.invoice-paper .invoice-document-type{font-size:13.5px!important;font-weight:700!important}
+.invoice-paper .invoice-number-box dt{font-size:9.5px!important;font-weight:600!important}
+.invoice-paper .invoice-number-box dd{font-size:10px!important;font-weight:600!important}
+.invoice-paper .section-label,.invoice-paper .customer-topline{font-size:9.4px!important;font-weight:700!important}
+.invoice-paper .billed-to-section h2{font-size:18px!important;font-weight:700!important;line-height:1!important}
+.invoice-paper .customer-contact-line{font-size:10.3px!important;font-weight:400!important;line-height:1.35!important}
+.invoice-paper .invoice-table{font-size:10.7px!important}
+.invoice-paper .invoice-table th{font-size:9.8px!important;font-weight:700!important;padding-top:6px!important;padding-bottom:6px!important}
+.invoice-paper .invoice-table td{font-size:10.7px!important;font-weight:400!important;padding-top:5.5px!important;padding-bottom:5.5px!important}
+.invoice-paper .invoice-table .description{font-size:10.7px!important;font-weight:600!important}
+.invoice-paper .invoice-table .amount{font-weight:600!important}
+.invoice-paper .invoice-table .row-number{font-size:9.3px!important;font-weight:600!important}
+.invoice-paper .invoice-table tfoot td{font-size:10px!important;font-weight:600!important}
+.invoice-paper .summary-row{font-size:10.8px!important;min-height:30px!important;padding:5px 10px!important}
+.invoice-paper .invoice-totals-panel span{font-size:10.8px!important;font-weight:400!important}
+.invoice-paper .invoice-totals-panel strong{font-size:10.8px!important;font-weight:600!important}
+.invoice-paper .invoice-totals-panel .invoice-emphasis-row span,.invoice-paper .invoice-totals-panel .invoice-emphasis-row strong{font-weight:600!important}
+.invoice-paper .invoice-totals-panel .invoice-emphasis-row strong,.invoice-paper .invoice-totals-panel .invoice-total-row strong{font-size:11.7px!important;font-weight:600!important}
+.invoice-paper .invoice-totals-panel .invoice-total-row span,.invoice-paper .invoice-totals-panel .invoice-total-row strong{font-weight:600!important}
+.invoice-paper .invoice-thanks,.invoice-paper .invoice-system-credit{font-size:9.8px!important;font-weight:600!important}
+.invoice-paper .invoice-footer-note,.invoice-paper .invoice-agency-credit{font-size:9.2px!important;font-weight:400!important;color:#475569!important}
+
+@media print{
+  #invoice-print-clone-root .invoice-paper{font-size:11.1px!important;line-height:1.38!important}
+  #invoice-print-clone-root .invoice-paper .invoice-brand h1{font-size:27px!important;font-weight:700!important}
+  #invoice-print-clone-root .invoice-paper .invoice-business-details{font-size:10px!important;font-weight:400!important}
+  #invoice-print-clone-root .invoice-paper .invoice-salesman-line{font-size:10.5px!important;font-weight:600!important}
+  #invoice-print-clone-root .invoice-paper .invoice-document-type{font-size:13.5px!important;font-weight:700!important}
+  #invoice-print-clone-root .invoice-paper .invoice-number-box dt{font-size:9.5px!important;font-weight:600!important}
+  #invoice-print-clone-root .invoice-paper .invoice-number-box dd{font-size:10px!important;font-weight:600!important}
+  #invoice-print-clone-root .invoice-paper .section-label,#invoice-print-clone-root .invoice-paper .customer-topline{font-size:9.4px!important;font-weight:700!important}
+  #invoice-print-clone-root .invoice-paper .billed-to-section h2{font-size:18px!important;font-weight:700!important;line-height:1!important}
+  #invoice-print-clone-root .invoice-paper .customer-contact-line{font-size:10.3px!important;font-weight:400!important}
+  #invoice-print-clone-root .invoice-paper .invoice-table th{font-size:9.8px!important;font-weight:700!important}
+  #invoice-print-clone-root .invoice-paper .invoice-table td{font-size:10.7px!important;font-weight:400!important}
+  #invoice-print-clone-root .invoice-paper .invoice-table .description,#invoice-print-clone-root .invoice-paper .invoice-table .amount{font-weight:600!important}
+  #invoice-print-clone-root .invoice-paper .invoice-table .row-number{font-size:9.3px!important;font-weight:600!important}
+  #invoice-print-clone-root .invoice-paper .invoice-table tfoot td{font-size:10px!important;font-weight:600!important}
+  #invoice-print-clone-root .invoice-paper .invoice-totals-panel span{font-size:10.8px!important;font-weight:400!important}
+  #invoice-print-clone-root .invoice-paper .invoice-totals-panel strong{font-size:10.8px!important;font-weight:600!important}
+  #invoice-print-clone-root .invoice-paper .invoice-totals-panel .invoice-emphasis-row strong,#invoice-print-clone-root .invoice-paper .invoice-totals-panel .invoice-total-row strong{font-size:11.7px!important;font-weight:600!important}
+  #invoice-print-clone-root .invoice-paper .invoice-thanks,#invoice-print-clone-root .invoice-paper .invoice-system-credit{font-size:9.8px!important;font-weight:600!important}
+  #invoice-print-clone-root .invoice-paper .invoice-footer-note,#invoice-print-clone-root .invoice-paper .invoice-agency-credit{font-size:9.2px!important;font-weight:400!important}
+}
