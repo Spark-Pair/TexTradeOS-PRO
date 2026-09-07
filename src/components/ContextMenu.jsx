@@ -23,7 +23,8 @@ export default function ContextMenu({ isOpen, children, onClose }) {
   const closeRef = useRef(onClose);
   const [position, setPosition] = useState(null);
 
-  useEffect(() => { closeRef.current = onClose; }, [onClose]);
+  // Keep the latest close handler available synchronously, including the first open render.
+  closeRef.current = onClose;
 
   useLayoutEffect(() => {
     if (!isOpen) {
@@ -62,21 +63,25 @@ export default function ContextMenu({ isOpen, children, onClose }) {
       if (menuRef.current?.contains(event.target) || anchorRef.current?.contains(event.target)) return;
       close();
     };
-    const keyDown = (event) => { if (event.key === "Escape") close(); };
+    const keyDown = (event) => {
+      if (event.key !== "Escape" && event.key !== "Esc" && event.code !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      close();
+    };
     const ancestors = getAncestors(anchorRef.current);
 
     window.addEventListener(MENU_OPEN_EVENT, closeOther);
     document.addEventListener("pointerdown", pointerDown, true);
     document.addEventListener("mousedown", pointerDown, true);
+    // Listen at window capture level so page-level keyboard handlers cannot swallow Escape first.
+    window.addEventListener("keydown", keyDown, true);
     document.addEventListener("keydown", keyDown, true);
     document.addEventListener("scroll", close, true);
     window.addEventListener("scroll", close, true);
     document.addEventListener("wheel", close, true);
     document.addEventListener("touchmove", close, true);
     window.addEventListener("resize", close);
-
-    // Listen to every ancestor, not only elements whose computed overflow looks scrollable.
-    // This covers table wrappers whose parent is the element that actually changes scrollTop.
     ancestors.forEach((element) => {
       element.addEventListener("scroll", close, { capture: true, passive: true });
       element.addEventListener("wheel", close, { capture: true, passive: true });
@@ -87,6 +92,7 @@ export default function ContextMenu({ isOpen, children, onClose }) {
       window.removeEventListener(MENU_OPEN_EVENT, closeOther);
       document.removeEventListener("pointerdown", pointerDown, true);
       document.removeEventListener("mousedown", pointerDown, true);
+      window.removeEventListener("keydown", keyDown, true);
       document.removeEventListener("keydown", keyDown, true);
       document.removeEventListener("scroll", close, true);
       window.removeEventListener("scroll", close, true);
