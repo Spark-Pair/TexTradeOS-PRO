@@ -16,9 +16,7 @@ export default defineConfig({
       registerType: "autoUpdate",
       cleanupOutdatedCaches: true,
       devOptions: {
-        enabled: true,
-        type: "module",
-        navigateFallback: "/index.html",
+        enabled: false,
       },
       includeAssets: ["favicon.ico", "android-chrome-192x192.png", "android-chrome-512x512.png"],
       workbox: {
@@ -91,6 +89,5 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
-    // ❌ REMOVE hmr config completely
   }
 });
