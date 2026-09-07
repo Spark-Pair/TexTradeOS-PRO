@@ -9,15 +9,29 @@ export default function ContextMenu({ isOpen, children, onClose }) {
   const anchorRef = useRef(null);
   const closeRef = useRef(onClose);
   const [position, setPosition] = useState(null);
+  const [mounted, setMounted] = useState(false);
 
   closeRef.current = onClose;
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    setMounted(Boolean(isOpen));
     if (!isOpen) {
       anchorRef.current = null;
       setPosition(null);
-      return undefined;
     }
+  }, [isOpen]);
+
+  const dismiss = () => {
+    // Remove the portal from the DOM immediately. Parent state is then reset as well,
+    // so the next trigger click creates a fresh menu instance.
+    setMounted(false);
+    setPosition(null);
+    anchorRef.current = null;
+    closeRef.current?.();
+  };
+
+  useLayoutEffect(() => {
+    if (!isOpen || !mounted) return undefined;
 
     const active = document.activeElement;
     const anchor = active instanceof HTMLElement ? active.closest("button") : null;
@@ -38,41 +52,48 @@ export default function ContextMenu({ isOpen, children, onClose }) {
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [isOpen]);
+  }, [isOpen, mounted]);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!isOpen || !mounted) return undefined;
 
-    const close = () => closeRef.current?.();
     const keyDown = (event) => {
-      if (event.key === "Escape" || event.key === "Esc" || event.code === "Escape") {
-        event.preventDefault();
-        close();
-      }
+      if (event.key !== "Escape" && event.key !== "Esc" && event.code !== "Escape") return;
+      event.preventDefault();
+      dismiss();
     };
+
     const pointerDown = (event) => {
       if (menuRef.current?.contains(event.target) || anchorRef.current?.contains(event.target)) return;
-      close();
+      dismiss();
     };
 
+    const scrollOrWheel = () => dismiss();
+
     window.addEventListener("keydown", keyDown, true);
+    document.addEventListener("keydown", keyDown, true);
     document.addEventListener("pointerdown", pointerDown, true);
-    document.addEventListener("scroll", close, true);
-    window.addEventListener("scroll", close, true);
-    document.addEventListener("wheel", close, true);
-    document.addEventListener("touchmove", close, true);
+    document.addEventListener("mousedown", pointerDown, true);
+    document.addEventListener("scroll", scrollOrWheel, true);
+    window.addEventListener("scroll", scrollOrWheel, true);
+    document.addEventListener("wheel", scrollOrWheel, true);
+    window.addEventListener("wheel", scrollOrWheel, true);
+    document.addEventListener("touchmove", scrollOrWheel, true);
 
     return () => {
       window.removeEventListener("keydown", keyDown, true);
+      document.removeEventListener("keydown", keyDown, true);
       document.removeEventListener("pointerdown", pointerDown, true);
-      document.removeEventListener("scroll", close, true);
-      window.removeEventListener("scroll", close, true);
-      document.removeEventListener("wheel", close, true);
-      document.removeEventListener("touchmove", close, true);
+      document.removeEventListener("mousedown", pointerDown, true);
+      document.removeEventListener("scroll", scrollOrWheel, true);
+      window.removeEventListener("scroll", scrollOrWheel, true);
+      document.removeEventListener("wheel", scrollOrWheel, true);
+      window.removeEventListener("wheel", scrollOrWheel, true);
+      document.removeEventListener("touchmove", scrollOrWheel, true);
     };
-  }, [isOpen]);
+  }, [isOpen, mounted]);
 
-  if (typeof document === "undefined" || !isOpen) return null;
+  if (typeof document === "undefined" || !isOpen || !mounted) return null;
 
   return createPortal(
     <div
