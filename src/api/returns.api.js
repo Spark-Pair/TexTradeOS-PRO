@@ -13,6 +13,11 @@ export async function fetchReturns(type) {
   return unwrap(response);
 }
 
+export async function fetchReturn(type, id) {
+  const response = await apiClient.get(`/returns/${type}/${encodeURIComponent(id)}`);
+  return unwrap(response);
+}
+
 export async function createReturn(type, payload) {
   const response = await apiClient.post(`/returns/${type}`, payload);
   return unwrap(response);
