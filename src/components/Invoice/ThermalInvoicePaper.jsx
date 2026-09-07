@@ -14,6 +14,13 @@ const grossForArticle = (article) => {
   return Number(article?.pcs || 0) * Number(article?.rate || 0);
 };
 
+const displayPaymentMethod = (invoice, receivedAmount) => {
+  const payment = invoice?.payment || (Array.isArray(invoice?.payments) ? invoice.payments.at(-1) : null);
+  const method = String(payment?.method || "").trim();
+  if (!receivedAmount || !method) return "-";
+  return method.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
 export default function ThermalInvoicePaper({ invoice, businessName = "Akhlaq Garments" }) {
   const articles = invoice?.articles || invoice?.orders || [];
   const customerUrduTitle = String(invoice?.customer_urdu_title || "").trim();
@@ -33,9 +40,9 @@ export default function ThermalInvoicePaper({ invoice, businessName = "Akhlaq Ga
   const totalDiscountAmount = Number(invoice?.total_discount_amount ?? (percentDiscountAmount + rupeeDiscountAmount));
   const netAmount = Number(invoice?.net_amount ?? Math.max(0, grossAmount - totalDiscountAmount));
   const salesReturnAmount = Number(invoice?.sales_return?.total_amount ?? invoice?.sales_return_amount ?? 0);
-  const salesReturnPcs = Number(invoice?.sales_return?.total_pcs ?? 0);
-  const paymentMethod = String(invoice?.payment?.method || "").trim();
+  const salesReturnPcs = Number(invoice?.sales_return?.total_pcs ?? invoice?.sales_return_pcs ?? 0);
   const receivedAmount = Number(invoice?.received_amount ?? 0);
+  const paymentMethod = displayPaymentMethod(invoice, receivedAmount);
   const payableAmount = Number(invoice?.total_amount ?? 0);
   const balanceAmount = Number(invoice?.balance_amount ?? Math.max(0, payableAmount - receivedAmount));
   const returnAmount = Number(invoice?.return_amount ?? Math.max(0, receivedAmount - payableAmount));
@@ -98,7 +105,7 @@ export default function ThermalInvoicePaper({ invoice, businessName = "Akhlaq Ga
         <div className="thermal-summary-strong"><span>Net Amount</span><strong>{formatNumbers(netAmount, 1)}</strong></div>
         <div><span>Sales Return</span><strong>-{formatNumbers(salesReturnAmount, 1)}</strong></div>
         <div><span>Sales Return (Pcs)</span><strong>-{formatNumbers(salesReturnPcs, 1)}</strong></div>
-        <div><span>Payment Method</span><strong>-{formatNumbers(paymentMethod, 1)}</strong></div>
+        <div><span>Payment Method</span><strong>{paymentMethod}</strong></div>
         <div><span>Received</span><strong>{formatNumbers(receivedAmount, 1)}</strong></div>
         <div className="thermal-summary-total"><span>Payable</span><strong>{formatNumbers(payableAmount, 1)}</strong></div>
         <div className="thermal-summary-total">
