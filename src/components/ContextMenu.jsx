@@ -5,13 +5,12 @@ const MENU_OPEN_EVENT = "textradeos:context-menu-open";
 const VIEWPORT_GAP = 10;
 const TRIGGER_GAP = 6;
 
-function getScrollableAncestors(element) {
+function getAncestors(element) {
   const ancestors = [];
   let node = element?.parentElement;
-  while (node && node !== document.body) {
-    const style = window.getComputedStyle(node);
-    const overflow = `${style.overflow} ${style.overflowX} ${style.overflowY}`;
-    if (/(auto|scroll|overlay)/.test(overflow)) ancestors.push(node);
+  while (node) {
+    ancestors.push(node);
+    if (node === document.body) break;
     node = node.parentElement;
   }
   return ancestors;
@@ -64,7 +63,7 @@ export default function ContextMenu({ isOpen, children, onClose }) {
       close();
     };
     const keyDown = (event) => { if (event.key === "Escape") close(); };
-    const scrollParents = getScrollableAncestors(anchorRef.current);
+    const ancestors = getAncestors(anchorRef.current);
 
     window.addEventListener(MENU_OPEN_EVENT, closeOther);
     document.addEventListener("pointerdown", pointerDown, true);
@@ -75,7 +74,14 @@ export default function ContextMenu({ isOpen, children, onClose }) {
     document.addEventListener("wheel", close, true);
     document.addEventListener("touchmove", close, true);
     window.addEventListener("resize", close);
-    scrollParents.forEach((element) => element.addEventListener("scroll", close, { passive: true }));
+
+    // Listen to every ancestor, not only elements whose computed overflow looks scrollable.
+    // This covers table wrappers whose parent is the element that actually changes scrollTop.
+    ancestors.forEach((element) => {
+      element.addEventListener("scroll", close, { capture: true, passive: true });
+      element.addEventListener("wheel", close, { capture: true, passive: true });
+      element.addEventListener("touchmove", close, { capture: true, passive: true });
+    });
 
     return () => {
       window.removeEventListener(MENU_OPEN_EVENT, closeOther);
@@ -87,7 +93,11 @@ export default function ContextMenu({ isOpen, children, onClose }) {
       document.removeEventListener("wheel", close, true);
       document.removeEventListener("touchmove", close, true);
       window.removeEventListener("resize", close);
-      scrollParents.forEach((element) => element.removeEventListener("scroll", close));
+      ancestors.forEach((element) => {
+        element.removeEventListener("scroll", close, true);
+        element.removeEventListener("wheel", close, true);
+        element.removeEventListener("touchmove", close, true);
+      });
     };
   }, [isOpen, menuId]);
 
