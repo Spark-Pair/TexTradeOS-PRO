@@ -6,8 +6,10 @@ import RoleRoute from './routes/RoleRoute';
 import Layout from './layouts/layout';
 import { ToastProvider } from './context/ToastContext';
 import Login from './pages/Login';
+import Options from './pages/Options';
+import KeyboardShortcuts from './pages/KeyboardShortcuts';
 
-const MenuPage = lazy(() => import("./pages/Menu")); const Dashboard = lazy(() => import("./pages/Dashboard")); const Customers = lazy(() => import("./pages/Customers")); const Suppliers = lazy(() => import("./pages/Suppliers")); const Invoices = lazy(() => import("./pages/Invoices")); const Inventory = lazy(() => import("./pages/Inventory")); const Purchases = lazy(() => import("./pages/Purchases")); const Users = lazy(() => import("./pages/Users")); const Settings = lazy(() => import("./pages/Settings")); const Backup = lazy(() => import("./pages/Backup")); const KeyboardShortcuts = lazy(() => import("./pages/KeyboardShortcuts")); const Setup = lazy(() => import("./pages/Setup")); const Returns = lazy(() => import("./pages/Returns")); const SystemManagement = lazy(() => import("./pages/SystemManagement")); const Options = lazy(() => import("./pages/Options"));
+const MenuPage = lazy(() => import("./pages/Menu")); const Dashboard = lazy(() => import("./pages/Dashboard")); const Customers = lazy(() => import("./pages/Customers")); const Suppliers = lazy(() => import("./pages/Suppliers")); const Invoices = lazy(() => import("./pages/Invoices")); const Inventory = lazy(() => import("./pages/Inventory")); const Purchases = lazy(() => import("./pages/Purchases")); const Users = lazy(() => import("./pages/Users")); const Settings = lazy(() => import("./pages/Settings")); const Backup = lazy(() => import("./pages/Backup")); const Setup = lazy(() => import("./pages/Setup")); const Returns = lazy(() => import("./pages/Returns")); const SystemManagement = lazy(() => import("./pages/SystemManagement"));
 const NEGATIVE_NUMBER_REGEX = /^\(?\s*(?:PKR|RS\.?)?\s*-\s*\d[\d,]*(?:\.\d+)?\s*\)?$/i; const NEGATIVE_NUMBER_CLASS = "is-negative-number"; const NON_NEGATIVE_TAGS = new Set(["INPUT", "TEXTAREA", "OPTION", "SCRIPT", "STYLE"]);
 
 export default function App() {
