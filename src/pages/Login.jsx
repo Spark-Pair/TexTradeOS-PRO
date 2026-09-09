@@ -25,7 +25,7 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard', { replace: true });
+      navigate('/', { replace: true });
     }
   }, [user, navigate]);
 
@@ -65,7 +65,7 @@ export default function Login() {
         const loginResult = await login(res.data);
         
         if (loginResult.success) {
-          navigate("/dashboard");
+          navigate("/");
         }
       }
 
