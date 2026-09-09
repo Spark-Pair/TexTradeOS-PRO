@@ -2,5 +2,7 @@
 .github
 node_modules
 dist
+tmp
 .env
+.env.*
 README.md
