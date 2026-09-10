@@ -4,15 +4,23 @@ const unwrap = (response) => response?.data?.data ?? response?.data;
 
 export const fetchCustomers = async () => unwrap(await apiClient.get("/customers"));
 export const fetchCustomerStatement = async (id, params = {}) => unwrap(await apiClient.get(`/customers/${id}/statement`, { params }));
+export const createCustomerPayment = async (id, payload) => unwrap(await apiClient.post(`/customers/${id}/payments`, payload));
 export const createCustomer = async (payload) => unwrap(await apiClient.post("/customers", payload));
 export const updateCustomer = async (id, payload) => unwrap(await apiClient.put(`/customers/${id}`, payload));
 export const toggleCustomer = async (id) => unwrap(await apiClient.patch(`/customers/${id}/toggle-status`));
 
 export const fetchSuppliers = async () => unwrap(await apiClient.get("/suppliers"));
 export const fetchSupplierStatement = async (id, params = {}) => unwrap(await apiClient.get(`/suppliers/${id}/statement`, { params }));
+export const createSupplierPayment = async (id, payload) => unwrap(await apiClient.post(`/suppliers/${id}/payments`, payload));
 export const createSupplier = async (payload) => unwrap(await apiClient.post("/suppliers", payload));
 export const updateSupplier = async (id, payload) => unwrap(await apiClient.put(`/suppliers/${id}`, payload));
 export const toggleSupplier = async (id) => unwrap(await apiClient.patch(`/suppliers/${id}/toggle-status`));
+
+export const fetchPayments = async (params = {}) => unwrap(await apiClient.get("/payments", { params }));
+
+export const fetchExpenses = async (params = {}) => unwrap(await apiClient.get("/expenses", { params }));
+export const createExpense = async (payload) => unwrap(await apiClient.post("/expenses", payload));
+export const removeExpense = async (id) => unwrap(await apiClient.delete(`/expenses/${id}`));
 
 export const fetchPurchases = async () => unwrap(await apiClient.get("/purchases"));
 export const fetchPurchase = async (id) => unwrap(await apiClient.get(`/purchases/${id}`));

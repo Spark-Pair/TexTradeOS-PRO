@@ -15,6 +15,8 @@ const Suppliers = lazy(() => import("./pages/Suppliers"));
 const Invoices = lazy(() => import("./pages/Invoices"));
 const Inventory = lazy(() => import("./pages/Inventory"));
 const Purchases = lazy(() => import("./pages/Purchases"));
+const Payments = lazy(() => import("./pages/Payments"));
+const Expenses = lazy(() => import("./pages/Expenses"));
 const Users = lazy(() => import("./pages/Users"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Backup = lazy(() => import("./pages/Backup"));
@@ -219,6 +221,22 @@ export default function App() {
                   element={
                     <RoleRoute accessKey="purchases">
                       <Purchases />
+                    </RoleRoute>
+                  }
+                />
+                <Route
+                  path="/payments"
+                  element={
+                    <RoleRoute accessKey="payments">
+                      <Payments />
+                    </RoleRoute>
+                  }
+                />
+                <Route
+                  path="/expenses"
+                  element={
+                    <RoleRoute accessKey="expenses">
+                      <Expenses />
                     </RoleRoute>
                   }
                 />
