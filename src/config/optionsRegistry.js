@@ -1,17 +1,10 @@
 export const OPTION_GROUP_REGISTRY = [
   {
-    key: "inventory.article.size",
-    moduleKey: "inventory",
-    label: "Article Size",
-    description: "Reusable size values available to article forms.",
-    storageKey: "article_sizes",
-  },
-  {
-    key: "inventory.article.category",
-    moduleKey: "inventory",
-    label: "Article Category",
-    description: "Reusable category values available to article forms.",
-    storageKey: "article_categories",
+    key: "payments.method",
+    moduleKey: "payments",
+    label: "Payment Methods",
+    description: "Payment methods available when receiving or recording payments.",
+    storageKey: "payment_methods",
   },
 ];
 
