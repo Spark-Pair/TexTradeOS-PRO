@@ -89,7 +89,7 @@ export default function Inventory() {
   }, [selectedArticle]);
 
   const openArticleLabelPrint = () => {
-    if (!selectedArticle) return;
+    if (!selectedArticle || !selectedArticle.purchase_number) return;
     setPrintPurchase({
       _id: selectedArticle.purchase_id,
       purchase_number: selectedArticle.purchase_number,
@@ -158,7 +158,7 @@ export default function Inventory() {
   return (
     <>
       <div className="relative z-10 max-w-7xl mx-auto h-full flex flex-col">
-        <PageHeader title="Inventory" subtitle="Track purchased articles, sold quantity, and current stock." actionLabel="Print QR Labels" actionIcon={Printer} onAction={openBatchLabelPrint} />
+        <PageHeader title="Inventory" subtitle="Track purchased and direct-sale articles, sold quantity, and current stock." actionLabel="Print QR Labels" actionIcon={Printer} onAction={openBatchLabelPrint} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
           <StatCard label="Total Articles" value={formatNumbers(stats.totalArticles, 0)} icon={Archive} />

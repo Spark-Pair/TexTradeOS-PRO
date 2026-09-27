@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -54,7 +54,7 @@ const toInvoiceInventory = (items = []) =>
       stock_pcs: Math.max(0, numberValue(item.stock_pcs ?? item.available_pcs)),
       label: `${item.article_no} | ${item.description || "Article"} | Stock ${Math.max(0, numberValue(item.stock_pcs ?? item.available_pcs))} pcs | Sale ${item.sale_rate || item.rate || 0}`,
     }))
-    .filter((item) => item.stock_pcs > 0);
+    .filter((item) => item.stock_pcs > 0 || !item.purchase_number);
 const newInvoiceArticle = (item) => ({
   _key: uuidv4(),
   article_no: item.article_no,
@@ -68,6 +68,22 @@ const newInvoiceArticle = (item) => ({
   purchase_rate: numberValue(item.rate),
   rate: numberValue(item.sale_rate || item.rate),
   discount: item.discount || "",
+  is_direct_sale: !item.purchase_number,
+});
+const newDirectSaleArticle = () => ({
+  _key: uuidv4(),
+  article_no: "",
+  purchase_number: "",
+  description: "",
+  size: "",
+  unit: "",
+  quantity_pkt: "",
+  dzn: "",
+  pcs: "",
+  purchase_rate: "",
+  rate: "",
+  discount: "",
+  is_direct_sale: true,
 });
 const syncQuantity = (row, field, value) => {
   const unit = Math.max(0, numberValue(field === "unit" ? value : row.unit));
@@ -169,6 +185,7 @@ function InvoiceItemModal({
   article = null,
   inventory = [],
 }) {
+  const articleSelectRef = useRef(null);
   const [selectedArticleNo, setSelectedArticleNo] = useState("");
   const [row, setRow] = useState(null);
   const [error, setError] = useState("");
@@ -180,16 +197,24 @@ function InvoiceItemModal({
       setRow(article);
     } else {
       setSelectedArticleNo("");
-      setRow(null);
+      setRow(newDirectSaleArticle());
     }
   }, [article, inventory, isOpen]);
   const selectedArticle = inventory.find(
     (item) => item.article_no === selectedArticleNo,
   );
+  const isSelectedArticle = Boolean(selectedArticle);
+  const enforcesStock = isSelectedArticle && Boolean(selectedArticle.purchase_number);
   const chooseArticle = (articleNo) => {
     const match = inventory.find((item) => item.article_no === articleNo);
     setSelectedArticleNo(articleNo);
-    setRow(match ? newInvoiceArticle(match) : null);
+    setError("");
+    setRow(match ? newInvoiceArticle(match) : newDirectSaleArticle());
+  };
+  const startNewArticleFromSearch = (search) => {
+    setSelectedArticleNo("");
+    setError("");
+    setRow({ ...newDirectSaleArticle(), description: search });
   };
   const update = (field, value) =>
     setRow((prev) => {
@@ -197,7 +222,7 @@ function InvoiceItemModal({
       if (["quantity_pkt", "dzn", "pcs"].includes(field)) {
         const next = syncQuantity(prev, field, value),
           available = numberValue(selectedArticle?.stock_pcs);
-        if (numberValue(next.pcs) > available) {
+        if (enforcesStock && numberValue(next.pcs) > available) {
           setError(`Only ${available} pieces are available.`);
           return syncQuantity(prev, "pcs", String(available));
         }
@@ -208,9 +233,10 @@ function InvoiceItemModal({
     });
   const submit = (event) => {
     event.preventDefault();
-    if (!row?.article_no) return setError("Select an article first.");
+    if (!isSelectedArticle && !row.description.trim()) return setError("Enter an article description.");
+    if (!isSelectedArticle && numberValue(row.unit) <= 0) return setError("Enter Unit.");
     if (numberValue(row.pcs) <= 0) return setError("Enter quantity.");
-    if (numberValue(row.pcs) > numberValue(selectedArticle?.stock_pcs))
+    if (enforcesStock && numberValue(row.pcs) > numberValue(selectedArticle?.stock_pcs))
       return setError(
         `Only ${numberValue(selectedArticle?.stock_pcs)} pieces are available.`,
       );
@@ -221,8 +247,9 @@ function InvoiceItemModal({
       isOpen={isOpen}
       onClose={onClose}
       maxWidth="max-w-3xl"
+      onEnterComplete={() => articleSelectRef.current?.focus()}
       title={article ? "Edit Invoice Item" : "Add Invoice Item"}
-      subtitle="Select the item and enter its sale quantity"
+      subtitle="Select stock or enter a new article for a direct sale"
       footer={
         <div className="flex w-full items-center justify-between gap-3">
           <p className="min-w-0 flex-1 text-xs font-medium text-red-600">
@@ -245,11 +272,13 @@ function InvoiceItemModal({
       >
         <div className="md:col-span-3">
           <Select
+            ref={articleSelectRef}
             label="Search & Select Article"
             value={selectedArticleNo}
             onChange={chooseArticle}
-            options={inventory}
-            placeholder="Choose article by number or description"
+            onSearchSubmit={startNewArticleFromSearch}
+            options={[{ label: "— New article / Clear selection —", value: "" }, ...inventory]}
+            placeholder="Select an article or enter a new one below"
           />
           {selectedArticle && (
             <div className="mt-2 grid gap-2 rounded-xl border border-gray-300 bg-gray-50 p-3 text-xs text-gray-600 md:grid-cols-3">
@@ -276,6 +305,12 @@ function InvoiceItemModal({
             </div>
           )}
         </div>
+        {!isSelectedArticle && <div className="md:col-span-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">This article will be created from this sale and will have sales records without a purchase record.</div>}
+        <Input label="Article No" value={row?.article_no || "Auto-generated on save"} disabled />
+        <Input label="Description" value={row?.description || ""} onChange={(e) => update("description", e.target.value)} placeholder="Article description" disabled={isSelectedArticle} />
+        <Input label="Size" value={row?.size || ""} onChange={(e) => update("size", e.target.value)} placeholder="Optional" required={false} disabled={isSelectedArticle} />
+        <Input label="Unit" type="number" min="1" value={row?.unit || ""} onChange={(e) => update("unit", e.target.value)} placeholder="Required" disabled={isSelectedArticle} />
+        <Input label="Cost Rate" type="number" min="0" value={row?.purchase_rate || ""} onChange={(e) => update("purchase_rate", e.target.value)} placeholder="Optional" required={false} disabled={isSelectedArticle} />
         <div className="md:col-span-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
           Type quantity in any one box. Packets, dozens and pieces calculate
           automatically.
@@ -284,7 +319,7 @@ function InvoiceItemModal({
           label="Packets"
           type="number"
           min="0"
-          max={
+          max={!enforcesStock ? undefined :
             selectedArticle?.unit
               ? selectedArticle.stock_pcs / selectedArticle.unit
               : 0
@@ -297,7 +332,7 @@ function InvoiceItemModal({
           label="Dozens"
           type="number"
           min="0"
-          max={(selectedArticle?.stock_pcs || 0) / 12}
+          max={!enforcesStock ? undefined : (selectedArticle?.stock_pcs || 0) / 12}
           value={row?.dzn || ""}
           onChange={(e) => update("dzn", e.target.value)}
           placeholder="Auto calculated"
@@ -306,7 +341,7 @@ function InvoiceItemModal({
           label="Pieces"
           type="number"
           min="0"
-          max={selectedArticle?.stock_pcs || 0}
+          max={!enforcesStock ? undefined : selectedArticle?.stock_pcs || 0}
           value={row?.pcs || ""}
           onChange={(e) => update("pcs", e.target.value)}
           placeholder="Auto calculated"
@@ -494,6 +529,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
         .filter(
           (item) =>
             item.stock_pcs > 0 ||
+            !item.purchase_number ||
             item.article_no === itemModal.article?.article_no,
         ),
     [articles, inventory, itemModal.article],
@@ -610,7 +646,9 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
       if (edited >= 0)
         return rows.map((r) => (r._key === article._key ? article : r));
       const duplicate = rows.findIndex(
-        (r) => r.article_no === article.article_no,
+        (r) =>
+          r.article_no === article.article_no &&
+          String(r.purchase_number || "") === String(article.purchase_number || ""),
       );
       if (duplicate >= 0)
         return rows.map((r, i) =>
@@ -668,6 +706,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
       return setError("Add at least one article.");
     const over = calculatedArticles.find(
       (r) =>
+        !r.is_direct_sale &&
         numberValue(r.pcs) >
         numberValue(
           inventory.find((i) => i.article_no === r.article_no)?.stock_pcs,

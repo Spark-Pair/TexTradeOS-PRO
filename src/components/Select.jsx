@@ -3,7 +3,7 @@ import { ChevronDown, Check, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Select = forwardRef(function Select(
-  { label, options = [], value, onChange, placeholder = "Select...", disabled = false },
+  { label, options = [], value, onChange, placeholder = "Select...", disabled = false, onSearchSubmit },
   ref
 ) {
   const [isOpen, setIsOpen] = useState(false);
@@ -254,6 +254,9 @@ const Select = forwardRef(function Select(
                     e.stopPropagation();
                     if (activeIndex >= 0 && filteredOptions[activeIndex]) {
                       selectOption(filteredOptions[activeIndex], { moveNext: true });
+                    } else if (onSearchSubmit && search.trim()) {
+                      onSearchSubmit(search.trim());
+                      closeDropdown();
                     }
                   }
                 }}

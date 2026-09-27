@@ -12,6 +12,7 @@ export default function Modal({
   footer,
   maxWidth = "max-w-md",
   closeOnEscape = true,
+  onEnterComplete,
 }) {
   const [visibleViewport, setVisibleViewport] = useState({ height: 0, top: 0 });
 
@@ -90,6 +91,7 @@ export default function Modal({
               }
             }}
             className="relative h-full w-full flex items-end justify-center overflow-hidden no-default-transition sm:items-center sm:p-3"
+            onAnimationComplete={() => { if (isOpen) onEnterComplete?.(); }}
 
             // ✅ prevent close when clicking inside modal
             onMouseDown={onClose}
