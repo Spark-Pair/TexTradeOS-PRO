@@ -80,8 +80,11 @@ export default function Invoices() {
 
   const handleInvoiceFormAction = async (payload) => {
     try {
-      await createInvoice(payload);
+      const savedInvoice = await createInvoice(payload);
       showToast({ type: "success", message: "Invoice saved successfully" });
+      // Open the just-saved invoice immediately so the user can print it
+      // without searching for it again in the invoice list.
+      setPreviewModal({ isOpen: true, data: savedInvoice?.data || null });
       await loadInvoices(pagination.currentPage, filters);
     } catch (err) {
       showToast({ type: "error", message: err.response?.data?.message || "Failed to save invoice" });

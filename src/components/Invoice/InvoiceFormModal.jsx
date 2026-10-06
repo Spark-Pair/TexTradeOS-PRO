@@ -645,11 +645,17 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
       const edited = rows.findIndex((r) => r._key === article._key);
       if (edited >= 0)
         return rows.map((r) => (r._key === article._key ? article : r));
-      const duplicate = rows.findIndex(
-        (r) =>
-          r.article_no === article.article_no &&
-          String(r.purchase_number || "") === String(article.purchase_number || ""),
-      );
+      // Manual/direct-sale rows have no article number until the invoice is
+      // saved. Keep each manual article as a separate invoice line instead
+      // of merging every blank article number into the first row.
+      const duplicate = article.article_no
+        ? rows.findIndex(
+            (r) =>
+              r.article_no === article.article_no &&
+              String(r.purchase_number || "") ===
+                String(article.purchase_number || ""),
+          )
+        : -1;
       if (duplicate >= 0)
         return rows.map((r, i) =>
           i === duplicate
