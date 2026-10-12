@@ -25,6 +25,7 @@ import {
   fetchInventory,
 } from "../../api/commerce";
 import { useToast } from "../../context/ToastContext";
+import useAuth from "../../hooks/useAuth";
 import { InvoicePrintPreview } from "./InvoicePreviewModal";
 import ReturnEditor, { returnTotals } from "../Returns/ReturnEditor";
 import PaymentEditor from "./PaymentEditor";
@@ -357,6 +358,7 @@ function InvoiceItemModal({
 }
 
 export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
+  const { user } = useAuth();
   const { showToast } = useToast();
   const [step, setStep] = useState("entry"),
     [entryStage, setEntryStage] = useState(1),
@@ -588,6 +590,8 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
         ...payment,
         amount: payment.received_now ? numberValue(payment.amount) : 0,
       },
+      customer_balance_before: selectedCustomer?.isWalkIn ? 0 : Number(selectedCustomer?.balance || 0),
+      customer_balance_after: selectedCustomer?.isWalkIn ? Number(invoiceTotals.total_amount || 0) - Number(invoiceTotals.received_amount || 0) : Number(selectedCustomer?.balance || 0) + Number(invoiceTotals.total_amount || 0) - Number(invoiceTotals.received_amount || 0),
       ...invoiceTotals,
     }),
     [
@@ -807,7 +811,8 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
       {step === "preview" ? (
         <InvoicePrintPreview
           invoice={draftInvoice}
-          businessName="Akhlaq Garments"
+          businessName={user?.business?.name || ""}
+          business={user?.business || {}}
           printMode="a5"
         />
       ) : (

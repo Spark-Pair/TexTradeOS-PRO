@@ -30,6 +30,7 @@ export default function InvoiceTable({articles=[],invoice=null,totalAmount=0}) {
         <div className="summary-row"><span>Rs Discount</span><strong>-{formatNumbers(rupeeDiscountAmount,1)}</strong></div>
         <div className="summary-row invoice-emphasis-row"><span>Net Amount</span><strong>{formatNumbers(netAmount,1)}</strong></div>
         <div className="summary-row"><span>Sales Return</span><strong>-{formatNumbers(salesReturnAmount,1)}</strong></div>
+        <div className="summary-row"><span>Previous Outstanding</span><strong>{formatNumbers(invoice?.customer_balance_before,1)}</strong></div>
       </div>
       <div className="invoice-totals-panel">
         <div className="summary-row"><span>Sales Return (Pcs)</span><strong>-{formatNumbers(salesReturnPcs,1)}</strong></div>
@@ -37,6 +38,7 @@ export default function InvoiceTable({articles=[],invoice=null,totalAmount=0}) {
         <div className="summary-row"><span>Received</span><strong>{formatNumbers(receivedAmount,1)}</strong></div>
         <div className="summary-row invoice-total-row"><span>Payable</span><strong>{formatNumbers(payableAmount,1)}</strong></div>
         <div className="summary-row invoice-total-row"><span>{returnAmount>0?"Return To Customer":"Balance"}</span><strong>{formatNumbers(returnAmount>0?returnAmount:balanceAmount,1)}</strong></div>
+        <div className="summary-row invoice-total-row"><span>Current Balance</span><strong>{formatNumbers(invoice?.customer_balance_after,1)}</strong></div>
       </div>
     </div>
   </div>;
