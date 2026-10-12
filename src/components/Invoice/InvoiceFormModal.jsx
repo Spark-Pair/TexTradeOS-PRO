@@ -74,7 +74,7 @@ const newDirectSaleArticle = () => ({
   _key: uuidv4(),
   article_no: "",
   purchase_number: "",
-  description: "",
+  description: null,
   size: "",
   unit: "",
   quantity_pkt: "",
@@ -211,10 +211,10 @@ function InvoiceItemModal({
     setError("");
     setRow(match ? newInvoiceArticle(match) : newDirectSaleArticle());
   };
-  const startNewArticleFromSearch = (search) => {
+  const startNewArticleFromSearch = () => {
     setSelectedArticleNo("");
     setError("");
-    setRow({ ...newDirectSaleArticle(), description: search });
+    setRow(newDirectSaleArticle());
   };
   const update = (field, value) =>
     setRow((prev) => {
@@ -233,8 +233,6 @@ function InvoiceItemModal({
     });
   const submit = (event) => {
     event.preventDefault();
-    if (!isSelectedArticle && !row.description.trim()) return setError("Enter an article description.");
-    if (!isSelectedArticle && numberValue(row.unit) <= 0) return setError("Enter Unit.");
     if (numberValue(row.pcs) <= 0) return setError("Enter quantity.");
     if (enforcesStock && numberValue(row.pcs) > numberValue(selectedArticle?.stock_pcs))
       return setError(
@@ -249,7 +247,7 @@ function InvoiceItemModal({
       maxWidth="max-w-3xl"
       onEnterComplete={() => articleSelectRef.current?.focus()}
       title={article ? "Edit Invoice Item" : "Add Invoice Item"}
-      subtitle="Select stock or enter a new article for a direct sale"
+      subtitle="Select stock or add a direct-sale item using pieces, rate and discount"
       footer={
         <div className="flex w-full items-center justify-between gap-3">
           <p className="min-w-0 flex-1 text-xs font-medium text-red-600">
@@ -305,25 +303,11 @@ function InvoiceItemModal({
             </div>
           )}
         </div>
-        {!isSelectedArticle && <div className="md:col-span-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">This article will be created from this sale and will have sales records without a purchase record.</div>}
-        <Input label="Article No" value={row?.article_no || "Auto-generated on save"} disabled />
-        <Input label="Description" value={row?.description || ""} onChange={(e) => update("description", e.target.value)} placeholder="Article description" disabled={isSelectedArticle} />
-        <Input label="Size" value={row?.size || ""} onChange={(e) => update("size", e.target.value)} placeholder="Optional" required={false} disabled={isSelectedArticle} />
-        <Input label="Unit" type="number" min="1" value={row?.unit || ""} onChange={(e) => update("unit", e.target.value)} placeholder="Required" disabled={isSelectedArticle} />
-        <Input label="Cost Rate" type="number" min="0" value={row?.purchase_rate || ""} onChange={(e) => update("purchase_rate", e.target.value)} placeholder="Optional" required={false} disabled={isSelectedArticle} />
-        <div className="md:col-span-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
-          Type quantity in any one box. Packets, dozens and pieces calculate
-          automatically.
-        </div>
         <Input
           label="Packets"
           type="number"
           min="0"
-          max={!enforcesStock ? undefined :
-            selectedArticle?.unit
-              ? selectedArticle.stock_pcs / selectedArticle.unit
-              : 0
-          }
+          max={!enforcesStock ? undefined : selectedArticle?.unit ? selectedArticle.stock_pcs / selectedArticle.unit : 0}
           value={row?.quantity_pkt || ""}
           onChange={(e) => update("quantity_pkt", e.target.value)}
           placeholder="e.g. 2"
