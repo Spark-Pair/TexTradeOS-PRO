@@ -161,7 +161,7 @@ export default function Invoices() {
       </div>
     </div>
     <InvoiceFormModal isOpen={formModal.isOpen} onClose={() => setFormModal({ isOpen: false })} onAction={handleInvoiceFormAction} />
-    <InvoicePreviewModal isOpen={previewModal.isOpen} onClose={() => setPreviewModal({ isOpen: false, data: null })} invoice={previewModal.data} loading={previewLoading} />
+    <InvoicePreviewModal isOpen={previewModal.isOpen} onClose={() => setPreviewModal({ isOpen: false, data: null })} invoice={previewModal.data} loading={previewLoading} business={user?.business || {}} businessName={user?.business?.name || ""} />
     <FilterDrawer isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} filters={filterConfig} onApply={handleApplyFilters} onReset={handleResetFilters} />
     <ConfirmModal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} onConfirm={handleDeleteInvoice} title="Delete Invoice" message={`Delete invoice "${deleteTarget?.invoice_number || ""}"? This cannot be undone.`} confirmText="Delete Invoice" variant="danger" />
   </>;

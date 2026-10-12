@@ -4,14 +4,16 @@ import "./invoiceTypography.css";
 
 export default function InvoicePaper({
   invoice,
-  businessName = "Akhlaq Garments",
+  businessName = "",
+  business = {},
   copyLabel = "",
   isLastCopy = true,
 }) {
   const articles = invoice?.articles || invoice?.orders || [];
   const customerUrduTitle = String(invoice?.customer_urdu_title || "").trim();
   const salesmanName = String(invoice?.salesman_name || "").trim();
-  const businessUrduTitle = "اخلاق گارمنٹس";
+  const businessUrduTitle = String(business?.urdu_name || "").trim();
+  const businessDetails = [business?.phone ? `Tel: ${business.phone}` : "", business?.address || ""].filter(Boolean).join(" | ");
 
   const customerDetails = [
     invoice?.customer_phone ? `Phone: ${invoice.customer_phone}` : "",
@@ -35,9 +37,7 @@ export default function InvoicePaper({
             </h1>
           </div>
 
-          <p className="invoice-business-details">
-            Tel: 32441153, 32434590 | Shop No. 1, OT 4/79, Meethadar, Karachi
-          </p>
+          {businessDetails && <p className="invoice-business-details">{businessDetails}</p>}
 
           {salesmanName && (
             <p className="invoice-salesman-line">Salesman: {salesmanName}</p>
@@ -96,8 +96,7 @@ export default function InvoicePaper({
         </div>
 
         <div className="invoice-footer-branding">
-          <p className="invoice-system-credit">TexTradeOS PRO by SparkPair</p>
-          <p className="invoice-agency-credit">+923165825495 | sparkpair.dev</p>
+          <p className="invoice-system-credit">TexTradeOS PRO</p>
         </div>
       </footer>
     </article>

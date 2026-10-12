@@ -21,11 +21,12 @@ const displayPaymentMethod = (invoice, receivedAmount) => {
   return method.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 };
 
-export default function ThermalInvoicePaper({ invoice, businessName = "Akhlaq Garments" }) {
+export default function ThermalInvoicePaper({ invoice, businessName = "", business = {} }) {
   const articles = invoice?.articles || invoice?.orders || [];
   const customerUrduTitle = String(invoice?.customer_urdu_title || "").trim();
   const salesmanName = String(invoice?.salesman_name || "").trim();
-  const businessUrduTitle = "اخلاق گارمنٹس";
+  const businessUrduTitle = String(business?.urdu_name || "").trim();
+  const businessDetails = [business?.phone ? `Tel: ${business.phone}` : "", business?.address || ""].filter(Boolean).join(" | ");
   const customerDetails = [
     invoice?.customer_phone ? `Phone: ${invoice.customer_phone}` : "",
     invoice?.customer_address ? `Address: ${invoice.customer_address}` : "",
@@ -52,7 +53,7 @@ export default function ThermalInvoicePaper({ invoice, businessName = "Akhlaq Ga
       <header className="thermal-header">
         <h1>{businessName}</h1>
         <p className="thermal-urdu" dir="rtl" lang="ur">{businessUrduTitle}</p>
-        <p className="thermal-shop-line">Tel: 32441153, 32434590 | Shop No. 1, OT 4/79, Meethadar, Karachi</p>
+        {businessDetails && <p className="thermal-shop-line">{businessDetails}</p>}
         {salesmanName && <p className="thermal-salesman-line">Salesman: {salesmanName}</p>}
       </header>
 
@@ -99,6 +100,7 @@ export default function ThermalInvoicePaper({ invoice, businessName = "Akhlaq Ga
       </section>
       
       <section className="thermal-summary">
+        <div><span>Previous Outstanding</span><strong>{formatNumbers(invoice?.customer_balance_before, 1)}</strong></div>
         <div><span>Gross Amount</span><strong>{formatNumbers(grossAmount, 1)}</strong></div>
         <div><span>Percent Discount</span><strong>-{formatNumbers(percentDiscountAmount, 1)}</strong></div>
         <div><span>Rs Discount</span><strong>-{formatNumbers(rupeeDiscountAmount, 1)}</strong></div>
@@ -112,12 +114,12 @@ export default function ThermalInvoicePaper({ invoice, businessName = "Akhlaq Ga
           <span>{returnAmount > 0 ? "Return To Customer" : "Balance"}</span>
           <strong>{formatNumbers(returnAmount > 0 ? returnAmount : balanceAmount, 1)}</strong>
         </div>
+        <div className="thermal-summary-total"><span>Current Balance</span><strong>{formatNumbers(invoice?.customer_balance_after, 1)}</strong></div>
       </section>
 
       <footer className="thermal-footer">
         <p>Thank you for your business.</p>
         <p>TexTradeOS PRO by SparkPair</p>
-        <p>+923165825495 | www.sparkpair.dev</p>
       </footer>
     </article>
   );
