@@ -1,5 +1,8 @@
 import { apiClient } from "./apiClient";
 
+export const fetchMyBusiness = async () => (await apiClient.get("/businesses/me")).data;
+export const updateMyBusiness = async (business) => (await apiClient.patch("/businesses/me", { business })).data;
+
 export const fetchMyReferenceData = async () => {
   const res = await apiClient.get("/businesses/me/reference-data");
   return res.data;

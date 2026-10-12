@@ -8,9 +8,11 @@ export const AuthContext = createContext();
 
 const normalizeUser = (source) => source ? {
   ...source,
+  business: source.business ? { ...source.business } : null,
   _id: source._id || source.id,
   id: source.id || source._id,
   businessId: source.business?.id || source.businessId,
+  businessProfileComplete: Boolean(source.business?.name?.trim() && source.business.name.trim() !== "TexTradeOS PRO"),
 } : null;
 
 export default function AuthProvider({ children }) {

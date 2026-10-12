@@ -21,6 +21,7 @@ const Users = lazy(() => import("./pages/Users"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Backup = lazy(() => import("./pages/Backup"));
 const Setup = lazy(() => import("./pages/Setup"));
+const BusinessSetup = lazy(() => import("./pages/BusinessSetup"));
 const Returns = lazy(() => import("./pages/Returns"));
 const SystemManagement = lazy(() => import("./pages/SystemManagement"));
 const Reports = lazy(() => import("./pages/Reports"));
@@ -151,6 +152,7 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/setup" element={<Setup />} />
+              <Route path="/business-setup" element={<ProtectedRoute><BusinessSetup /></ProtectedRoute>} />
               <Route
                 element={
                   <ProtectedRoute>
