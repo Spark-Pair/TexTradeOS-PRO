@@ -22,8 +22,13 @@ export default function StatCard({
   value,
   icon: Icon,
   variant = "normal",
+  meta = "",
+  negative = false,
 }) {
   const styles = VARIANTS[variant] || VARIANTS.normal;
+  const isNegative = negative ||
+    (typeof value === "string" && /(?:^|\s)-\s*\d/.test(value));
+  const isNegativeMeta = typeof meta === "string" && /^\s*-\s*\d/.test(meta);
 
   return (
     <div className="stat-card bg-white p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-gray-300 flex items-center gap-3 sm:gap-5 min-w-0">
@@ -34,11 +39,21 @@ export default function StatCard({
         <Icon size={26} className="hidden sm:block" strokeWidth={1.5} />
       </div>
 
-      <div className="min-w-0">
-        <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-gray-400 truncate">
-          {label}
-        </p>
-        <p className="text-lg sm:text-2xl text-gray-900 truncate">{value}</p>
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-1">
+          <p className="min-w-0 flex-1 text-[10px] sm:text-xs font-medium uppercase tracking-wider text-gray-400 truncate">
+            {label}
+          </p>
+          {meta && (
+            <span
+              title={meta}
+              className={`max-w-[5.75rem] shrink-0 truncate rounded-md px-2 py-1 text-[12px] font-semibold leading-none sm:text-[13px] ${isNegativeMeta ? "bg-red-50 text-red-600" : "bg-gray-200/65 text-gray-600"}`}
+            >
+              {meta}
+            </span>
+          )}
+        </div>
+        <p className={`truncate text-lg sm:text-2xl ${isNegative ? "text-red-600" : "text-gray-900"}`}>{value}</p>
       </div>
     </div>
   );
