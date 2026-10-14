@@ -1,16 +1,231 @@
-const money=(v)=>Number(v||0).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:2});
-const date=(v)=>v?new Date(`${String(v).slice(0,10)}T00:00:00`).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}).replace(/ /g,"-"):"-";
-const balance=(v)=>{const n=Number(v||0);return `${money(Math.abs(n))}${n?` ${n<0?"Cr":"Dr"}`:""}`};
-export default function StatementPaper({data,type,business={}}){const customer=type==="customer",party=data?.party||{},totals=data?.totals||{},period=data?.period||{},rows=Array.isArray(data?.rows)?data.rows:[],name=party[customer?"customer_name":"supplier_name"]||"-",from=period.date_from?date(period.date_from):rows[0]?.date?date(rows[0].date):"Beginning",to=period.date_to?date(period.date_to):rows.at(-1)?.date?date(rows.at(-1).date):"Present",range=`${from} - ${to}`,businessDetails=[business.phone&&`Tel: ${business.phone}`,business.address].filter(Boolean).join(" | ");return <><style>{CSS}</style><article className="statement-paper">
-<header className="statement-head"><div className="brand"><h1>{business.name || ""} {business.urdu_name&&<span className="business-urdu" dir="rtl" lang="ur">{business.urdu_name}</span>}</h1>{businessDetails&&<p>{businessDetails}</p>}</div><div className="document-meta"><h2>{customer?"CUSTOMER":"SUPPLIER"} STATEMENT</h2><div><b>STATEMENT DATE</b><strong>{date(new Date().toISOString().slice(0,10))}</strong></div><div><b>PERIOD</b><strong>{range}</strong></div></div></header>
-<section className="party-block"><span>{customer?"CUSTOMER":"SUPPLIER"}</span><div><h3>{name}</h3>{party.person_name&&<b>{party.person_name}</b>}</div><p>{[party.phone_number&&`Tel: ${party.phone_number}`,party.city&&`City: ${party.city}`,party.address&&`Address: ${party.address}`].filter(Boolean).join(" | ")||"Account details"}</p></section>
-<table className="statement-ledger"><colgroup><col className="no"/><col className="date"/><col className="ref"/><col className="method"/><col className="desc"/><col className="bill"/><col className="payment"/><col className="balance"/></colgroup><thead><tr><th>#</th><th>Date</th><th>Reff. No.</th><th>Method</th><th>Description</th><th>{customer?"Bill":"Purchase"}</th><th>Credit</th><th>Balance</th></tr></thead><tbody>{rows.length?rows.map((r,i)=><tr key={`${r.type}-${r.id}-${i}`} className="statement-row"><td>{String(i+1).padStart(2,"0")}</td><td>{date(r.date)}</td><td><b>{r.reference||"-"}</b>{r.reference_no&&r.reference_no!==r.reference&&<small>{r.reference_no}</small>}</td><td>{methodOf(r)}</td><td><b>{r.description||"Transaction"}</b>{detailsOf(r)&&<small>{detailsOf(r)}</small>}{r.notes&&<small>{r.notes}</small>}</td><td className="num">{r.debit?money(r.debit):"-"}</td><td className="num">{r.credit?money(r.credit):"-"}</td><td className="num balance-value">{balance(r.running_balance)}</td></tr>):<tr><td colSpan="8" className="empty">No transactions found for this period.</td></tr>}</tbody></table>
-<section className="statement-final"><div></div><div className="totals-box"><p><span>Opening Balance</span><b>{balance(data?.opening_balance)}</b></p><p><span>Total {customer?"Bill":"Purchase"}</span><b>{money(totals.debit)}</b></p><p><span>Total Credit</span><b>{money(totals.credit)}</b></p><p className="closing"><span>Closing Balance</span><b>{balance(data?.closing_balance)}</b></p></div></section>
-<footer className="statement-footer"><div><strong>Thank you for your business.</strong><span>System-generated account statement. Please verify entries and report any discrepancies.</span></div><div><strong>TexTradeOS PRO by SparkPair</strong><span>Computer generated statement</span></div></footer>
-</article></>}
-function methodOf(r){if(r.method)return String(r.method).replace(/_/g," ");const d=String(r.description||"").toLowerCase();if(d.includes("return"))return "Adjustment";if(d.includes("invoice"))return "Invoice";if(d.includes("purchase"))return "Purchase";return "Entry"}
-function detailsOf(r){return [r.total_pcs!=null&&`PCs: ${r.total_pcs}`,r.article_count!=null&&`Articles: ${r.article_count}`,r.packet_count!=null&&`Packets: ${r.packet_count}`].filter(Boolean).join(" · ")}
-const CSS=`
+const money = (v) =>
+  Number(v || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 2,
+  });
+const date = (v) =>
+  v
+    ? new Date(`${String(v).slice(0, 10)}T00:00:00`)
+        .toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+        .replace(/ /g, "-")
+    : "-";
+const balance = (v) => {
+  const n = Number(v || 0);
+  return (
+    <span style={n < 0 ? { color: "#dc2626" } : undefined}>
+      {money(Math.abs(n))}
+      {n ? ` ${n < 0 ? "Cr" : "Dr"}` : ""}
+    </span>
+  );
+};
+export default function StatementPaper({ data, type, business = {} }) {
+  const customer = type === "customer",
+    party = data?.party || {},
+    totals = data?.totals || {},
+    period = data?.period || {},
+    rows = Array.isArray(data?.rows) ? data.rows : [],
+    name = party[customer ? "customer_name" : "supplier_name"] || "-",
+    from = period.date_from
+      ? date(period.date_from)
+      : rows[0]?.date
+        ? date(rows[0].date)
+        : "Beginning",
+    to = period.date_to
+      ? date(period.date_to)
+      : rows.at(-1)?.date
+        ? date(rows.at(-1).date)
+        : "Present",
+    range = `${from} - ${to}`,
+    businessDetails = [
+      business.phone && `Tel: ${business.phone}`,
+      business.address,
+    ]
+      .filter(Boolean)
+      .join(" | ");
+  return (
+    <>
+      <style>{CSS}</style>
+      <article className="statement-paper">
+        <header className="statement-head">
+          <div className="brand">
+            <h1>
+              {business.name || ""}{" "}
+              {business.urdu_name && (
+                <span className="business-urdu" dir="rtl" lang="ur">
+                  {business.urdu_name}
+                </span>
+              )}
+            </h1>
+            {businessDetails && <p>{businessDetails}</p>}
+          </div>
+          <div className="document-meta">
+            <h2>{customer ? "CUSTOMER" : "SUPPLIER"} STATEMENT</h2>
+            <div>
+              <b>STATEMENT DATE</b>
+              <strong>{date(new Date().toISOString().slice(0, 10))}</strong>
+            </div>
+            <div>
+              <b>PERIOD</b>
+              <strong>{range}</strong>
+            </div>
+          </div>
+        </header>
+        <section className="party-block">
+          <span>{customer ? "CUSTOMER" : "SUPPLIER"}</span>
+          <div>
+            <h3>{name}</h3>
+            {party.person_name && <b>{party.person_name}</b>}
+          </div>
+          <p>
+            {[
+              party.phone_number && `Tel: ${party.phone_number}`,
+              party.city && `City: ${party.city}`,
+              party.address && `Address: ${party.address}`,
+            ]
+              .filter(Boolean)
+              .join(" | ") || "Account details"}
+          </p>
+        </section>
+        <table className="statement-ledger">
+          <colgroup>
+            <col className="no" />
+            <col className="date" />
+            <col className="ref" />
+            <col className="method" />
+            <col className="desc" />
+            <col className="bill" />
+            <col className="payment" />
+            <col className="balance" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Reff. No.</th>
+              <th>Method</th>
+              <th>Description</th>
+              <th>{customer ? "Bill" : "Purchase"}</th>
+              <th>Credit</th>
+              <th>Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length ? (
+              rows.map((r, i) => (
+                <tr key={`${r.type}-${r.id}-${i}`} className="statement-row">
+                  <td>{String(i + 1).padStart(2, "0")}</td>
+                  <td>{date(r.date)}</td>
+                  <td>
+                    <b>{r.reference || "-"}</b>
+                    {r.reference_no && r.reference_no !== r.reference && (
+                      <small>{r.reference_no}</small>
+                    )}
+                  </td>
+                  <td>{methodOf(r)}</td>
+                  <td>
+                    <b>{r.description || "Transaction"}</b>
+                    {detailsOf(r) && <small>{detailsOf(r)}</small>}
+                    {r.notes && <small>{r.notes}</small>}
+                  </td>
+                  <td
+                    className={`num ${Number(r.debit) < 0 ? "negative-amount" : ""}`}
+                  >
+                    {r.debit ? money(r.debit) : "-"}
+                  </td>
+                  <td
+                    className={`num ${Number(r.credit) < 0 ? "negative-amount" : ""}`}
+                  >
+                    {r.credit ? money(r.credit) : "-"}
+                  </td>
+                  <td
+                    className={`num balance-value ${Number(r.running_balance) < 0 ? "negative-amount" : ""}`}
+                  >
+                    {balance(r.running_balance)}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="8" className="empty">
+                  No transactions found for this period.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        <section className="statement-final">
+          <div></div>
+          <div className="totals-box">
+            <p>
+              <span>Opening Balance</span>
+              <b>{balance(data?.opening_balance)}</b>
+            </p>
+            <p>
+              <span>Total {customer ? "Bill" : "Purchase"}</span>
+              <b
+                style={
+                  Number(totals.debit) < 0 ? { color: "#dc2626" } : undefined
+                }
+              >
+                {money(totals.debit)}
+              </b>
+            </p>
+            <p>
+              <span>Total Credit</span>
+              <b
+                style={
+                  Number(totals.credit) < 0 ? { color: "#dc2626" } : undefined
+                }
+              >
+                {money(totals.credit)}
+              </b>
+            </p>
+            <p className="closing">
+              <span>Closing Balance</span>
+              <b>{balance(data?.closing_balance)}</b>
+            </p>
+          </div>
+        </section>
+        <footer className="statement-footer">
+          <div>
+            <strong>Thank you for your business.</strong>
+            <span>
+              System-generated account statement. Please verify entries and
+              report any discrepancies.
+            </span>
+          </div>
+          <div>
+            <strong>TexTradeOS PRO by SparkPair</strong>
+            <span>Computer generated statement</span>
+          </div>
+        </footer>
+      </article>
+    </>
+  );
+}
+function methodOf(r) {
+  if (r.method) return String(r.method).replace(/_/g, " ");
+  const d = String(r.description || "").toLowerCase();
+  if (d.includes("return")) return "Adjustment";
+  if (d.includes("invoice")) return "Invoice";
+  if (d.includes("purchase")) return "Purchase";
+  return "Entry";
+}
+function detailsOf(r) {
+  return [
+    r.total_pcs != null && `PCs: ${r.total_pcs}`,
+    r.article_count != null && `Articles: ${r.article_count}`,
+    r.packet_count != null && `Packets: ${r.packet_count}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+const CSS = `
+.negative-amount{color:#dc2626!important}
 .statement-paper{width:100%;box-sizing:border-box;background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:11.1px;line-height:1.38}.statement-head{display:flex;justify-content:space-between;align-items:flex-start;gap:28px;border-bottom:1.4px solid #111827;padding:0 5px 11px}.brand{min-width:0}.brand h1{display:flex;align-items:baseline;gap:10px;margin:0;font-size:27px;font-weight:700;letter-spacing:-.45px;line-height:1}.brand .business-urdu{font-size:15.5px;font-weight:600;letter-spacing:0}.brand p{margin:5px 0 0;font-size:10px;color:#475569}.document-meta{width:260px;flex:none}.document-meta h2{margin:0 0 7px;border-bottom:1px solid #111827;padding:0 0 5px;text-align:right;font-size:13.5px;font-weight:700;letter-spacing:.03em}.document-meta>div{display:grid;grid-template-columns:105px 1fr;gap:8px;padding:2.3px 0;font-size:10px}.document-meta b{font-size:9.5px;font-weight:600;letter-spacing:.04em}.document-meta strong{text-align:right;font-size:10px;font-weight:600}.party-block{border-bottom:1.2px solid #111827;padding:10px 5px 11px}.party-block>span{display:block;font-size:9.4px;font-weight:700;letter-spacing:.08em;color:#475569}.party-block>div{display:flex;align-items:baseline;gap:8px;margin-top:3px}.party-block h3{margin:0;font-size:18px;font-weight:700;line-height:1}.party-block>div b{font-size:10.5px;font-weight:600}.party-block p{margin:5.5px 0 0;font-size:10.3px;color:#475569}.statement-ledger{width:100%;margin-top:9px;border:1px solid #111827;border-radius:8px;border-spacing:0;border-collapse:separate;overflow:hidden;table-layout:fixed}.statement-ledger col.no{width:4%}.statement-ledger col.date{width:13%}.statement-ledger col.ref{width:13%}.statement-ledger col.method{width:9%}.statement-ledger col.desc{width:25%}.statement-ledger col.bill{width:11%}.statement-ledger col.payment{width:11%}.statement-ledger col.balance{width:14%}.statement-ledger th{padding:6.5px 5px;background:#dfe4ea;border-bottom:1px solid #111827;text-align:left;font-size:9.8px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}.statement-ledger th:nth-last-child(-n+3){text-align:right}.statement-ledger td{padding:6.5px 5px;border-bottom:1px solid #aeb7c3;vertical-align:top;font-size:10.7px;font-weight:400}.statement-ledger tbody tr:last-child td{border-bottom:0}.statement-ledger td b{font-weight:600}.statement-ledger td small{display:block;margin-top:2.2px;color:#475569;font-size:9.3px;line-height:1.3}.statement-ledger .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.statement-ledger .balance-value{font-weight:600}.statement-ledger .empty{text-align:center;padding:32px;color:#64748b;font-size:10.6px}.statement-final{display:grid;grid-template-columns:1fr 290px;gap:18px;margin-top:9px;break-inside:avoid;page-break-inside:avoid}.totals-box{border:1px solid #111827;border-radius:7px;overflow:hidden}.totals-box p{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:30px;margin:0;padding:5px 10px;border-bottom:1px solid #111827;font-size:10.8px}.totals-box p:last-child{border-bottom:0}.totals-box p b{font-weight:600}.totals-box .closing{background:#dfe4ea;font-size:11.7px;font-weight:600}.statement-footer{display:flex;justify-content:space-between;gap:20px;margin-top:11px;padding:8px 5px 0;border-top:1px solid #111827;font-size:9.4px}.statement-footer>div{display:flex;flex-direction:column;gap:1.8px}.statement-footer>div:last-child{text-align:right}.statement-footer strong{font-size:9.8px;font-weight:600}.statement-footer span{color:#475569;font-size:9.2px}.statement-row{break-inside:avoid;page-break-inside:avoid}
 @media print{.statement-paper{font-size:11.1px}.statement-ledger thead{display:table-header-group}.statement-ledger{margin-top:8px}.statement-ledger th{padding:6px 5px}.statement-ledger td{padding:6px 5px}.statement-final{margin-top:8px}.statement-footer{margin-top:9px}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 `;

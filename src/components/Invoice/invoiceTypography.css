@@ -27,7 +27,8 @@
 .invoice-paper .invoice-agency-credit{font-weight:400!important}
 
 @media print{
-  @page{size:A5 portrait!important;margin:0!important}
+  @page invoicePage{size:A5 portrait!important;margin:0!important}
+  #invoice-print-clone-root{page:invoicePage!important}
   #invoice-print-clone-root,
   #invoice-print-clone-root #invoice-print-root,
   #invoice-print-clone-root .invoice-preview-stage,
