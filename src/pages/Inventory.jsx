@@ -201,7 +201,7 @@ export default function Inventory() {
           </>}
         </div>
       </Modal>
-      <PurchaseFormModal isOpen={Boolean(printPurchase)} purchase={printPurchase} initialStep="labels" allowBack={false} suppliers={[]} onSubmit={() => null} onClose={() => setPrintPurchase(null)} />
+      <PurchaseFormModal isOpen={Boolean(printPurchase)} purchase={printPurchase} initialStep="labels" allowBack={false} suppliers={[]} labelArticlesOverride={printPurchase?.articles || null} onSubmit={() => null} onClose={() => setPrintPurchase(null)} />
     </>
   );
 }
