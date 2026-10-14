@@ -1,4 +1,5 @@
 import { formatDate, formatNumbers } from "../../utils";
+import Amount from "../Amount";
 
 const displayDiscount = (article) => {
   const raw = String(article?.discount || "").trim();
@@ -81,7 +82,7 @@ export default function ThermalInvoicePaper({ invoice, businessName = "", busine
           <div className="thermal-item" key={article?._key || article?._id || index}>
             <div className="thermal-item-title">
               <span>{String(index + 1).padStart(2, "0")}. {article?.description || "-"}</span>
-              <strong>{formatNumbers(article?.amount, 1)}</strong>
+              <strong><Amount value={article?.amount} decimals={1} /></strong>
             </div>
             <div className="thermal-item-grid">
               <span>Size: {article?.size || "-"}</span>
@@ -100,21 +101,21 @@ export default function ThermalInvoicePaper({ invoice, businessName = "", busine
       </section>
       
       <section className="thermal-summary">
-        <div><span>Previous Outstanding</span><strong>{formatNumbers(invoice?.customer_balance_before, 1)}</strong></div>
-        <div><span>Gross Amount</span><strong>{formatNumbers(grossAmount, 1)}</strong></div>
-        <div><span>Percent Discount</span><strong>-{formatNumbers(percentDiscountAmount, 1)}</strong></div>
-        <div><span>Rs Discount</span><strong>-{formatNumbers(rupeeDiscountAmount, 1)}</strong></div>
-        <div className="thermal-summary-strong"><span>Net Amount</span><strong>{formatNumbers(netAmount, 1)}</strong></div>
-        <div><span>Sales Return</span><strong>-{formatNumbers(salesReturnAmount, 1)}</strong></div>
+        <div><span>Previous Outstanding</span><strong><Amount value={invoice?.customer_balance_before} decimals={1} /></strong></div>
+        <div><span>Gross Amount</span><strong><Amount value={grossAmount} decimals={1} /></strong></div>
+        <div><span>Percent Discount</span><strong><Amount value={-Math.abs(percentDiscountAmount)} decimals={1} /></strong></div>
+        <div><span>Discount</span><strong><Amount value={-Math.abs(rupeeDiscountAmount)} decimals={1} /></strong></div>
+        <div className="thermal-summary-strong"><span>Net Amount</span><strong><Amount value={netAmount} decimals={1} /></strong></div>
+        <div><span>Sales Return</span><strong><Amount value={-Math.abs(salesReturnAmount)} decimals={1} /></strong></div>
         <div><span>Sales Return (Pcs)</span><strong>-{formatNumbers(salesReturnPcs, 1)}</strong></div>
         <div><span>Payment Method</span><strong>{paymentMethod}</strong></div>
-        <div><span>Received</span><strong>{formatNumbers(receivedAmount, 1)}</strong></div>
-        <div className="thermal-summary-total"><span>Payable</span><strong>{formatNumbers(payableAmount, 1)}</strong></div>
+        <div><span>Received</span><strong><Amount value={receivedAmount} decimals={1} /></strong></div>
+        <div className="thermal-summary-total"><span>Payable</span><strong><Amount value={payableAmount} decimals={1} /></strong></div>
         <div className="thermal-summary-total">
           <span>{returnAmount > 0 ? "Return To Customer" : "Balance"}</span>
-          <strong>{formatNumbers(returnAmount > 0 ? returnAmount : balanceAmount, 1)}</strong>
+          <strong><Amount value={returnAmount > 0 ? returnAmount : balanceAmount} decimals={1} /></strong>
         </div>
-        <div className="thermal-summary-total"><span>Current Balance</span><strong>{formatNumbers(invoice?.customer_balance_after, 1)}</strong></div>
+        <div className="thermal-summary-total"><span>Current Balance</span><strong><Amount value={invoice?.customer_balance_after} decimals={1} /></strong></div>
       </section>
 
       <footer className="thermal-footer">

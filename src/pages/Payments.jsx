@@ -7,13 +7,14 @@ import Modal from "../components/Modal";
 import PageHeader from "../components/PageHeader";
 import Select from "../components/Select";
 import StatCard from "../components/StatCard";
+import Amount from "../components/Amount";
 import TableToolbar from "../components/table/TableToolbar";
 import { useToast } from "../context/ToastContext";
 import { createCustomerPayment, createSupplierPayment, fetchCustomers, fetchPayments, fetchSuppliers } from "../api/commerce";
 
 const PAGE_SIZE = 30;
 const today = () => new Date().toISOString().slice(0, 10);
-const money = (value) => `Rs ${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+const money = (value) => <Amount value={value} decimals={2} />;
 const errorMessage = (error, fallback) => error?.response?.data?.message || error?.message || fallback;
 const emptyForm = () => ({ party_type: "customer", party_id: "", payment_date: today(), method: "cash", amount: "", reference_no: "", bank_name: "", cheque_date: "", slip_date: "" });
 const methodLabel = (value) => ({ cash: "Cash", cheque: "Cheque", slip: "Slip", online: "Online" }[value] || value || "-");

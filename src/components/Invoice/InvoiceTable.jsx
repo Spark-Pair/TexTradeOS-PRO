@@ -1,4 +1,5 @@
 import { formatNumbers } from "../../utils";
+import Amount from "../Amount";
 
 const grossForArticle = (article) => { const explicitGross=Number(article?.gross_amount||0); return Number.isFinite(explicitGross)&&explicitGross>0?explicitGross:Number(article?.pcs||0)*Number(article?.rate||0); };
 const displayDiscount = (article) => { const raw=String(article?.discount||"").trim();if(raw)return raw;return Number(article?.discount_amount||0)>0?formatNumbers(article.discount_amount,1):"-"; };
@@ -25,20 +26,20 @@ export default function InvoiceTable({articles=[],invoice=null,totalAmount=0}) {
     <div className="invoice-table-wrap"><table className="invoice-table"><colgroup><col style={{width:"5%"}}/><col style={{width:"12%"}}/><col style={{width:"28%"}}/><col style={{width:"7%"}}/><col style={{width:"7%"}}/><col style={{width:"9%"}}/><col style={{width:"7%"}}/><col style={{width:"15%"}}/><col style={{width:"15%"}}/></colgroup><thead><tr><th>NO</th><th className="center">SIZE</th><th><span className="screen-label">DESCRIPTION</span><span className="print-label">DESC</span></th><th className="numeric">DZN</th><th className="numeric">PCS</th><th className="numeric">RATE</th><th className="numeric">DISC</th><th className="numeric">GROSS</th><th className="numeric"><span className="screen-label">AMOUNT</span><span className="print-label">AMT</span></th></tr></thead><tbody>{articles.map((article,index)=><tr key={article?._key||article?._id||index}><td className="row-number">{String(index+1).padStart(2,"0")}</td><td className="center">{article?.size||"-"}</td><td className="description">{article?.description||"-"}</td><td className="numeric tabular">{formatNumbers(article?.dzn,1)}</td><td className="numeric tabular">{formatNumbers(article?.pcs,0)}</td><td className="numeric">{formatNumbers(article?.rate,1)}</td><td className="numeric muted-value">{displayDiscount(article)}</td><td className="numeric muted-value">{formatNumbers(grossForArticle(article),1)}</td><td className="numeric amount">{formatNumbers(article?.amount,1)}</td></tr>)}</tbody><tfoot><tr><td colSpan={3}>Totals</td><td className="numeric tabular">{formatNumbers(totalDzn,1)}</td><td className="numeric tabular">{formatNumbers(totalPcs,0)}</td><td/><td/><td className="numeric">{formatNumbers(lineGrossAmount,1)}</td><td className="numeric amount">{formatNumbers(lineFinalAmount,1)}</td></tr></tfoot></table></div>
     <div className="invoice-summary invoice-summary-two-column">
       <div className="invoice-totals-panel">
-        <div className="summary-row"><span>Gross Amount</span><strong>{formatNumbers(grossAmount,1)}</strong></div>
-        <div className="summary-row"><span>Percent Discount</span><strong>-{formatNumbers(percentDiscountAmount,1)}</strong></div>
-        <div className="summary-row"><span>Rs Discount</span><strong>-{formatNumbers(rupeeDiscountAmount,1)}</strong></div>
-        <div className="summary-row invoice-emphasis-row"><span>Net Amount</span><strong>{formatNumbers(netAmount,1)}</strong></div>
-        <div className="summary-row"><span>Sales Return</span><strong>-{formatNumbers(salesReturnAmount,1)}</strong></div>
-        <div className="summary-row"><span>Previous Outstanding</span><strong>{formatNumbers(invoice?.customer_balance_before,1)}</strong></div>
+        <div className="summary-row"><span>Gross Amount</span><strong><Amount value={grossAmount} decimals={1} /></strong></div>
+        <div className="summary-row"><span>Percent Discount</span><strong><Amount value={-Math.abs(percentDiscountAmount)} decimals={1} /></strong></div>
+        <div className="summary-row"><span>Discount</span><strong><Amount value={-Math.abs(rupeeDiscountAmount)} decimals={1} /></strong></div>
+        <div className="summary-row invoice-emphasis-row"><span>Net Amount</span><strong><Amount value={netAmount} decimals={1} /></strong></div>
+        <div className="summary-row"><span>Sales Return</span><strong><Amount value={-Math.abs(salesReturnAmount)} decimals={1} /></strong></div>
+        <div className="summary-row"><span>Previous Outstanding</span><strong><Amount value={invoice?.customer_balance_before} decimals={1} /></strong></div>
       </div>
       <div className="invoice-totals-panel">
         <div className="summary-row"><span>Sales Return (Pcs)</span><strong>-{formatNumbers(salesReturnPcs,1)}</strong></div>
         <div className="summary-row"><span>Payment Method</span><strong>{receivedAmount>0?(paymentMethod||"-"):"-"}</strong></div>
-        <div className="summary-row"><span>Received</span><strong>{formatNumbers(receivedAmount,1)}</strong></div>
-        <div className="summary-row invoice-total-row"><span>Payable</span><strong>{formatNumbers(payableAmount,1)}</strong></div>
-        <div className="summary-row invoice-total-row"><span>{returnAmount>0?"Return To Customer":"Balance"}</span><strong>{formatNumbers(returnAmount>0?returnAmount:balanceAmount,1)}</strong></div>
-        <div className="summary-row invoice-total-row"><span>Current Balance</span><strong>{formatNumbers(invoice?.customer_balance_after,1)}</strong></div>
+        <div className="summary-row"><span>Received</span><strong><Amount value={receivedAmount} decimals={1} /></strong></div>
+        <div className="summary-row invoice-total-row"><span>Payable</span><strong><Amount value={payableAmount} decimals={1} /></strong></div>
+        <div className="summary-row invoice-total-row"><span>{returnAmount>0?"Return To Customer":"Balance"}</span><strong><Amount value={returnAmount>0?returnAmount:balanceAmount} decimals={1} /></strong></div>
+        <div className="summary-row invoice-total-row"><span>Current Balance</span><strong><Amount value={invoice?.customer_balance_after} decimals={1} /></strong></div>
       </div>
     </div>
   </div>;

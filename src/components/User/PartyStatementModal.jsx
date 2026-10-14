@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, BookOpen, Loader2, RefreshCw } from "lucide-react";
 import Modal from "../Modal";
 import Button from "../Button";
+import Amount from "../Amount";
 import { fetchCustomerStatement, fetchSupplierStatement } from "../../api/commerce";
 
-const money = (value) => `Rs ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+const money = (value) => <Amount value={value} decimals={2} />;
 const date = (value) => value ? new Date(`${String(value).slice(0, 10)}T00:00:00`).toLocaleDateString() : "-";
 
 export default function PartyStatementModal({ isOpen, onClose, party, type = "customer" }) {

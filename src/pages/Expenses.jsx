@@ -8,13 +8,14 @@ import Modal from "../components/Modal";
 import PageHeader from "../components/PageHeader";
 import Select from "../components/Select";
 import StatCard from "../components/StatCard";
+import Amount from "../components/Amount";
 import TableToolbar from "../components/table/TableToolbar";
 import { useToast } from "../context/ToastContext";
 import { createExpense, fetchExpenses, removeExpense } from "../api/commerce";
 
 const PAGE_SIZE = 30;
 const today = () => new Date().toISOString().slice(0, 10);
-const money = (value) => `Rs ${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+const money = (value) => <Amount value={value} decimals={2} />;
 const errorMessage = (error, fallback) => error?.response?.data?.message || error?.message || fallback;
 const emptyForm = () => ({ expense_date: today(), category: "", paid_to: "", method: "cash", amount: "", reference_no: "", bank_name: "", cheque_date: "", slip_date: "", notes: "" });
 const methodLabel = (value) => ({ cash: "Cash", cheque: "Cheque", slip: "Slip", online: "Online" }[value] || value || "-");

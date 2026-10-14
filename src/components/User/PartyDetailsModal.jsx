@@ -3,8 +3,9 @@ import Button from "../Button";
 import Modal from "../Modal";
 import ModalDetails from "../ModalDetails";
 import StatusBadge from "../StatusBadge";
+import Amount from "../Amount";
 
-const money = (value) => `Rs ${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+const money = (value) => <Amount value={value}/>;
 
 export default function PartyDetailsModal({ isOpen, onClose, party, type = "customer", onEdit, onToggle }) {
   const isCustomer = type === "customer"; const isActive = party?.isActive; const name = party?.[isCustomer ? "customer_name" : "supplier_name"];
