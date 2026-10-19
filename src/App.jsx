@@ -152,7 +152,6 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/setup" element={<Setup />} />
-              <Route path="/business-setup" element={<ProtectedRoute><BusinessSetup /></ProtectedRoute>} />
               <Route
                 element={
                   <ProtectedRoute>
@@ -162,6 +161,7 @@ export default function App() {
               >
                 <Route path="/" element={<MenuPage />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/business-setup" element={<RoleRoute allow={["developer"]}><BusinessSetup /></RoleRoute>} />
                 <Route
                   path="/users"
                   element={

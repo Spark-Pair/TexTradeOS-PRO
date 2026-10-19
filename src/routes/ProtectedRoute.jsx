@@ -8,7 +8,7 @@ export default function ProtectedRoute({ children }) {
   if (loading) return <FullScreenLoader />;
 
   if (!user) return <Navigate to="/login" replace />;
-  if (!user.businessProfileComplete && window.location.pathname !== "/business-setup") return <Navigate to="/business-setup" replace />;
+  if (user.role === "developer" && !user.businessProfileComplete && window.location.pathname !== "/business-setup") return <Navigate to="/business-setup" replace />;
 
   return children;
 }
