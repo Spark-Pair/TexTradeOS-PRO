@@ -59,7 +59,7 @@ const getPrintStyle = (printMode = "a5") => `
   .customer-two-invoice .invoice-table td { border-color:var(--customer-brand-border,#5f7890); }
   .customer-two-invoice .invoice-table tfoot td { border-color:var(--customer-brand-border,#5f7890); background:var(--customer-brand-soft,rgba(190,226,244,.72)); color:var(--customer-brand-dark,#073763); }
   .customer-two-invoice .invoice-summary { margin-top:8px; }
-  .customer-two-invoice .invoice-summary-two-column { gap:8px; }
+  .customer-two-invoice .invoice-summary-two-column { gap:7px; }
   .customer-two-invoice .summary-row { min-height:22px; padding:4.5px 7px; border-color:var(--customer-brand-border,#5f7890); }
   .customer-two-invoice .invoice-totals-panel .invoice-emphasis-row { background:var(--customer-brand-emphasis,rgba(214,226,235,.72)); }
   .customer-two-invoice .invoice-totals-panel .invoice-total-row { background:var(--customer-brand-total,rgba(169,218,241,.74)); }
@@ -121,7 +121,7 @@ const getPrintStyle = (printMode = "a5") => `
   .invoice-table tfoot td { padding:3px 5.5px; border:0; border-top:var(--invoice-border-width) solid var(--invoice-border-color); background:#dfe3e8; color:#111827; font-size:8.1px; font-weight:750; letter-spacing:.02em; }
   .invoice-table tfoot td:first-child{border-bottom-left-radius:calc(var(--invoice-radius) - 1px)}.invoice-table tfoot td:last-child{border-bottom-right-radius:calc(var(--invoice-radius) - 1px)}
   .invoice-summary { display:flex; justify-content:flex-end; margin-top:7px; }
-  .invoice-summary-single { display:block; }
+  .invoice-summary-single { display:grid; grid-template-columns:minmax(0,64mm); justify-content:end; align-items:start; gap:7px; }
   .invoice-summary-single .invoice-totals-panel { width:100%; }
   .invoice-summary.summary-compact .summary-row { min-height:18px; padding-top:2.5px; padding-bottom:2.5px; font-size:9px; }
   .invoice-totals-panel { display:grid; gap:0; width:64mm; max-width:100%; padding:0; border:var(--invoice-border-width) solid var(--invoice-border-color); border-radius:var(--invoice-radius); background:#fff; color:#111827; overflow:hidden; }
@@ -178,8 +178,10 @@ const getPrintStyle = (printMode = "a5") => `
     #invoice-print-clone-root .invoice-table thead{display:table-header-group!important}#invoice-print-clone-root .invoice-table tfoot{display:table-row-group!important;break-inside:avoid!important;page-break-inside:avoid!important}#invoice-print-clone-root .invoice-table th{border:0!important;border-bottom:var(--invoice-border-width) solid var(--invoice-border-color)!important;background:#dfe3e8!important;text-transform:capitalize!important}#invoice-print-clone-root .invoice-table td{border:0!important;border-bottom:var(--invoice-border-width) solid var(--invoice-border-color)!important}#invoice-print-clone-root .invoice-table tbody tr,#invoice-print-clone-root .invoice-table tfoot tr{break-inside:avoid!important;page-break-inside:avoid!important}#invoice-print-clone-root .invoice-table tbody tr:last-child td{border-bottom:0!important}#invoice-print-clone-root .invoice-table tfoot td{border:0!important;border-top:var(--invoice-border-width) solid var(--invoice-border-color)!important;background:#dfe3e8!important}
     #invoice-print-clone-root .invoice-totals-panel{border:var(--invoice-border-width) solid var(--invoice-border-color)!important;border-radius:var(--invoice-radius)!important;overflow:hidden!important}#invoice-print-clone-root .summary-row{border-bottom:var(--invoice-border-width) solid var(--invoice-border-color)!important}#invoice-print-clone-root .summary-row:last-child{border-bottom:0!important}#invoice-print-clone-root .invoice-totals-panel span{font-size:8.8px!important}#invoice-print-clone-root .invoice-totals-panel strong{font-size:9.3px!important}#invoice-print-clone-root .invoice-totals-panel .invoice-emphasis-row strong{font-size:9.7px!important}#invoice-print-clone-root .invoice-totals-panel .invoice-total-row strong{font-size:9.8px!important}
     #invoice-print-clone-root .invoice-paper-footer{border-top:var(--invoice-border-width) solid var(--invoice-border-color)!important}#invoice-print-clone-root .invoice-thanks,#invoice-print-clone-root .invoice-system-credit{font-size:7.8px!important}#invoice-print-clone-root .invoice-footer-note,#invoice-print-clone-root .invoice-agency-credit{font-size:7.2px!important}#invoice-print-clone-root .invoice-summary,#invoice-print-clone-root .invoice-totals-panel,#invoice-print-clone-root .invoice-paper-footer{break-inside:avoid!important;page-break-inside:avoid!important}
-    #invoice-print-clone-root .invoice-summary-two-column{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;gap:8px!important;justify-content:stretch!important}
+    #invoice-print-clone-root .invoice-summary-two-column{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;gap:7px!important;justify-content:stretch!important}
     #invoice-print-clone-root .invoice-summary-two-column .invoice-totals-panel{width:100%!important;max-width:none!important}
+    #invoice-print-clone-root .invoice-summary-single{display:grid!important;grid-template-columns:minmax(0,64mm)!important;width:100%!important;gap:7px!important;justify-content:end!important}
+    #invoice-print-clone-root .invoice-summary-single .invoice-totals-panel{width:100%!important;max-width:none!important}
     #invoice-print-clone-root .customer-two-invoice{--invoice-border-color:var(--customer-brand-border,#5f7890)!important;--invoice-radius:7px!important}
     #invoice-print-clone-root .customer-two-invoice .invoice-table-wrap,#invoice-print-clone-root .customer-two-invoice .invoice-totals-panel{border-color:var(--customer-brand-border,#5f7890)!important;background:rgba(255,255,255,.46)!important}
     #invoice-print-clone-root .customer-two-invoice .invoice-table th{border-color:var(--customer-brand-dark,#073763)!important;background:var(--customer-brand-dark,#073763)!important;color:#fff!important;text-transform:uppercase!important}
@@ -199,8 +201,8 @@ const getPrintStyle = (printMode = "a5") => `
     #invoice-print-clone-root .thermal-invoice-paper.customer-two-invoice .thermal-summary-total{background:var(--customer-brand-total,rgba(169,218,241,.74))!important}
   }
 
-  .invoice-summary-two-column{display:grid;grid-template-columns:repeat(2,minmax(0,64mm));justify-content:end;align-items:start;gap:6px}.invoice-summary-two-column .invoice-totals-panel{width:100%}.invoice-summary-single .invoice-totals-panel{width:100%}
-  .thermal-summary-two-column{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:5px}.thermal-summary-panel{display:block!important;min-width:0;overflow:hidden;border:var(--invoice-border-width) solid var(--invoice-border-color);border-radius:var(--invoice-radius);background:#fff}.thermal-summary-panel>div{padding:2px 4px;gap:3px}.thermal-summary-panel>div:not(:last-child)::after{left:0;right:0}.thermal-summary-panel span{min-width:0;font-size:8.6px}.thermal-summary-panel strong{font-size:9.2px}.thermal-summary-panel .thermal-summary-total strong{font-size:10px}
+  .invoice-summary-two-column{display:grid;grid-template-columns:repeat(2,minmax(0,64mm));justify-content:end;align-items:start;gap:7px}.invoice-summary-two-column .invoice-totals-panel{width:100%}.invoice-summary-single .invoice-totals-panel{width:100%}
+  .thermal-summary-two-column{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:7px}.thermal-summary-single .thermal-summary-panel{width:50%;margin-left:auto}.thermal-summary-panel{display:block!important;min-width:0;overflow:hidden;border:var(--invoice-border-width) solid var(--invoice-border-color);border-radius:var(--invoice-radius);background:#fff}.thermal-summary-panel>div{padding:2px 4px;gap:3px}.thermal-summary-panel>div:not(:last-child)::after{left:0;right:0}.thermal-summary-panel span{min-width:0;font-size:8.6px}.thermal-summary-panel strong{font-size:9.2px}.thermal-summary-panel .thermal-summary-total strong{font-size:10px}
 `;
 
 function injectPrintStyle(printMode = "a5") {
