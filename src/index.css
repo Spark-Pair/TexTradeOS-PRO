@@ -117,3 +117,8 @@ button, input, select, textarea {
 button {
   cursor: pointer;
 }
+
+/* Shared spacing for card/section headers that include a leading icon. */
+.icon-section-header {
+  padding-inline: 1.125rem;
+}

@@ -58,7 +58,7 @@ export default function SettingsPage() {
     <div className="relative z-10 mx-auto flex h-full min-h-0 max-w-7xl flex-col">
       <PageHeader title="Settings" subtitle="Manage module visibility and role access." rightContent={<Button icon={ShieldCheck} onClick={handleSave} disabled={loading || saving || Boolean(loadError) || !ruleDataDraft}>{saving ? "Saving..." : "Save Access Rules"}</Button>} />
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-gray-300 bg-white">
-        <div className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4 sm:px-6">
+        <div className="icon-section-header flex shrink-0 items-center gap-3 border-b border-gray-200 bg-gray-50 py-4">
           <span className="grid h-9 w-9 place-items-center rounded-xl border border-gray-300 bg-white text-gray-600"><ShieldCheck size={17} /></span>
           <div><h2 className="text-sm font-semibold text-gray-800">Access Rules</h2><p className="mt-0.5 text-xs text-gray-400">Choose where each registered module appears and which roles can open it.</p></div>
           <span className="ml-auto hidden text-xs text-gray-400 sm:block">{rules.length} modules</span>

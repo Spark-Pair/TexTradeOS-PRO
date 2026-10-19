@@ -92,7 +92,7 @@ export default function KeyboardShortcuts() {
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-gray-300 bg-white">
-        <div className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4 sm:px-6">
+        <div className="icon-section-header flex shrink-0 items-center gap-3 border-b border-gray-200 bg-gray-50 py-4">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white"><Keyboard size={17} className="text-gray-500" /></div>
           <div><h2 className="text-sm font-semibold text-gray-800">Shortcut assignments</h2><p className="text-xs text-gray-400">Editable shortcuts are saved to your user account.</p></div>
           <span className="ml-auto hidden text-xs text-gray-400 sm:block">{visible.length} shortcuts</span>

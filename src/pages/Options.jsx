@@ -79,7 +79,7 @@ export default function OptionsPage() {
         const module = BUSINESS_ACCESS_ITEMS_MAP.get(moduleKey);
         const Icon = getModuleMeta(moduleKey).icon || SlidersHorizontal;
         return <section key={moduleKey} className="overflow-hidden rounded-3xl border border-gray-300 bg-white">
-          <div className="flex items-center gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4 sm:px-6"><span className="grid h-9 w-9 place-items-center rounded-xl border border-gray-200 bg-white text-gray-600"><Icon size={17} /></span><div><h2 className="text-sm font-semibold text-gray-800">{module?.label || moduleKey}</h2><p className="text-xs text-gray-400">Values below are loaded from and saved to business reference data.</p></div></div>
+          <div className="icon-section-header flex items-center gap-3 border-b border-gray-200 bg-gray-50 py-4"><span className="grid h-9 w-9 place-items-center rounded-xl border border-gray-200 bg-white text-gray-600"><Icon size={17} /></span><div><h2 className="text-sm font-semibold text-gray-800">{module?.label || moduleKey}</h2><p className="text-xs text-gray-400">Values below are loaded from and saved to business reference data.</p></div></div>
           <div className="divide-y divide-gray-200">{options.map((option) => {
             const values = Array.isArray(referenceData?.[option.storageKey]) ? referenceData[option.storageKey] : [];
             const saving = savingKey === option.storageKey;
