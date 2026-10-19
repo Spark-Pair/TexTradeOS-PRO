@@ -134,19 +134,19 @@ export default function BusinessSetup() {
           </SectionCard>
 
           <SectionCard icon={Palette} title="Brand Color" description="Sets invoice colors." className="xl:h-[280px]" bodyClassName="flex flex-col justify-center p-5 xl:h-[210px]">
-            <div className="flex items-end gap-3">
-              <label className="relative grid h-[42px] w-[42px] shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border border-black/10 shadow-sm transition hover:scale-[1.03]" style={{ backgroundColor: primaryColor }}>
-                <Palette size={17} className="text-white drop-shadow" aria-hidden="true" />
+            <div className="flex items-end gap-4">
+              <label className="relative grid h-14 w-14 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-2xl border border-black/10 shadow-sm transition hover:scale-[1.03]" style={{ backgroundColor: primaryColor }}>
+                <Palette size={19} className="text-white drop-shadow" aria-hidden="true" />
                 <input type="color" name="primary_color" value={primaryColor} onChange={change} className="absolute inset-0 cursor-pointer opacity-0" aria-label="Choose primary business color" />
               </label>
               <div className="min-w-0 flex-1">
                 <label htmlFor="primary-color-value" className="text-xs font-medium text-gray-600">Primary color</label>
-                <input id="primary-color-value" name="primary_color" value={form.primary_color || "#0b74b7"} onChange={change} pattern="#[0-9A-Fa-f]{6}" maxLength="7" required className="mt-1 w-full rounded-xl border border-gray-400 px-3.5 py-2 font-mono text-sm uppercase outline-none transition focus:ring-2 focus:ring-teal-300" aria-label="Primary color hex value" />
+                <input id="primary-color-value" name="primary_color" value={form.primary_color || "#0b74b7"} onChange={change} pattern="#[0-9A-Fa-f]{6}" maxLength="7" required className="mt-1 w-full rounded-xl border border-gray-400 px-3.5 py-2.5 font-mono text-sm uppercase outline-none transition focus:ring-2 focus:ring-teal-300" aria-label="Primary color hex value" />
               </div>
             </div>
-            <div className="mt-4">
+            <div className="mt-5">
               <div className="mb-2 flex items-center justify-between text-[11px] text-gray-400"><span>Invoice palette</span><span>Auto-generated</span></div>
-              <div className="flex h-3 overflow-hidden rounded-full ring-1 ring-black/5"><span className="flex-1" style={{ backgroundColor: primaryColor }} /><span className="flex-1 opacity-75" style={{ backgroundColor: primaryColor }} /><span className="flex-1 opacity-45" style={{ backgroundColor: primaryColor }} /><span className="flex-1 opacity-20" style={{ backgroundColor: primaryColor }} /></div>
+              <div className="flex h-4 overflow-hidden rounded-full ring-1 ring-black/5"><span className="flex-1" style={{ backgroundColor: primaryColor }} /><span className="flex-1 opacity-75" style={{ backgroundColor: primaryColor }} /><span className="flex-1 opacity-45" style={{ backgroundColor: primaryColor }} /><span className="flex-1 opacity-20" style={{ backgroundColor: primaryColor }} /></div>
             </div>
           </SectionCard>
 
