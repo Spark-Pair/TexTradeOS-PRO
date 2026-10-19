@@ -169,33 +169,40 @@ export default function BusinessSetup() {
       </div>
 
       <SectionCard icon={FileText} title="Invoice Summary" description="Choose the layout and visibility rules for invoice totals." className="mt-4" bodyClassName="p-4 sm:p-5">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)]">
-          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-gray-50/80 px-4 py-3.5">
-            <span className="min-w-0"><strong className="block text-sm font-semibold text-gray-800">Compact summary</strong><span className="mt-0.5 block text-xs text-gray-400">Reduce row height on preview and print.</span></span>
-            <AnimatedSwitch checked={summarySettings.summary_compact} onChange={() => updateSummarySetting("summary_compact", !summarySettings.summary_compact)} />
-          </label>
-          <div className="rounded-2xl border border-gray-200 bg-gray-50/80 px-4 py-3.5">
-            <p className="text-xs font-semibold text-gray-700">Summary layout</p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {[["dual", "Dual boxes"], ["single", "Single box"]].map(([value, label]) => <label key={value} className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${summarySettings.summary_layout === value ? "border-[#127475] bg-white text-[#127475] shadow-sm" : "border-transparent bg-gray-100 text-gray-500 hover:bg-white"}`}><input type="radio" name="summary_layout" value={value} checked={summarySettings.summary_layout === value} onChange={() => updateSummarySetting("summary_layout", value)} className="accent-[#127475]" />{label}</label>)}
+        <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-400">Presentation</p>
+            <label className="mt-3 flex cursor-pointer items-center justify-between gap-4 border-b border-gray-200 pb-4">
+              <span className="min-w-0"><strong className="block text-sm font-semibold text-gray-800">Compact rows</strong><span className="mt-0.5 block text-[11px] leading-4 text-gray-400">Reduce summary height.</span></span>
+              <AnimatedSwitch checked={summarySettings.summary_compact} onChange={() => updateSummarySetting("summary_compact", !summarySettings.summary_compact)} />
+            </label>
+            <div className="pt-4">
+              <p className="text-xs font-semibold text-gray-700">Box layout</p>
+              <div className="mt-2 grid gap-2">
+                {[["dual", "Dual boxes", "Two balanced columns"], ["single", "Single box", "One full-width list"]].map(([value, label, hint]) => <label key={value} className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition ${summarySettings.summary_layout === value ? "border-[#127475] bg-white shadow-sm" : "border-gray-200 bg-transparent hover:bg-white"}`}><input type="radio" name="summary_layout" value={value} checked={summarySettings.summary_layout === value} onChange={() => updateSummarySetting("summary_layout", value)} className="h-4 w-4 accent-[#127475]" /><span><strong className={`block text-xs font-semibold ${summarySettings.summary_layout === value ? "text-[#127475]" : "text-gray-700"}`}>{label}</strong><small className="mt-0.5 block text-[10px] text-gray-400">{hint}</small></span></label>)}
+              </div>
             </div>
-          </div>
-        </div>
+          </aside>
 
-        <div className="mt-4 border-t border-gray-200 pt-4">
-          <div><h3 className="text-sm font-semibold text-gray-800">Summary fields</h3><p className="mt-0.5 text-xs text-gray-400">Set visibility and zero-value behavior separately for every field.</p></div>
-          <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-            {SUMMARY_FIELD_DEFINITIONS.map(({ key, label }) => {
-              const visible = summarySettings.summary_fields[key] !== false;
-              const hideWhenZero = summarySettings.summary_zero_fields[key] === true;
-              return <div key={key} className={`flex min-w-0 items-center justify-between gap-3 rounded-xl border px-3.5 py-3 transition ${visible ? "border-gray-200 bg-white" : "border-gray-200 bg-gray-50 opacity-70"}`}>
-                <span className="min-w-0 truncate text-xs font-semibold text-gray-700" title={label}>{label}</span>
-                <div className="flex shrink-0 items-center gap-2">
-                  <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition ${visible ? "bg-teal-50 text-[#127475]" : "bg-gray-100 text-gray-500"}`} title="Show this field"><input type="checkbox" checked={visible} onChange={() => toggleSummaryField(key)} className="h-3.5 w-3.5 accent-[#127475]" /><span>Show</span></label>
-                  <label className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition ${visible ? "cursor-pointer bg-amber-50 text-amber-700" : "cursor-not-allowed bg-gray-100 text-gray-400"}`} title="Hide this field when its value is zero"><input type="checkbox" checked={hideWhenZero} disabled={!visible} onChange={() => toggleSummaryZeroField(key)} className="h-3.5 w-3.5 accent-amber-600" /><span>Zero</span></label>
-                </div>
-              </div>;
-            })}
+          <div className="grid gap-3 md:grid-cols-2">
+            {[["primary", "Amount details"], ["secondary", "Payment & balance"]].map(([group, title]) => <section key={group} className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+              <div className="grid grid-cols-[minmax(0,1fr)_58px_78px] items-center gap-2 border-b border-gray-200 bg-gray-50/80 px-4 py-3">
+                <div><h3 className="text-xs font-semibold text-gray-800">{title}</h3><p className="mt-0.5 text-[10px] text-gray-400">Invoice summary rows</p></div>
+                <span className="text-center text-[9px] font-semibold uppercase tracking-wide text-gray-400">Visible</span>
+                <span className="text-center text-[9px] font-semibold uppercase tracking-wide text-gray-400">Hide zero</span>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {SUMMARY_FIELD_DEFINITIONS.filter((field) => field.group === group).map(({ key, label }) => {
+                  const visible = summarySettings.summary_fields[key] !== false;
+                  const hideWhenZero = summarySettings.summary_zero_fields[key] === true;
+                  return <div key={key} className={`grid min-h-10 grid-cols-[minmax(0,1fr)_58px_78px] items-center gap-2 px-4 py-2 transition ${visible ? "bg-white" : "bg-gray-50/70"}`}>
+                    <span className={`min-w-0 truncate text-xs font-medium ${visible ? "text-gray-700" : "text-gray-400"}`} title={label}>{label}</span>
+                    <label className="grid cursor-pointer place-items-center" title={visible ? "Hide field" : "Show field"}><input type="checkbox" checked={visible} onChange={() => toggleSummaryField(key)} className="h-4 w-4 accent-[#127475]" /><span className="sr-only">Show {label}</span></label>
+                    <label className={`grid place-items-center ${visible ? "cursor-pointer" : "cursor-not-allowed"}`} title="Hide this field when its value is zero"><input type="checkbox" checked={hideWhenZero} disabled={!visible} onChange={() => toggleSummaryZeroField(key)} className="h-4 w-4 accent-[#127475] disabled:opacity-30" /><span className="sr-only">Hide {label} when zero</span></label>
+                  </div>;
+                })}
+              </div>
+            </section>)}
           </div>
         </div>
       </SectionCard>
