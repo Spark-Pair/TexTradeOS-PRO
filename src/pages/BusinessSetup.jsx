@@ -133,7 +133,7 @@ export default function BusinessSetup() {
               </div>
           </SectionCard>
 
-          <SectionCard icon={Palette} title="Brand Color" description="Sets invoice colors.">
+          <SectionCard icon={Palette} title="Brand Color" description="Sets invoice colors." className="xl:h-[240px]" bodyClassName="flex flex-col justify-center p-5 xl:h-[170px]">
             <div className="flex items-end gap-3">
               <label className="relative grid h-[42px] w-[42px] shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border border-black/10 shadow-sm transition hover:scale-[1.03]" style={{ backgroundColor: primaryColor }}>
                 <Palette size={17} className="text-white drop-shadow" aria-hidden="true" />
@@ -159,16 +159,16 @@ export default function BusinessSetup() {
             </div>
           </SectionCard>
 
-          <SectionCard icon={MapPin} title="Contact & Registration" description="Business contact and tax information." bodyClassName="p-4 sm:p-5">
-            <div className="grid gap-3 sm:grid-cols-2">
+          <SectionCard icon={MapPin} title="Contact & Registration" description="Business contact and tax information." bodyClassName="p-3 sm:p-4">
+            <div className="grid gap-2 sm:grid-cols-2">
               {fields.slice(3).map(([name, label, placeholder, required]) => <Input key={name} name={name} label={label} placeholder={placeholder} value={form[name] || ""} onChange={change} required={required === true} />)}
-              <label className="grid gap-1.5 text-sm text-gray-700 sm:col-span-2"><span>Business address <span className="text-gray-400">(Optional)</span></span><textarea name="address" rows="3" placeholder="Optional" value={form.address || ""} onChange={change} className="resize-y rounded-xl border border-gray-400 px-4 py-2 font-normal outline-none transition focus:ring-2 focus:ring-teal-300" /></label>
+              <label className="grid gap-1.5 text-sm text-gray-700 sm:col-span-2"><span>Business address <span className="text-gray-400">(Optional)</span></span><textarea name="address" rows="2" placeholder="Optional" value={form.address || ""} onChange={change} className="resize-y rounded-xl border border-gray-400 px-4 py-2 font-normal outline-none transition focus:ring-2 focus:ring-teal-300" /></label>
             </div>
           </SectionCard>
         </div>
       </div>
 
-      <SectionCard icon={FileText} title="Invoice Summary" description="Choose the layout and visibility rules for invoice totals." className="mt-3" bodyClassName="p-4 sm:p-5">
+      <SectionCard icon={FileText} title="Invoice Summary" description="Choose the layout and visibility rules for invoice totals." className="mt-2" bodyClassName="p-3 sm:p-4">
         <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-400">Presentation</p>
