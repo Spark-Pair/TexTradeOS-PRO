@@ -8,6 +8,7 @@ import PageHeader from "../components/PageHeader";
 import { useToast } from "../context/ToastContext";
 import useAuth from "../hooks/useAuth";
 import { updateMyBusiness } from "../api/business";
+import { DEFAULT_SUMMARY_SETTINGS, SUMMARY_FIELD_DEFINITIONS, normalizeSummarySettings } from "../components/Invoice/invoiceSummary";
 
 const fields = [
   ["name", "Business name", "e.g. Your Garments Store", true],
@@ -58,7 +59,7 @@ export default function BusinessSetup() {
   const { user, refreshUser } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ primary_color: "#0b74b7", custom_invoice_enabled: false, ...(user?.business || {}) });
+  const [form, setForm] = useState({ primary_color: "#0b74b7", custom_invoice_enabled: false, summary_settings: DEFAULT_SUMMARY_SETTINGS, ...(user?.business || {}) });
   const [saving, setSaving] = useState(false);
   const change = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   const selectLogo = (event) => {
@@ -88,6 +89,12 @@ export default function BusinessSetup() {
     } finally { setSaving(false); }
   };
   const primaryColor = /^#[0-9a-f]{6}$/i.test(form.primary_color || "") ? form.primary_color : "#0b74b7";
+  const summarySettings = normalizeSummarySettings(form.summary_settings);
+  const updateSummarySetting = (key, value) => setForm((current) => ({ ...current, summary_settings: { ...normalizeSummarySettings(current.summary_settings), [key]: value } }));
+  const toggleSummaryField = (key) => setForm((current) => {
+    const settings = normalizeSummarySettings(current.summary_settings);
+    return { ...current, summary_settings: { ...settings, summary_fields: { ...settings.summary_fields, [key]: !settings.summary_fields[key] } } };
+  });
   return <div className="relative z-10 mx-auto flex h-full min-h-0 max-w-7xl flex-col">
     <PageHeader title="Business Profile" subtitle="Manage the identity and contact details used across invoices." rightContent={<div className="hidden sm:block"><Button type="submit" form="business-profile-form" icon={Save} loading={saving}>{saving ? "Saving..." : "Save Changes"}</Button></div>} />
     <form id="business-profile-form" onSubmit={submit} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2">
@@ -136,6 +143,31 @@ export default function BusinessSetup() {
             <div className="mt-4">
               <div className="mb-2 flex items-center justify-between text-[11px] text-gray-400"><span>Invoice palette</span><span>Auto-generated</span></div>
               <div className="flex h-3 overflow-hidden rounded-full ring-1 ring-black/5"><span className="flex-1" style={{ backgroundColor: primaryColor }} /><span className="flex-1 opacity-75" style={{ backgroundColor: primaryColor }} /><span className="flex-1 opacity-45" style={{ backgroundColor: primaryColor }} /><span className="flex-1 opacity-20" style={{ backgroundColor: primaryColor }} /></div>
+            </div>
+          </SectionCard>
+
+          <SectionCard icon={FileText} title="Invoice Summary" description="Control summary fields and layout.">
+            <div className="grid gap-3">
+              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm text-gray-700">
+                <span><strong className="block text-xs font-semibold text-gray-800">Compact summary</strong><span className="text-[11px] text-gray-400">Use tighter rows to save space.</span></span>
+                <input type="checkbox" checked={summarySettings.summary_compact} onChange={(event) => updateSummarySetting("summary_compact", event.target.checked)} className="h-4 w-4 accent-[#127475]" />
+              </label>
+              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm text-gray-700">
+                <span><strong className="block text-xs font-semibold text-gray-800">Hide zero values</strong><span className="text-[11px] text-gray-400">Zero-value fields stay hidden.</span></span>
+                <input type="checkbox" checked={summarySettings.summary_hide_zero} onChange={(event) => updateSummarySetting("summary_hide_zero", event.target.checked)} className="h-4 w-4 accent-[#127475]" />
+              </label>
+              <div>
+                <p className="mb-2 text-xs font-semibold text-gray-700">Summary boxes</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[['dual', 'Dual boxes'], ['single', 'Single box']].map(([value, label]) => <label key={value} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${summarySettings.summary_layout === value ? "border-[#127475] bg-teal-50 text-[#127475]" : "border-gray-200 bg-white text-gray-600"}`}><input type="radio" name="summary_layout" value={value} checked={summarySettings.summary_layout === value} onChange={() => updateSummarySetting("summary_layout", value)} className="accent-[#127475]" />{label}</label>)}
+                </div>
+              </div>
+              <div>
+                <p className="mb-2 text-xs font-semibold text-gray-700">Visible fields</p>
+                <div className="grid gap-1.5 sm:grid-cols-2">
+                  {SUMMARY_FIELD_DEFINITIONS.map(({ key, label }) => <label key={key} className="flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-xs text-gray-600 hover:bg-gray-50"><input type="checkbox" checked={summarySettings.summary_fields[key] !== false} onChange={() => toggleSummaryField(key)} className="h-3.5 w-3.5 accent-[#127475]" />{label}</label>)}
+                </div>
+              </div>
             </div>
           </SectionCard>
         </div>

@@ -130,6 +130,7 @@ export default function InvoicePaper({
         articles={articles}
         invoice={invoice}
         totalAmount={invoice?.total_amount || 0}
+            summarySettings={business?.summary_settings}
       />
 
       <footer className="invoice-paper-footer">

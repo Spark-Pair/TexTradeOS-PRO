@@ -1,6 +1,7 @@
 import { formatDate, formatNumbers } from "../../utils";
 import Amount from "../Amount";
 import { createInvoiceBrandStyle } from "./invoiceBranding";
+import { buildInvoiceSummaryRows, normalizeSummarySettings, splitSummaryRows } from "./invoiceSummary";
 
 const displayDiscount = (article) => {
   const raw = String(article?.discount || "").trim();
@@ -21,6 +22,11 @@ const displayPaymentMethod = (invoice, receivedAmount) => {
   const method = String(payment?.method || "").trim();
   if (!receivedAmount || !method) return "-";
   return method.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+const renderSummaryValue = (row) => {
+  if (row.type === "text") return row.value;
+  if (row.type === "number") return `${row.numericValue < 0 ? "-" : ""}${formatNumbers(Math.abs(row.numericValue), 1)}`;
+  return <Amount value={row.numericValue} decimals={1} />;
 };
 
 export default function ThermalInvoicePaper({ invoice, businessName = "", business = {}, customerVariant = "customer-1" }) {
@@ -51,6 +57,9 @@ export default function ThermalInvoicePaper({ invoice, businessName = "", busine
   const payableAmount = Number(invoice?.total_amount ?? 0);
   const balanceAmount = Number(invoice?.balance_amount ?? Math.max(0, payableAmount - receivedAmount));
   const returnAmount = Number(invoice?.return_amount ?? Math.max(0, receivedAmount - payableAmount));
+  const summarySettings = normalizeSummarySettings(business?.summary_settings);
+  const summaryRows = buildInvoiceSummaryRows({ invoice, settings: summarySettings, grossAmount, percentDiscountAmount, rupeeDiscountAmount, netAmount, salesReturnAmount, salesReturnPcs, receivedAmount, paymentMethod, payableAmount, balanceAmount, returnAmount });
+  const summaryGroups = splitSummaryRows(summaryRows, summarySettings.summary_layout);
 
   return (
     <article className={`thermal-invoice-paper ${customerVariant === "customer-2" ? "customer-two-invoice" : ""}`} style={customerVariant === "customer-2" ? customerBrandStyle : undefined}>
@@ -123,22 +132,10 @@ export default function ThermalInvoicePaper({ invoice, businessName = "", busine
         </div>
       </section>
       
-      <section className="thermal-summary">
-        <div><span>Previous Outstanding</span><strong><Amount value={invoice?.customer_balance_before} decimals={1} /></strong></div>
-        <div><span>Gross Amount</span><strong><Amount value={grossAmount} decimals={1} /></strong></div>
-        <div><span>Percent Discount</span><strong><Amount value={-Math.abs(percentDiscountAmount)} decimals={1} /></strong></div>
-        <div><span>Discount</span><strong><Amount value={-Math.abs(rupeeDiscountAmount)} decimals={1} /></strong></div>
-        <div className="thermal-summary-strong"><span>Net Amount</span><strong><Amount value={netAmount} decimals={1} /></strong></div>
-        <div><span>Sales Return</span><strong><Amount value={-Math.abs(salesReturnAmount)} decimals={1} /></strong></div>
-        <div><span>Sales Return (Pcs)</span><strong>-{formatNumbers(salesReturnPcs, 1)}</strong></div>
-        <div><span>Payment Method</span><strong>{paymentMethod}</strong></div>
-        <div><span>Received</span><strong><Amount value={receivedAmount} decimals={1} /></strong></div>
-        <div className="thermal-summary-total"><span>Payable</span><strong><Amount value={payableAmount} decimals={1} /></strong></div>
-        <div className="thermal-summary-total">
-          <span>{returnAmount > 0 ? "Return To Customer" : "Balance"}</span>
-          <strong><Amount value={returnAmount > 0 ? returnAmount : balanceAmount} decimals={1} /></strong>
-        </div>
-        <div className="thermal-summary-total"><span>Current Balance</span><strong><Amount value={invoice?.customer_balance_after} decimals={1} /></strong></div>
+      <section className={`thermal-summary thermal-summary-${summarySettings.summary_layout} ${summarySettings.summary_compact ? "summary-compact" : ""}`}>
+        {summaryGroups.map((group, groupIndex) => <div className="thermal-summary-panel" key={groupIndex}>
+          {group.map((row) => <div className={row.tone ? `thermal-summary-${row.tone}` : ""} key={row.key}><span>{row.label}</span><strong>{renderSummaryValue(row, Amount, formatNumbers)}</strong></div>)}
+        </div>)}
       </section>
 
       <footer className="thermal-footer">
