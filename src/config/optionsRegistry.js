@@ -6,6 +6,7 @@ export const OPTION_GROUP_REGISTRY = [
     description: "Payment methods available when receiving or recording payments.",
     storageKey: "payment_methods",
   },
+  { key: "bank_accounts.bank", moduleKey: "bank_accounts", label: "Banks", description: "Banks available for bank account records.", storageKey: "bank_names" },
 ];
 
 export const getOptionGroupsByModule = () => OPTION_GROUP_REGISTRY.reduce((groups, option) => {

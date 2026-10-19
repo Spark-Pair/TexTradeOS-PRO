@@ -12,6 +12,7 @@ const MenuPage = lazy(() => import("./pages/Menu"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Customers = lazy(() => import("./pages/Customers"));
 const Suppliers = lazy(() => import("./pages/Suppliers"));
+const BankAccounts = lazy(() => import("./pages/BankAccounts"));
 const Invoices = lazy(() => import("./pages/Invoices"));
 const Inventory = lazy(() => import("./pages/Inventory"));
 const Purchases = lazy(() => import("./pages/Purchases"));
@@ -218,6 +219,7 @@ export default function App() {
                     </RoleRoute>
                   }
                 />
+                <Route path="/bank-accounts" element={<RoleRoute accessKey="bank_accounts"><BankAccounts /></RoleRoute>} />
                 <Route
                   path="/purchases"
                   element={

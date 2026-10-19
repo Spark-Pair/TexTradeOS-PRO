@@ -3,7 +3,131 @@ import Checkbox from "../Checkbox";
 import Input from "../Input";
 import Select from "../Select";
 import { fetchMyReferenceData } from "../../api/business";
-const defaults=["cash","cheque","slip","online"];const label=value=>({cash:"Cash",cheque:"Cheque",slip:"Slip",online:"Online Transfer"}[value]||String(value).replace(/\b\w/g,c=>c.toUpperCase()));
-export default function PaymentEditor({payment,onChange}){const [methods,setMethods]=useState(defaults);const set=(key,value)=>onChange({...payment,[key]:value});const received=payment.received_now!==false;const method=payment.method||methods[0]||"cash";useEffect(()=>{fetchMyReferenceData().then(data=>{const configured=data?.reference_data?.payment_methods;setMethods(Array.isArray(configured)&&configured.length?configured.map(value=>String(value).trim().toLowerCase()).filter(Boolean):defaults);}).catch(()=>setMethods(defaults));},[]);const options=methods.map(value=>({value,label:label(value)}));return <div className="grid gap-3"><Checkbox checked={received} onChange={checked=>set("received_now",checked)} label="Payment received with this invoice"/>{received&&<><div className="grid gap-3 md:grid-cols-2"><Input label="Amount Received" type="number" min="0" step="0.01" value={payment.amount||""} onChange={e=>set("amount",e.target.value)} placeholder="0.00"/><Select label="Payment Method" value={method} onChange={v=>set("method",v)} options={options}/></div>{method==="cheque"&&<div className="grid gap-3 md:grid-cols-3"><Input label="Cheque No" value={payment.cheque_no||""} onChange={e=>set("cheque_no",e.target.value)}/><Input label="Bank" value={payment.bank_name||""} onChange={e=>set("bank_name",e.target.value)}/><Input label="Cheque Date" type="date" value={payment.cheque_date||""} onChange={e=>set("cheque_date",e.target.value)}/></div>}{method==="slip"&&<div className="grid gap-3 md:grid-cols-3"><Input label="Slip / Deposit No" value={payment.reference_no||""} onChange={e=>set("reference_no",e.target.value)}/><Input label="Bank Name" value={payment.bank_name||""} onChange={e=>set("bank_name",e.target.value)}/><Input label="Deposit Date" type="date" value={payment.payment_date||""} onChange={e=>set("payment_date",e.target.value)}/></div>}{method==="online"&&<div className="grid gap-3 md:grid-cols-3"><Input label="Transaction ID" value={payment.reference_no||""} onChange={e=>set("reference_no",e.target.value)}/><Input label="Bank / Wallet" value={payment.bank_name||""} onChange={e=>set("bank_name",e.target.value)}/><Input label="Transfer Date" type="date" value={payment.payment_date||""} onChange={e=>set("payment_date",e.target.value)}/></div>}</>}</div>}
-
-
+const defaults = ["cash", "cheque", "slip", "online"];
+const label = (value) =>
+  ({ cash: "Cash", cheque: "Cheque", slip: "Slip", online: "Online Transfer" })[
+    value
+  ] || String(value).replace(/\b\w/g, (c) => c.toUpperCase());
+export default function PaymentEditor({ payment, onChange }) {
+  const [methods, setMethods] = useState(defaults);
+  const [banks, setBanks] = useState([]);
+  const set = (key, value) => onChange({ ...payment, [key]: value });
+  const received = payment.received_now !== false;
+  const method = payment.method || methods[0] || "cash";
+  useEffect(() => {
+    fetchMyReferenceData()
+      .then((data) => {
+        const configured = data?.reference_data?.payment_methods;
+        setMethods(
+          Array.isArray(configured) && configured.length
+            ? configured
+                .map((value) => String(value).trim().toLowerCase())
+                .filter(Boolean)
+            : defaults,
+        );
+        setBanks(
+          Array.isArray(data?.reference_data?.bank_names)
+            ? data.reference_data.bank_names
+            : [],
+        );
+      })
+      .catch(() => {
+        setMethods(defaults);
+        setBanks([]);
+      });
+  }, []);
+  const options = methods.map((value) => ({ value, label: label(value) }));
+  const bankOptions = banks.map((value) => ({ value, label: value }));
+  return (
+    <div className="grid gap-3">
+      <Checkbox
+        checked={received}
+        onChange={(checked) => set("received_now", checked)}
+        label="Payment received with this invoice"
+      />
+      {received && (
+        <>
+          <div className="grid gap-3 md:grid-cols-2">
+            <Input
+              label="Amount Received"
+              type="number"
+              min="0"
+              step="0.01"
+              value={payment.amount || ""}
+              onChange={(e) => set("amount", e.target.value)}
+              placeholder="0.00"
+            />
+            <Select
+              label="Payment Method"
+              value={method}
+              onChange={(v) => set("method", v)}
+              options={options}
+            />
+          </div>
+          {method === "cheque" && (
+            <div className="grid gap-3 md:grid-cols-3">
+              <Input
+                label="Cheque No"
+                value={payment.cheque_no || ""}
+                onChange={(e) => set("cheque_no", e.target.value)}
+              />
+              <Select
+                label="Bank"
+                value={payment.bank_name || ""}
+                onChange={(v) => set("bank_name", v)}
+                options={bankOptions}
+                placeholder="Select bank"
+              />
+              <Input
+                label="Cheque Date"
+                type="date"
+                value={payment.cheque_date || ""}
+                onChange={(e) => set("cheque_date", e.target.value)}
+              />
+            </div>
+          )}
+          {method === "slip" && (
+            <div className="grid gap-3 md:grid-cols-3">
+              <Input
+                label="Slip / Deposit No"
+                value={payment.reference_no || ""}
+                onChange={(e) => set("reference_no", e.target.value)}
+              />
+              <Input
+                label="Bank Name"
+                value={payment.bank_name || ""}
+                onChange={(e) => set("bank_name", e.target.value)}
+              />
+              <Input
+                label="Deposit Date"
+                type="date"
+                value={payment.payment_date || ""}
+                onChange={(e) => set("payment_date", e.target.value)}
+              />
+            </div>
+          )}
+          {method === "online" && (
+            <div className="grid gap-3 md:grid-cols-3">
+              <Input
+                label="Transaction ID"
+                value={payment.reference_no || ""}
+                onChange={(e) => set("reference_no", e.target.value)}
+              />
+              <Input
+                label="Bank / Wallet"
+                value={payment.bank_name || ""}
+                onChange={(e) => set("bank_name", e.target.value)}
+              />
+              <Input
+                label="Transfer Date"
+                type="date"
+                value={payment.payment_date || ""}
+                onChange={(e) => set("payment_date", e.target.value)}
+              />
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
