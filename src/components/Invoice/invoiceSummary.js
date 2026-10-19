@@ -16,21 +16,25 @@ export const SUMMARY_FIELD_DEFINITIONS = [
 export const DEFAULT_SUMMARY_SETTINGS = {
   summary_layout: "dual",
   summary_compact: false,
-  summary_hide_zero: false,
   summary_fields: Object.fromEntries(SUMMARY_FIELD_DEFINITIONS.map(({ key }) => [key, true])),
+  summary_zero_fields: Object.fromEntries(SUMMARY_FIELD_DEFINITIONS.map(({ key }) => [key, false])),
 };
 
-export const normalizeSummarySettings = (settings = {}) => ({
-  ...DEFAULT_SUMMARY_SETTINGS,
-  ...settings,
-  summary_layout: settings?.summary_layout === "single" ? "single" : "dual",
-  summary_compact: settings?.summary_compact === true,
-  summary_hide_zero: settings?.summary_hide_zero === true,
-  summary_fields: {
-    ...DEFAULT_SUMMARY_SETTINGS.summary_fields,
-    ...(settings?.summary_fields && typeof settings.summary_fields === "object" ? settings.summary_fields : {}),
-  },
-});
+export const normalizeSummarySettings = (settings = {}) => {
+  const legacyHideZero = settings?.summary_hide_zero === true;
+  return {
+    summary_layout: settings?.summary_layout === "single" ? "single" : "dual",
+    summary_compact: settings?.summary_compact === true,
+    summary_fields: {
+      ...DEFAULT_SUMMARY_SETTINGS.summary_fields,
+      ...(settings?.summary_fields && typeof settings.summary_fields === "object" ? settings.summary_fields : {}),
+    },
+    summary_zero_fields: {
+      ...Object.fromEntries(SUMMARY_FIELD_DEFINITIONS.map(({ key }) => [key, legacyHideZero])),
+      ...(settings?.summary_zero_fields && typeof settings.summary_zero_fields === "object" ? settings.summary_zero_fields : {}),
+    },
+  };
+};
 
 export const buildInvoiceSummaryRows = ({
   invoice,
@@ -67,7 +71,7 @@ export const buildInvoiceSummaryRows = ({
     label: definition.key === "balance" && returnAmount > 0 ? "Return To Customer" : definition.label,
     value: values[definition.key],
     numericValue: definition.type === "text" ? null : Number(values[definition.key] || 0),
-  })).filter((row) => settings.summary_fields[row.key] !== false && (!settings.summary_hide_zero || (row.type === "text" ? row.value !== "-" : Math.abs(row.numericValue) > 0)));
+  })).filter((row) => settings.summary_fields[row.key] !== false && (!settings.summary_zero_fields[row.key] || (row.type === "text" ? row.value !== "-" : Math.abs(row.numericValue) > 0)));
 };
 
 export const splitSummaryRows = (rows, layout = "dual") => {
