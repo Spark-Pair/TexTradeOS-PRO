@@ -104,8 +104,8 @@ export default function BusinessSetup() {
     <form id="business-profile-form" onSubmit={submit} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2">
       <div className="grid gap-3 xl:grid-cols-[360px_minmax(0,1fr)]">
         <div className="grid content-start gap-4">
-          <SectionCard icon={FileText} title="Customized Invoice" description="Branded Customer 2 design." bodyClassName="" headerRight={<AnimatedSwitch checked={Boolean(form.custom_invoice_enabled)} onChange={() => setForm((current) => ({ ...current, custom_invoice_enabled: !current.custom_invoice_enabled }))} />}>
-            <label className="group relative flex h-48 cursor-pointer items-center justify-center overflow-hidden bg-[linear-gradient(45deg,#f8fafc_25%,transparent_25%),linear-gradient(-45deg,#f8fafc_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f8fafc_75%),linear-gradient(-45deg,transparent_75%,#f8fafc_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0px] p-8 outline-none focus-within:ring-2 focus-within:ring-inset focus-within:ring-[#127475]/20">
+          <SectionCard icon={FileText} title="Customized Invoice" description="Branded Customer 2 design." className="xl:min-h-[360px]" bodyClassName="" headerRight={<AnimatedSwitch checked={Boolean(form.custom_invoice_enabled)} onChange={() => setForm((current) => ({ ...current, custom_invoice_enabled: !current.custom_invoice_enabled }))} />}>
+            <label className="group relative flex h-56 cursor-pointer items-center justify-center overflow-hidden bg-[linear-gradient(45deg,#f8fafc_25%,transparent_25%),linear-gradient(-45deg,#f8fafc_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f8fafc_75%),linear-gradient(-45deg,transparent_75%,#f8fafc_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0px] p-8 outline-none focus-within:ring-2 focus-within:ring-inset focus-within:ring-[#127475]/20">
               {form.logo_data ? <>
                 <img src={form.logo_data} alt="Business logo preview" className="h-full w-full object-contain" />
                 <span className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 shadow-sm backdrop-blur"><Check size={12} strokeWidth={2.5} aria-hidden="true" /> Ready</span>
@@ -133,7 +133,7 @@ export default function BusinessSetup() {
               </div>
           </SectionCard>
 
-          <SectionCard icon={Palette} title="Brand Color" description="Sets invoice colors." className="xl:h-[240px]" bodyClassName="flex flex-col justify-center p-5 xl:h-[170px]">
+          <SectionCard icon={Palette} title="Brand Color" description="Sets invoice colors." className="xl:h-[280px]" bodyClassName="flex flex-col justify-center p-5 xl:h-[210px]">
             <div className="flex items-end gap-3">
               <label className="relative grid h-[42px] w-[42px] shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border border-black/10 shadow-sm transition hover:scale-[1.03]" style={{ backgroundColor: primaryColor }}>
                 <Palette size={17} className="text-white drop-shadow" aria-hidden="true" />
@@ -159,10 +159,10 @@ export default function BusinessSetup() {
             </div>
           </SectionCard>
 
-          <SectionCard icon={MapPin} title="Contact & Registration" description="Business contact and tax information." bodyClassName="p-3 sm:p-4">
-            <div className="grid gap-2 sm:grid-cols-2">
+          <SectionCard icon={MapPin} title="Contact & Registration" description="Business contact and tax information." bodyClassName="p-4 sm:p-5">
+            <div className="grid gap-3 sm:grid-cols-2">
               {fields.slice(3).map(([name, label, placeholder, required]) => <Input key={name} name={name} label={label} placeholder={placeholder} value={form[name] || ""} onChange={change} required={required === true} />)}
-              <label className="grid gap-1.5 text-sm text-gray-700 sm:col-span-2"><span>Business address <span className="text-gray-400">(Optional)</span></span><textarea name="address" rows="2" placeholder="Optional" value={form.address || ""} onChange={change} className="resize-y rounded-xl border border-gray-400 px-4 py-2 font-normal outline-none transition focus:ring-2 focus:ring-teal-300" /></label>
+              <label className="grid gap-1.5 text-sm text-gray-700 sm:col-span-2"><span>Business address <span className="text-gray-400">(Optional)</span></span><textarea name="address" rows="3" placeholder="Optional" value={form.address || ""} onChange={change} className="resize-y rounded-xl border border-gray-400 px-4 py-2 font-normal outline-none transition focus:ring-2 focus:ring-teal-300" /></label>
             </div>
           </SectionCard>
         </div>
