@@ -35,6 +35,38 @@ const getPrintStyle = (printMode = "a5") => `
     font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
     font-size: 8.8px; line-height: 1.32; font-variant-numeric: tabular-nums;
   }
+  .customer-two-invoice { position:relative; isolation:isolate; --invoice-border-color:var(--customer-brand-border,#5f7890); --invoice-radius:7px; }
+  .customer-two-invoice > *:not(.customer-two-watermark) { position: relative; z-index: 1; }
+  .customer-two-banner { position:relative; display:grid; grid-template-columns:42mm minmax(0,1fr) 25mm; grid-template-rows:30mm; align-items:stretch; min-height:30mm; margin:-1mm 0 4mm; overflow:hidden; border:1px solid var(--customer-brand-border,#5f7890); border-radius:7px; background:linear-gradient(90deg,var(--customer-brand-dark,#073763) 0 42mm,#fff 42mm 100%); color:#0f172a; box-shadow:0 2px 5px var(--customer-brand-shadow,rgba(7,55,99,.10)); }
+  .customer-two-banner::before,.customer-two-banner::after { content: ""; position: absolute; pointer-events: none; }
+  .customer-two-banner::before { z-index:2; top:0; bottom:0; left:42mm; width:1.3mm; background:var(--customer-brand-accent,#27aee4); }
+  .customer-two-banner::after { z-index:2; right:0; bottom:0; left:42mm; height:1.6mm; background:linear-gradient(90deg,var(--customer-brand-accent,#27aee4) 0 45%,var(--customer-brand-primary,#0b74b7) 45% 76%,var(--customer-brand-dark,#073763) 76% 100%); }
+  .customer-two-banner-info,.customer-two-banner-brand,.customer-two-banner-identity { position:relative; z-index:1; display:flex; flex-direction:column; justify-content:center; min-width:0; }
+  .customer-two-banner-brand { grid-column:3; grid-row:1; align-items:center; padding:3mm 3mm 4mm 1mm; text-align:center; }
+  .customer-two-banner-brand img { box-sizing:border-box; width:19mm; height:19mm; object-fit:contain; margin:0; padding:0; border:0; border-radius:0; background:transparent; filter:none; }
+  .customer-two-banner-identity { grid-column:2; grid-row:1; align-items:center; gap:2px; padding:4mm 2mm 5mm 4mm; text-align:center; }
+  .customer-two-banner-identity strong { max-width:100%; overflow:hidden; color:var(--customer-brand-primary,#0b74b7); font-family:Georgia,"Times New Roman",serif; font-size:16px; font-weight:800; line-height:1.08; letter-spacing:.015em; text-overflow:ellipsis; white-space:nowrap; text-transform:uppercase; }
+  .customer-two-banner-identity>span:not(.customer-two-banner-urdu) { color:#0f172a; font-size:7.2px; font-weight:800; line-height:1.1; letter-spacing:.055em; text-transform:uppercase; }
+  .customer-two-banner-urdu { color:#111827; font-family:"Noto Nastaliq Urdu","Noto Naskh Arabic",serif; font-size:10px; font-weight:650; line-height:1.35; }
+  .customer-two-banner-info { grid-column:1; grid-row:1; align-items:flex-start; justify-content:center; gap:2.5px; padding:4mm 4mm 4mm; color:#fff; text-align:left; }
+  .customer-two-banner-info span { width:100%; color:#fff; font-size:7.6px; font-weight:600; line-height:1.28; overflow-wrap:anywhere; }
+  .customer-two-banner-info span:first-child { color:var(--customer-brand-accent-text,#7dd3fc); font-weight:800; }
+  .customer-two-watermark { position:absolute; z-index:0; inset:32mm 0 10mm; background-position:center; background-size:min(68mm,62%) auto; background-repeat:no-repeat; opacity:.045; pointer-events:none; }
+  .customer-two-invoice .invoice-line-items { margin-top:7px; }
+  .customer-two-invoice .invoice-table-wrap,.customer-two-invoice .invoice-totals-panel { border-color:var(--customer-brand-border,#5f7890); background:rgba(255,255,255,.12); box-shadow:0 2px 5px var(--customer-brand-shadow,rgba(7,55,99,.08)); }
+  .customer-two-invoice .invoice-table th { padding-top:5px; padding-bottom:5px; border-color:var(--customer-brand-dark,#073763); background:var(--customer-brand-dark,#073763); color:#fff; text-transform:uppercase; }
+  .customer-two-invoice .invoice-table tbody tr:nth-child(even) td { background:rgba(255,255,255,.38); }
+  .customer-two-invoice .invoice-table td { border-color:var(--customer-brand-border,#5f7890); }
+  .customer-two-invoice .invoice-table tfoot td { border-color:var(--customer-brand-border,#5f7890); background:var(--customer-brand-soft,rgba(190,226,244,.72)); color:var(--customer-brand-dark,#073763); }
+  .customer-two-invoice .invoice-summary { margin-top:8px; }
+  .customer-two-invoice .invoice-summary-two-column { gap:8px; }
+  .customer-two-invoice .summary-row { min-height:22px; padding:4.5px 7px; border-color:var(--customer-brand-border,#5f7890); }
+  .customer-two-invoice .invoice-totals-panel .invoice-emphasis-row { background:var(--customer-brand-emphasis,rgba(214,226,235,.72)); }
+  .customer-two-invoice .invoice-totals-panel .invoice-total-row { background:var(--customer-brand-total,rgba(169,218,241,.74)); }
+  .customer-two-invoice .invoice-totals-panel .invoice-emphasis-row span,.customer-two-invoice .invoice-totals-panel .invoice-emphasis-row strong,.customer-two-invoice .invoice-totals-panel .invoice-total-row span,.customer-two-invoice .invoice-totals-panel .invoice-total-row strong { color:#0f172a; }
+  .customer-two-invoice .billed-to-section::after,.customer-two-invoice .invoice-document-type::after,.customer-two-invoice .invoice-paper-footer { border-color:var(--customer-brand-border,#5f7890); }
+  .customer-two-invoice .billed-to-section h2 { color:var(--customer-brand-dark,#073763); }
+  .customer-two-invoice .invoice-thanks,.customer-two-invoice .invoice-system-credit { color:var(--customer-brand-primary,#0b74b7); }
   .invoice-paper-header { position:relative; display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:0 var(--invoice-content-inset-x) 7px; }
   .invoice-paper-header::after,.invoice-document-type::after,.billed-to-section::after,.thermal-header::after,.thermal-meta::after,.thermal-customer::after,.thermal-items::after,.thermal-summary::after { content:""; position:absolute; left:calc(var(--invoice-border-bleed-x) * -1); right:calc(var(--invoice-border-bleed-x) * -1); bottom:0; border-top:var(--invoice-border-width) solid var(--invoice-border-color); pointer-events:none; }
   .invoice-brand { min-width:0; flex:1; }
@@ -51,6 +83,21 @@ const getPrintStyle = (printMode = "a5") => `
   .invoice-number-box dt { color:#383c43; font-size:8.3px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
   .invoice-number-box dd { color:#111827; font-size:9px; font-weight:850; text-align:right; white-space:nowrap; }
   .billed-to-section { position:relative; margin-top:6px; padding:0 var(--invoice-content-inset-x) 6px; border:0; border-radius:0; background:#fff; color:#15181c; font-size:9px; }
+  .customer-two-billed-row { display:grid; grid-template-columns:minmax(0,1fr) 42mm; align-items:start; gap:6mm; margin-top:0; padding-top:2px; }
+  .customer-two-billed-row .billed-customer-block { min-width:0; padding-top:1px; }
+  .customer-two-invoice-meta { width:100%; min-width:0; gap:2px; }
+  .customer-two-invoice-meta .invoice-document-type { color:var(--customer-brand-primary,#0b74b7); font-size:10.5px; }
+  .customer-two-invoice-meta .invoice-number-box div { min-height:14px; }
+  .customer-two-invoice-meta .invoice-number-box dt { color:#4b5563; }
+  .customer-two-invoice .section-label { color:var(--customer-brand-primary,#0b74b7); }
+  .thermal-invoice-paper .customer-two-banner { grid-template-columns:26mm minmax(0,1fr) 17mm; grid-template-rows:25mm auto; min-height:37mm; background:linear-gradient(90deg,var(--customer-brand-dark,#073763) 0 26mm,#fff 26mm 100%); }
+  .thermal-invoice-paper .customer-two-banner::before { top:0; bottom:0; left:26mm; width:1mm; height:auto; }
+  .thermal-invoice-paper .customer-two-banner::after { left:26mm; width:auto; height:1.4mm; }
+  .thermal-invoice-paper .customer-two-banner-brand { grid-column:3; grid-row:1; padding:3mm 2mm 4mm 0; }
+  .thermal-invoice-paper .customer-two-banner-identity { grid-column:2; grid-row:1; padding:3mm 1mm 4mm 2mm; }
+  .thermal-invoice-paper .customer-two-banner-info { grid-column:1; grid-row:1 / 3; display:flex; gap:2px; padding:3mm 2.5mm; border:0; background:transparent; }
+  .thermal-invoice-paper .customer-two-banner-brand img { width:14mm; height:14mm; padding:0; }
+  .thermal-invoice-paper .customer-two-banner-identity strong { font-size:13px; }
   .customer-topline { margin:0 0 3px; color:#383c43; font-size:8.4px; line-height:1.25; }
   .customer-main { min-width:0; padding:0; }
   .section-label { margin:0; color:#383c43; font-size:8.4px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
@@ -87,6 +134,12 @@ const getPrintStyle = (printMode = "a5") => `
   .thermal-customer-balance div { display:grid; gap:2px; }
   .thermal-customer-balance span { color:#383c43; font-size:8.8px; font-weight:650; }
   .thermal-customer-balance strong { color:#111827; font-size:10px; font-weight:850; }
+  .thermal-invoice-paper.customer-two-invoice{--invoice-border-color:var(--customer-brand-border,#5f7890);--invoice-radius:7px}
+  .thermal-invoice-paper.customer-two-invoice .thermal-label,.thermal-invoice-paper.customer-two-invoice .thermal-meta strong,.thermal-invoice-paper.customer-two-invoice .thermal-items-head{color:#0f172a}
+  .thermal-invoice-paper.customer-two-invoice .thermal-summary-panel{background:rgba(255,255,255,.46)}
+  .thermal-invoice-paper.customer-two-invoice .thermal-summary-strong{background:var(--customer-brand-emphasis,rgba(214,226,235,.72))}
+  .thermal-invoice-paper.customer-two-invoice .thermal-summary-total{background:var(--customer-brand-total,rgba(169,218,241,.74))}
+  .thermal-invoice-paper.customer-two-invoice .thermal-summary-strong span,.thermal-invoice-paper.customer-two-invoice .thermal-summary-strong strong,.thermal-invoice-paper.customer-two-invoice .thermal-summary-total span,.thermal-invoice-paper.customer-two-invoice .thermal-summary-total strong{color:#0f172a}
 
   @media(max-width:720px){.invoice-preview-stage{padding:10px 6px}.invoice-paper{width:136mm;max-width:none}}
 
@@ -121,29 +174,221 @@ const getPrintStyle = (printMode = "a5") => `
     #invoice-print-clone-root .invoice-table thead{display:table-header-group!important}#invoice-print-clone-root .invoice-table tfoot{display:table-row-group!important;break-inside:avoid!important;page-break-inside:avoid!important}#invoice-print-clone-root .invoice-table th{border:0!important;border-bottom:var(--invoice-border-width) solid var(--invoice-border-color)!important;background:#dfe3e8!important;text-transform:capitalize!important}#invoice-print-clone-root .invoice-table td{border:0!important;border-bottom:var(--invoice-border-width) solid var(--invoice-border-color)!important}#invoice-print-clone-root .invoice-table tbody tr,#invoice-print-clone-root .invoice-table tfoot tr{break-inside:avoid!important;page-break-inside:avoid!important}#invoice-print-clone-root .invoice-table tbody tr:last-child td{border-bottom:0!important}#invoice-print-clone-root .invoice-table tfoot td{border:0!important;border-top:var(--invoice-border-width) solid var(--invoice-border-color)!important;background:#dfe3e8!important}
     #invoice-print-clone-root .invoice-totals-panel{border:var(--invoice-border-width) solid var(--invoice-border-color)!important;border-radius:var(--invoice-radius)!important;overflow:hidden!important}#invoice-print-clone-root .summary-row{border-bottom:var(--invoice-border-width) solid var(--invoice-border-color)!important}#invoice-print-clone-root .summary-row:last-child{border-bottom:0!important}#invoice-print-clone-root .invoice-totals-panel span{font-size:8.8px!important}#invoice-print-clone-root .invoice-totals-panel strong{font-size:9.3px!important}#invoice-print-clone-root .invoice-totals-panel .invoice-emphasis-row strong{font-size:9.7px!important}#invoice-print-clone-root .invoice-totals-panel .invoice-total-row strong{font-size:9.8px!important}
     #invoice-print-clone-root .invoice-paper-footer{border-top:var(--invoice-border-width) solid var(--invoice-border-color)!important}#invoice-print-clone-root .invoice-thanks,#invoice-print-clone-root .invoice-system-credit{font-size:7.8px!important}#invoice-print-clone-root .invoice-footer-note,#invoice-print-clone-root .invoice-agency-credit{font-size:7.2px!important}#invoice-print-clone-root .invoice-summary,#invoice-print-clone-root .invoice-totals-panel,#invoice-print-clone-root .invoice-paper-footer{break-inside:avoid!important;page-break-inside:avoid!important}
-    #invoice-print-clone-root .invoice-summary-two-column{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;gap:6px!important;justify-content:stretch!important}
+    #invoice-print-clone-root .invoice-summary-two-column{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;gap:8px!important;justify-content:stretch!important}
     #invoice-print-clone-root .invoice-summary-two-column .invoice-totals-panel{width:100%!important;max-width:none!important}
+    #invoice-print-clone-root .customer-two-invoice{--invoice-border-color:var(--customer-brand-border,#5f7890)!important;--invoice-radius:7px!important}
+    #invoice-print-clone-root .customer-two-invoice .invoice-table-wrap,#invoice-print-clone-root .customer-two-invoice .invoice-totals-panel{border-color:var(--customer-brand-border,#5f7890)!important;background:rgba(255,255,255,.46)!important}
+    #invoice-print-clone-root .customer-two-invoice .invoice-table th{border-color:var(--customer-brand-dark,#073763)!important;background:var(--customer-brand-dark,#073763)!important;color:#fff!important;text-transform:uppercase!important}
+    #invoice-print-clone-root .customer-two-invoice .invoice-table td{border-color:var(--customer-brand-border,#5f7890)!important}
+    #invoice-print-clone-root .customer-two-invoice .invoice-table tbody tr:nth-child(even) td{background:rgba(255,255,255,.38)!important}
+    #invoice-print-clone-root .customer-two-invoice .invoice-table tfoot td{border-color:var(--customer-brand-border,#5f7890)!important;background:var(--customer-brand-soft,rgba(190,226,244,.72))!important;color:var(--customer-brand-dark,#073763)!important}
+    #invoice-print-clone-root .customer-two-invoice .summary-row{border-color:var(--customer-brand-border,#5f7890)!important}
+    #invoice-print-clone-root .customer-two-invoice .invoice-totals-panel .invoice-emphasis-row{background:var(--customer-brand-emphasis,rgba(214,226,235,.72))!important}
+    #invoice-print-clone-root .customer-two-invoice .invoice-totals-panel .invoice-total-row{background:var(--customer-brand-total,rgba(169,218,241,.74))!important}
+    #invoice-print-clone-root .customer-two-invoice .invoice-totals-panel .invoice-emphasis-row span,#invoice-print-clone-root .customer-two-invoice .invoice-totals-panel .invoice-emphasis-row strong,#invoice-print-clone-root .customer-two-invoice .invoice-totals-panel .invoice-total-row span,#invoice-print-clone-root .customer-two-invoice .invoice-totals-panel .invoice-total-row strong{color:#0f172a!important}
+    #invoice-print-clone-root .customer-two-invoice .billed-to-section::after,#invoice-print-clone-root .customer-two-invoice .invoice-document-type::after,#invoice-print-clone-root .customer-two-invoice .invoice-paper-footer{border-color:var(--customer-brand-border,#5f7890)!important}
+    #invoice-print-clone-root .customer-two-invoice .section-label,#invoice-print-clone-root .customer-two-invoice .invoice-thanks,#invoice-print-clone-root .customer-two-invoice .invoice-system-credit,#invoice-print-clone-root .customer-two-invoice-meta .invoice-document-type{color:var(--customer-brand-primary,#0b74b7)!important}#invoice-print-clone-root .customer-two-invoice .billed-to-section h2{color:var(--customer-brand-dark,#073763)!important}
     #invoice-print-clone-root .thermal-invoice-paper{width:80mm!important;max-width:none!important;height:auto!important;min-height:auto!important;max-height:none!important;margin:0!important;padding:4mm 4mm 5mm!important;--invoice-border-color:#383c43!important;--invoice-border-width:1px!important;box-shadow:none!important;overflow:visible!important;background:#fff!important;color:#000!important;transform:none!important;zoom:1!important;break-after:auto!important;page-break-after:auto!important}
+    #invoice-print-clone-root .thermal-invoice-paper.customer-two-invoice{--invoice-border-color:var(--customer-brand-border,#5f7890)!important;--invoice-radius:7px!important}
+    #invoice-print-clone-root .thermal-invoice-paper.customer-two-invoice .thermal-summary-panel{background:rgba(255,255,255,.46)!important}
+    #invoice-print-clone-root .thermal-invoice-paper.customer-two-invoice .thermal-summary-strong{background:var(--customer-brand-emphasis,rgba(214,226,235,.72))!important}
+    #invoice-print-clone-root .thermal-invoice-paper.customer-two-invoice .thermal-summary-total{background:var(--customer-brand-total,rgba(169,218,241,.74))!important}
   }
 
   .invoice-summary-two-column{display:grid;grid-template-columns:repeat(2,minmax(0,64mm));justify-content:end;align-items:start;gap:6px}.invoice-summary-two-column .invoice-totals-panel{width:100%}
   .thermal-summary-two-column{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:5px}.thermal-summary-panel{display:block!important;min-width:0;overflow:hidden;border:var(--invoice-border-width) solid var(--invoice-border-color);border-radius:var(--invoice-radius);background:#fff}.thermal-summary-panel>div{padding:2px 4px;gap:3px}.thermal-summary-panel>div:not(:last-child)::after{left:0;right:0}.thermal-summary-panel span{min-width:0;font-size:8.6px}.thermal-summary-panel strong{font-size:9.2px}.thermal-summary-panel .thermal-summary-total strong{font-size:10px}
 `;
 
-function injectPrintStyle(printMode="a5"){const existingStyle=document.getElementById("invoice-print-style");if(existingStyle){existingStyle.textContent=getPrintStyle(printMode);return}const style=document.createElement("style");style.id="invoice-print-style";style.textContent=getPrintStyle(printMode);document.head.appendChild(style)}
-function removePrintClone(){document.getElementById("invoice-print-clone-root")?.remove();document.body.classList.remove("printing-invoice")}
-
-export function InvoicePrintPreview({invoice,businessName="",business={},printMode="a5"}){
- const stageRef=useRef(null);const[previewScale,setPreviewScale]=useState(1);
- useEffect(()=>{const stage=stageRef.current;if(!stage)return undefined;const naturalWidth=printMode==="thermal"?302:514;const updateScale=()=>setPreviewScale(Math.min(1,Math.max(.45,(stage.clientWidth-24)/naturalWidth)));updateScale();const observer=new ResizeObserver(updateScale);observer.observe(stage);return()=>observer.disconnect()},[printMode]);
- return <div id="invoice-print-root" className={`invoice-print-root invoice-print-${printMode} print-mode-${printMode}`}><div ref={stageRef} className="invoice-preview-stage"><div className="invoice-scale-shell" style={{zoom:previewScale}}>{printMode==="thermal"?<ThermalInvoicePaper invoice={invoice} businessName={businessName} business={business}/>:<InvoicePaper invoice={invoice} businessName={businessName} business={business}/>}</div></div></div>
+function injectPrintStyle(printMode = "a5") {
+  const existingStyle = document.getElementById("invoice-print-style");
+  if (existingStyle) {
+    existingStyle.textContent = getPrintStyle(printMode);
+    return;
+  }
+  const style = document.createElement("style");
+  style.id = "invoice-print-style";
+  style.textContent = getPrintStyle(printMode);
+  document.head.appendChild(style);
 }
-export {InvoicePaper};
-export default function InvoicePreviewModal({isOpen,onClose,invoice,loading=false,business={},businessName=""}){
- const[printMode,setPrintMode]=useState("a5");
- useEffect(()=>{injectPrintStyle(printMode)},[printMode]);
- useEffect(()=>()=>{removePrintClone()},[]);
- const handlePrintInvoice=()=>{const source=document.getElementById("invoice-print-root");if(!source){window.print();return}removePrintClone();const printContainer=document.createElement("div");printContainer.id="invoice-print-clone-root";printContainer.appendChild(source.cloneNode(true));document.body.appendChild(printContainer);document.body.classList.add("printing-invoice");const cleanup=()=>{removePrintClone();window.removeEventListener("afterprint",cleanup)};window.addEventListener("afterprint",cleanup);window.setTimeout(()=>window.print(),0);window.setTimeout(cleanup,2000)};
- return <Modal isOpen={isOpen} onClose={onClose} title="Invoice Preview" subtitle={printMode==="thermal"?"80mm thermal printer preview":"Adaptive A4 / A5 LaserJet print preview"} maxWidth="max-w-5xl" footer={<div className="flex w-full flex-wrap items-center justify-between gap-3"><div className="relative grid w-full grid-cols-2 rounded-xl border border-gray-300 bg-gray-100 p-1 sm:w-[270px]"><motion.span animate={{x:printMode==="thermal"?"100%":"0%"}} transition={{type:"spring",stiffness:500,damping:36}} className="absolute bottom-1 left-1 top-1 w-[calc(50%-4px)] rounded-lg bg-white shadow-sm ring-1 ring-gray-200"/><button type="button" onClick={()=>setPrintMode("a5")} className={`relative z-10 flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${printMode==="a5"?"text-gray-950":"text-gray-500 hover:text-gray-800"}`}>LaserJet A4/A5</button><button type="button" onClick={()=>setPrintMode("thermal")} className={`relative z-10 flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${printMode==="thermal"?"text-gray-950":"text-gray-500 hover:text-gray-800"}`}>Thermal 80mm</button></div><div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">{printMode==="a5"&&<p className="text-xs text-gray-400">Choose A4 or A5 in the print dialog. The invoice keeps equal safe margins on all sides.</p>}<div className="flex gap-2.5 [&>button]:flex-1 sm:[&>button]:flex-none"><Button variant="secondary" outline icon={X} onClick={onClose}>Close</Button><Button icon={Printer} onClick={handlePrintInvoice} disabled={!invoice||loading}>Print {printMode==="thermal"?"Thermal":"Invoice"}</Button></div></div></div>}>
- {loading&&<div className="py-16 text-center text-sm text-gray-400">Loading invoice...</div>}{!loading&&!invoice&&<div className="py-16 text-center text-sm text-gray-400">No invoice data available.</div>}{!loading&&invoice&&<InvoicePrintPreview invoice={invoice} business={business} businessName={businessName} printMode={printMode}/>}</Modal>
+function removePrintClone() {
+  document.getElementById("invoice-print-clone-root")?.remove();
+  document.body.classList.remove("printing-invoice");
+}
+
+export function InvoicePrintPreview({
+  invoice,
+  businessName = "",
+  business = {},
+  printMode = "a5",
+  customerVariant = "customer-1",
+}) {
+  const stageRef = useRef(null);
+  const [previewScale, setPreviewScale] = useState(1);
+  const resolvedCustomerVariant =
+    business?.custom_invoice_enabled === true &&
+    customerVariant === "customer-2"
+      ? "customer-2"
+      : "customer-1";
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return undefined;
+    const naturalWidth = printMode === "thermal" ? 302 : 514;
+    const updateScale = () =>
+      setPreviewScale(
+        Math.min(1, Math.max(0.45, (stage.clientWidth - 24) / naturalWidth)),
+      );
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [printMode]);
+  return (
+    <div
+      id="invoice-print-root"
+      className={`invoice-print-root invoice-print-${printMode} print-mode-${printMode}`}
+    >
+      <div ref={stageRef} className="invoice-preview-stage">
+        <div className="invoice-scale-shell" style={{ zoom: previewScale }}>
+          {printMode === "thermal" ? (
+            <ThermalInvoicePaper
+              invoice={invoice}
+              businessName={businessName}
+              business={business}
+              customerVariant={resolvedCustomerVariant}
+            />
+          ) : (
+            <InvoicePaper
+              invoice={invoice}
+              businessName={businessName}
+              business={business}
+              customerVariant={resolvedCustomerVariant}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+export { InvoicePaper };
+export default function InvoicePreviewModal({
+  isOpen,
+  onClose,
+  invoice,
+  loading = false,
+  business = {},
+  businessName = "",
+}) {
+  const [printMode, setPrintMode] = useState("a5");
+  const customizedInvoiceEnabled = business?.custom_invoice_enabled === true;
+  const activeCustomerVariant = customizedInvoiceEnabled
+    ? "customer-2"
+    : "customer-1";
+  useEffect(() => {
+    injectPrintStyle(printMode);
+  }, [printMode]);
+  useEffect(
+    () => () => {
+      removePrintClone();
+    },
+    [],
+  );
+  const handlePrintInvoice = () => {
+    const source = document.getElementById("invoice-print-root");
+    if (!source) {
+      window.print();
+      return;
+    }
+    removePrintClone();
+    const printContainer = document.createElement("div");
+    printContainer.id = "invoice-print-clone-root";
+    printContainer.appendChild(source.cloneNode(true));
+    document.body.appendChild(printContainer);
+    document.body.classList.add("printing-invoice");
+    const cleanup = () => {
+      removePrintClone();
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.setTimeout(() => window.print(), 0);
+    window.setTimeout(cleanup, 2000);
+  };
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Invoice Preview"
+      subtitle={
+        printMode === "thermal"
+          ? "80mm thermal printer preview"
+          : "Adaptive A4 / A5 LaserJet print preview"
+      }
+      maxWidth="max-w-5xl"
+      footer={
+        <div className="flex w-full flex-wrap items-center justify-between gap-3">
+          <div className="relative grid w-full grid-cols-2 rounded-xl border border-gray-300 bg-gray-100 p-1 sm:w-[270px]">
+            <motion.span
+              animate={{ x: printMode === "thermal" ? "100%" : "0%" }}
+              transition={{ type: "spring", stiffness: 500, damping: 36 }}
+              className="absolute bottom-1 left-1 top-1 w-[calc(50%-4px)] rounded-lg bg-white shadow-sm ring-1 ring-gray-200"
+            />
+            <button
+              type="button"
+              onClick={() => setPrintMode("a5")}
+              className={`relative z-10 flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${printMode === "a5" ? "text-gray-950" : "text-gray-500 hover:text-gray-800"}`}
+            >
+              LaserJet A4/A5
+            </button>
+            <button
+              type="button"
+              onClick={() => setPrintMode("thermal")}
+              className={`relative z-10 flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${printMode === "thermal" ? "text-gray-950" : "text-gray-500 hover:text-gray-800"}`}
+            >
+              Thermal 80mm
+            </button>
+          </div>
+          <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
+            {printMode === "a5" && (
+              <p className="text-xs text-gray-400">
+                Choose A4 or A5 in the print dialog. The invoice keeps equal
+                safe margins on all sides.
+              </p>
+            )}
+            <div className="flex gap-2.5 [&>button]:flex-1 sm:[&>button]:flex-none">
+              <Button variant="secondary" outline icon={X} onClick={onClose}>
+                Close
+              </Button>
+              <Button
+                icon={Printer}
+                onClick={handlePrintInvoice}
+                disabled={!invoice || loading}
+              >
+                Print {printMode === "thermal" ? "Thermal" : "Invoice"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      {loading && (
+        <div className="py-16 text-center text-sm text-gray-400">
+          Loading invoice...
+        </div>
+      )}
+      {!loading && !invoice && (
+        <div className="py-16 text-center text-sm text-gray-400">
+          No invoice data available.
+        </div>
+      )}
+      {!loading && invoice && (
+        <InvoicePrintPreview
+          key={activeCustomerVariant}
+          invoice={invoice}
+          business={business}
+          businessName={businessName}
+          printMode={printMode}
+          customerVariant={activeCustomerVariant}
+        />
+      )}
+    </Modal>
+  );
 }

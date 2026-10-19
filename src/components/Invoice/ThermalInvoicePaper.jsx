@@ -1,5 +1,6 @@
 import { formatDate, formatNumbers } from "../../utils";
 import Amount from "../Amount";
+import { createInvoiceBrandStyle } from "./invoiceBranding";
 
 const displayDiscount = (article) => {
   const raw = String(article?.discount || "").trim();
@@ -22,11 +23,13 @@ const displayPaymentMethod = (invoice, receivedAmount) => {
   return method.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 };
 
-export default function ThermalInvoicePaper({ invoice, businessName = "", business = {} }) {
+export default function ThermalInvoicePaper({ invoice, businessName = "", business = {}, customerVariant = "customer-1" }) {
   const articles = invoice?.articles || invoice?.orders || [];
   const customerUrduTitle = String(invoice?.customer_urdu_title || "").trim();
   const salesmanName = String(invoice?.salesman_name || "").trim();
   const businessUrduTitle = String(business?.urdu_name || "").trim();
+  const businessLogo = String(business?.logo_data || "/invoice-assets/customer-two-logo.png").trim();
+  const customerBrandStyle = createInvoiceBrandStyle(business?.primary_color);
   const businessDetails = [business?.phone ? `Tel: ${business.phone}` : "", business?.address || ""].filter(Boolean).join(" | ");
   const customerDetails = [
     invoice?.customer_phone ? `Phone: ${invoice.customer_phone}` : "",
@@ -50,13 +53,33 @@ export default function ThermalInvoicePaper({ invoice, businessName = "", busine
   const returnAmount = Number(invoice?.return_amount ?? Math.max(0, receivedAmount - payableAmount));
 
   return (
-    <article className="thermal-invoice-paper">
-      <header className="thermal-header">
+    <article className={`thermal-invoice-paper ${customerVariant === "customer-2" ? "customer-two-invoice" : ""}`} style={customerVariant === "customer-2" ? customerBrandStyle : undefined}>
+      {customerVariant === "customer-2" && (
+        <>
+          <div className="customer-two-banner">
+            <div className="customer-two-banner-brand">
+              <img src={businessLogo} alt={`${businessName || "Business"} logo`} />
+            </div>
+            <div className="customer-two-banner-identity">
+              <strong>{businessName || "Business"}</strong>
+              {businessUrduTitle && <span className="customer-two-banner-urdu" dir="rtl" lang="ur">{businessUrduTitle}</span>}
+              <span>{business?.tagline || "Garments Stock Lot"}</span>
+            </div>
+            <div className="customer-two-banner-info">
+              {salesmanName && <span>Salesman: {salesmanName}</span>}
+              {business?.phone && <span>Phone: {business.phone}</span>}
+              {business?.address && <span>Address: {business.address}</span>}
+            </div>
+          </div>
+          <div className="customer-two-watermark" style={{ backgroundImage: `url(${businessLogo})` }} aria-hidden="true" />
+        </>
+      )}
+      {customerVariant !== "customer-2" && <header className="thermal-header">
         <h1>{businessName}</h1>
         <p className="thermal-urdu" dir="rtl" lang="ur">{businessUrduTitle}</p>
         {businessDetails && <p className="thermal-shop-line">{businessDetails}</p>}
         {salesmanName && <p className="thermal-salesman-line">Salesman: {salesmanName}</p>}
-      </header>
+      </header>}
 
       <section className="thermal-meta">
         <div><span>Invoice No</span><strong>{invoice?.invoice_number || "-"}</strong></div>
@@ -121,6 +144,7 @@ export default function ThermalInvoicePaper({ invoice, businessName = "", busine
       <footer className="thermal-footer">
         <p>Thank you for your business.</p>
         <p>TexTradeOS PRO by SparkPair</p>
+        <p>+92 316583 5495</p>
       </footer>
     </article>
   );
