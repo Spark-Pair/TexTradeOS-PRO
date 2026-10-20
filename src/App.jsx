@@ -8,6 +8,7 @@ import { ToastProvider } from "./context/ToastContext";
 import Login from "./pages/Login";
 import Options from "./pages/Options";
 import KeyboardShortcuts from "./pages/KeyboardShortcuts";
+import { focusFirstField, focusNextField, isFormFieldTarget } from "./utils/focusNextField";
 const MenuPage = lazy(() => import("./pages/Menu"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Customers = lazy(() => import("./pages/Customers"));
@@ -132,11 +133,63 @@ export default function App() {
         if (document.activeElement === target && String(target.value || ""))
           try {
             target.select();
-          } catch {}
+          } catch {
+            // Some input types do not support programmatic selection.
+          }
       });
     };
     document.addEventListener("focusin", handler, true);
     return () => document.removeEventListener("focusin", handler, true);
+  }, []);
+  useEffect(() => {
+    const handleEnter = (event) => {
+      if (event.key !== "Enter" || event.isComposing) return;
+
+      const target = event.target;
+      if (
+        !isFormFieldTarget(target) ||
+        target.disabled ||
+        target.readOnly ||
+        target.matches?.('[data-shortcut-capture="true"] *')
+      ) return;
+
+      // Enter in a textarea remains available for line breaks.
+      if (target instanceof HTMLTextAreaElement) return;
+
+      if (focusNextField(target)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    document.addEventListener("keydown", handleEnter);
+    return () => document.removeEventListener("keydown", handleEnter);
+  }, []);
+  useEffect(() => {
+    const focusForm = (form) => {
+      // Let the browser finish the current render before focusing. This also
+      // covers forms whose first field becomes available in the same update.
+      requestAnimationFrame(() => focusFirstField(form));
+    };
+
+    const initialForm = [...document.querySelectorAll("form")].find(
+      (form) => form.getClientRects().length > 0,
+    );
+    if (initialForm) focusForm(initialForm);
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (!(node instanceof Element)) return;
+          if (node.matches("form")) focusForm(node);
+          node.querySelectorAll("form").forEach(focusForm);
+        });
+      });
+    });
+
+    const root = document.getElementById("root");
+    if (!root) return undefined;
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
   }, []);
   const fallback = (
     <div className="min-h-screen flex items-center justify-center text-sm text-gray-500">

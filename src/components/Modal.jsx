@@ -1,6 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { focusFirstField } from "../utils/focusNextField";
+
+const OPEN_MODAL_STACK = [];
 
 export default function Modal({
   isOpen,
@@ -15,23 +18,75 @@ export default function Modal({
   onEnterComplete,
 }) {
   const [visibleViewport, setVisibleViewport] = useState({ height: 0, top: 0 });
+  const panelRef = useRef(null);
+  const restoreFocusRef = useRef(null);
+  const isOpenRef = useRef(isOpen);
+  const modalTokenRef = useRef({});
+  const onCloseRef = useRef(onClose);
+  const closeOnEscapeRef = useRef(closeOnEscape);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    closeOnEscapeRef.current = closeOnEscape;
+  }, [closeOnEscape, onClose]);
+
+  const restoreFocus = () => {
+    const element = restoreFocusRef.current;
+    if (!(element instanceof HTMLElement)) return;
+
+    const frame = requestAnimationFrame(() => {
+      if (element.isConnected && !element.disabled) {
+        element.focus({ preventScroll: true });
+      }
+      restoreFocusRef.current = null;
+    });
+    return () => cancelAnimationFrame(frame);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      const active = document.activeElement;
+      restoreFocusRef.current =
+        active instanceof HTMLElement
+          ? active
+          : restoreFocusRef.current;
+      return undefined;
+    }
+
+    // The exit animation keeps the modal mounted. Actual restoration happens
+    // from onAnimationComplete after the modal has finished leaving.
+    return undefined;
+  }, [isOpen]);
 
   // ✅ ESC key close + scroll lock
   useEffect(() => {
+    const modalToken = modalTokenRef.current;
     const handleEsc = (e) => {
-      if (e.key === "Escape" && closeOnEscape) onClose();
+      const isTopMost = OPEN_MODAL_STACK[OPEN_MODAL_STACK.length - 1] === modalToken;
+      if (e.key === "Escape" && closeOnEscapeRef.current && isTopMost) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        onCloseRef.current?.();
+      }
     };
 
     if (isOpen) {
+      OPEN_MODAL_STACK.push(modalToken);
       document.addEventListener("keydown", handleEsc);
       document.body.style.overflow = "hidden";
     }
 
     return () => {
       document.removeEventListener("keydown", handleEsc);
-      document.body.style.overflow = "";
+      const index = OPEN_MODAL_STACK.indexOf(modalToken);
+      if (index >= 0) OPEN_MODAL_STACK.splice(index, 1);
+      document.body.style.overflow = OPEN_MODAL_STACK.length ? "hidden" : "";
     };
-  }, [closeOnEscape, isOpen, onClose]);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -50,6 +105,15 @@ export default function Modal({
       viewport?.removeEventListener("resize", updateViewport);
       viewport?.removeEventListener("scroll", updateViewport);
     };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    // The modal body is mounted after the open state changes. Focus on the
+    // next frame so the first field is available and its layout is measurable.
+    const frame = requestAnimationFrame(() => focusFirstField(panelRef.current));
+    return () => cancelAnimationFrame(frame);
   }, [isOpen]);
 
   return (
@@ -91,12 +155,19 @@ export default function Modal({
               }
             }}
             className="relative h-full w-full flex items-end justify-center overflow-hidden no-default-transition sm:items-center sm:p-3"
-            onAnimationComplete={() => { if (isOpen) onEnterComplete?.(); }}
+            onAnimationComplete={() => {
+              if (!isOpenRef.current) {
+                restoreFocus();
+                return;
+              }
+              focusFirstField(panelRef.current);
+              onEnterComplete?.();
+            }}
 
             // ✅ prevent close when clicking inside modal
             onMouseDown={onClose}
           >
-            <div className={`modal-panel flex max-h-full w-full flex-col overflow-hidden rounded-3xl bg-white p-5 shadow-md sm:max-h-[94dvh] sm:p-7 ${maxWidth} sm:rounded-4xl`} onMouseDown={(e) => e.stopPropagation()}>
+            <div ref={panelRef} className={`modal-panel flex max-h-full w-full flex-col overflow-hidden rounded-3xl bg-white p-5 shadow-md sm:max-h-[94dvh] sm:p-7 ${maxWidth} sm:rounded-4xl`} onMouseDown={(e) => e.stopPropagation()}>
               
               {/* Header */}
               {(title || badge) && (

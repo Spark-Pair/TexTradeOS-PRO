@@ -11,6 +11,9 @@ export const SHORTCUT_ACTIONS = [
   { id: "go_sales_returns", category: "Navigation", label: "Open Sales Returns", description: "Go to Sales Returns.", defaultCombo: "Alt+R", editable: true, path: "/sales-returns" },
   { id: "go_purchase_returns", category: "Navigation", label: "Open Purchase Returns", description: "Go to Purchase Returns.", defaultCombo: "Alt+Shift+R", editable: true, path: "/purchase-returns" },
   { id: "production_add_row", category: "Forms", label: "Add Invoice Row", description: "Add another item row while entering an invoice where supported.", defaultCombo: "ArrowRight", editable: true },
+  { id: "invoice_toggle_customer_mode", category: "Forms", label: "Switch Registered / Walk-in Customer", description: "Toggle between a registered customer and a walk-in customer while creating an invoice.", defaultCombo: "Ctrl+Shift+R", editable: true },
+  { id: "invoice_quick_add_customer", category: "Forms", label: "Quick Add Customer", description: "Open Quick Add Customer from the invoice customer section.", defaultCombo: "Ctrl+Shift+Q", editable: true },
+  { id: "invoice_next_step", category: "Forms", label: "Next Invoice Step", description: "Move to the next invoice step or review the invoice.", defaultCombo: "Ctrl+Enter", editable: true },
   { id: "close_top_dialog", category: "System", label: "Close Current Dialog", description: "Close only the top-most open dialog. Kept fixed for predictable keyboard behavior.", defaultCombo: "Esc", editable: false },
 ];
 

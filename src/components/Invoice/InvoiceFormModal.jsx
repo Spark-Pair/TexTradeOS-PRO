@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -31,6 +31,8 @@ import ReturnEditor, { returnTotals } from "../Returns/ReturnEditor";
 import PaymentEditor from "./PaymentEditor";
 import CustomerFormModal from "../User/CustomerFormModal";
 import InvoiceScanModal, { unlockScanAudio } from "../Scanner/InvoiceScanModal";
+import { useShortcut } from "../../hooks/useShortcuts";
+import { formatComboDisplay, isEventMatchingShortcut } from "../../utils/shortcuts";
 
 const todayInput = () => {
   const d = new Date();
@@ -45,6 +47,94 @@ const capitalizeWords = (value) =>
     .toLowerCase()
     .replace(/\s+/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+
+function ShortcutTooltip({ shortcut, label, children }) {
+  const [visible, setVisible] = useState(false);
+  const [positioned, setPositioned] = useState(false);
+  const [position, setPosition] = useState({ left: 0, top: 0 });
+  const timerRef = useRef(null);
+  const anchorRef = useRef(null);
+  const tooltipRef = useRef(null);
+
+  const stopTimer = () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = null;
+    setPositioned(false);
+    setVisible(false);
+  };
+
+  const startTimer = () => {
+    if (!shortcut) return;
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    setPositioned(false);
+    timerRef.current = window.setTimeout(() => setVisible(true), 1000);
+  };
+
+  useEffect(() => () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return undefined;
+
+    const updatePosition = () => {
+      const anchor = anchorRef.current?.getBoundingClientRect();
+      const tooltip = tooltipRef.current?.getBoundingClientRect();
+      if (!anchor || !tooltip) return;
+
+      const gap = 8;
+      const padding = 8;
+      const canFitAbove = anchor.top >= tooltip.height + gap + padding;
+      const canFitBelow = window.innerHeight - anchor.bottom >= tooltip.height + gap + padding;
+      const canFitRight = window.innerWidth - anchor.right >= tooltip.width + gap + padding;
+
+      let top = canFitAbove
+        ? anchor.top - tooltip.height - gap
+        : canFitBelow
+          ? anchor.bottom + gap
+          : canFitRight
+            ? anchor.top + (anchor.height - tooltip.height) / 2
+            : anchor.top + (anchor.height - tooltip.height) / 2;
+      let left = canFitAbove || canFitBelow
+        ? anchor.left + (anchor.width - tooltip.width) / 2
+        : canFitRight
+          ? anchor.right + gap
+          : anchor.left - tooltip.width - gap;
+
+      left = Math.max(padding, Math.min(left, window.innerWidth - tooltip.width - padding));
+      top = Math.max(padding, Math.min(top, window.innerHeight - tooltip.height - padding));
+      setPosition({ left, top });
+      revealFrame = requestAnimationFrame(() => setPositioned(true));
+    };
+
+    let revealFrame = 0;
+    const frame = requestAnimationFrame(updatePosition);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelAnimationFrame(revealFrame);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [visible]);
+
+  if (!shortcut) return children;
+  return (
+    <div ref={anchorRef} className="relative inline-flex" onMouseEnter={startTimer} onMouseLeave={stopTimer}>
+      {children}
+      {visible && (
+        <div
+          ref={tooltipRef}
+          style={{ left: position.left, top: position.top }}
+          className={`pointer-events-none fixed z-[200] whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1.5 text-[11px] font-medium text-white shadow-lg transition-[opacity,transform] duration-150 ease-out ${positioned ? "translate-y-0 scale-100 opacity-100" : "translate-y-1 scale-95 opacity-0"}`}
+        >
+          {label} · {formatComboDisplay(shortcut)}
+        </div>
+      )}
+    </div>
+  );
+}
 const formatInvoiceNumber = (year, next) =>
   `${year}-${String(Math.max(1, Number(next) || 1)).padStart(4, "0")}`;
 const toInvoiceInventory = (items = []) =>
@@ -396,6 +486,106 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
     [error, setError] = useState("");
   const [salesReturnInventory, setSalesReturnInventory] = useState([]),
     [salesReturnLoading, setSalesReturnLoading] = useState(false);
+  const toggleCustomerShortcut = useShortcut("invoice_toggle_customer_mode");
+  const quickAddCustomerShortcut = useShortcut("invoice_quick_add_customer");
+  const nextStepShortcut = useShortcut("invoice_next_step");
+  const customerSelectRef = useRef(null);
+  const walkInCustomerRef = useRef(null);
+  const addItemButtonRef = useRef(null);
+  const previousEntryStageRef = useRef(entryStage);
+  const focusCustomerAfterQuickAddRef = useRef(false);
+
+  const toggleCustomerMode = useCallback(() => {
+    if (customerMode === "registered") {
+      setCustomerMode("walkin");
+      setCustomerId("");
+      setIncludeSalesReturn(false);
+      setSalesReturnRows([]);
+    } else {
+      setCustomerMode("registered");
+    }
+    setError("");
+  }, [customerMode]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handleShortcut = (event) => {
+      if (
+        event.repeat ||
+        event.defaultPrevented ||
+        entryStage !== 1 ||
+        step !== "entry" ||
+        quickCustomerOpen ||
+        itemModal.isOpen ||
+        scanModalOpen ||
+        event.target.closest?.("[data-shortcut-capture='true']")
+      ) return;
+
+      if (toggleCustomerShortcut && isEventMatchingShortcut(event, toggleCustomerShortcut)) {
+        event.preventDefault();
+        toggleCustomerMode();
+        return;
+      }
+
+      if (
+        customerMode === "registered" &&
+        quickAddCustomerShortcut &&
+        isEventMatchingShortcut(event, quickAddCustomerShortcut)
+      ) {
+        event.preventDefault();
+        setQuickCustomerOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, [
+    isOpen,
+    entryStage,
+    step,
+    quickCustomerOpen,
+    itemModal.isOpen,
+    scanModalOpen,
+    customerMode,
+    toggleCustomerMode,
+    toggleCustomerShortcut,
+    quickAddCustomerShortcut,
+  ]);
+
+  useEffect(() => {
+    if (!isOpen || quickCustomerOpen || !focusCustomerAfterQuickAddRef.current) return undefined;
+
+    const frame = requestAnimationFrame(() => {
+      focusCustomerAfterQuickAddRef.current = false;
+      customerSelectRef.current?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, quickCustomerOpen]);
+
+  useEffect(() => {
+    if (!isOpen || entryStage !== 1 || quickCustomerOpen) return undefined;
+
+    const frame = requestAnimationFrame(() => {
+      const firstField =
+        customerMode === "registered"
+          ? customerSelectRef.current
+          : walkInCustomerRef.current;
+      firstField?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [customerMode, entryStage, isOpen, quickCustomerOpen]);
+
+  useEffect(() => {
+    const previousStage = previousEntryStageRef.current;
+    previousEntryStageRef.current = entryStage;
+    if (!isOpen || previousStage === entryStage || entryStage !== 2) return undefined;
+
+    const frame = requestAnimationFrame(() => {
+      addItemButtonRef.current?.focus({ preventScroll: true });
+      addItemButtonRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [entryStage, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -616,6 +806,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
       );
       setCustomerMode("registered");
       setCustomerId(created._id);
+      focusCustomerAfterQuickAddRef.current = true;
       setQuickCustomerOpen(false);
       showToast({
         type: "success",
@@ -683,7 +874,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
   };
   const removeRow = (key) =>
     setArticles((rows) => rows.filter((r) => r._key !== key));
-  const advance = () => {
+  const advance = useCallback(() => {
     if (entryStage === 1 && !selectedCustomer)
       return setError("Select a customer to continue.");
     if (entryStage === 1 && !salesmanName.trim())
@@ -692,8 +883,9 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
       return setError("Add at least one article to continue.");
     setError("");
     setEntryStage((s) => Math.min(3, s + 1));
-  };
-  const review = () => {
+  }, [calculatedArticles.length, entryStage, salesmanName, selectedCustomer]);
+
+  const review = useCallback(() => {
     if (!selectedCustomer) return setError("Select a customer.");
     if (!salesmanName.trim()) return setError("Salesman name is required.");
     if (!calculatedArticles.length)
@@ -712,7 +904,41 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
       );
     setError("");
     setStep("preview");
-  };
+  }, [calculatedArticles, inventory, salesmanName, selectedCustomer]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handleNextShortcut = (event) => {
+      if (
+        event.repeat ||
+        event.defaultPrevented ||
+        step !== "entry" ||
+        quickCustomerOpen ||
+        itemModal.isOpen ||
+        scanModalOpen ||
+        event.target.closest?.("[data-shortcut-capture='true']") ||
+        !nextStepShortcut ||
+        !isEventMatchingShortcut(event, nextStepShortcut)
+      ) return;
+
+      event.preventDefault();
+      if (entryStage < 3) advance();
+      else review();
+    };
+
+    window.addEventListener("keydown", handleNextShortcut);
+    return () => window.removeEventListener("keydown", handleNextShortcut);
+  }, [
+    isOpen,
+    step,
+    entryStage,
+    quickCustomerOpen,
+    itemModal.isOpen,
+    scanModalOpen,
+    nextStepShortcut,
+    advance,
+    review,
+  ]);
   const save = async () => {
     setSubmitting(true);
     try {
@@ -854,50 +1080,49 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
               subtitle="Select the customer and salesperson handling this sale"
             />
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="relative grid w-full grid-cols-2 rounded-xl border border-gray-300 bg-gray-100 p-1 sm:w-[270px]">
-                <motion.span
-                  animate={{ x: customerMode === "walkin" ? "100%" : "0%" }}
-                  transition={{ type: "spring", stiffness: 500, damping: 36 }}
-                  className="absolute bottom-1 left-1 top-1 w-[calc(50%-4px)] rounded-lg bg-white shadow-sm ring-1 ring-gray-200"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCustomerMode("registered");
-                    setError("");
-                  }}
-                  className={`relative z-10 rounded-lg px-3 py-2 text-xs font-semibold ${customerMode === "registered" ? "text-gray-950" : "text-gray-500"}`}
-                >
-                  Registered
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCustomerMode("walkin");
-                    setCustomerId("");
-                    setIncludeSalesReturn(false);
-                    setSalesReturnRows([]);
-                    setError("");
-                  }}
-                  className={`relative z-10 rounded-lg px-3 py-2 text-xs font-semibold ${customerMode === "walkin" ? "text-gray-950" : "text-gray-500"}`}
-                >
-                  Walk-in
-                </button>
-              </div>
+              <ShortcutTooltip shortcut={toggleCustomerShortcut} label="Switch customer type">
+                <div className="relative grid w-full grid-cols-2 rounded-xl border border-gray-300 bg-gray-100 p-1 sm:w-[270px]">
+                  <motion.span
+                    animate={{ x: customerMode === "walkin" ? "100%" : "0%" }}
+                    transition={{ type: "spring", stiffness: 500, damping: 36 }}
+                    className="absolute bottom-1 left-1 top-1 w-[calc(50%-4px)] rounded-lg bg-white shadow-sm ring-1 ring-gray-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => customerMode !== "registered" && toggleCustomerMode()}
+                    aria-keyshortcuts={toggleCustomerShortcut || undefined}
+                    className={`relative z-10 rounded-lg px-3 py-2 text-xs font-semibold ${customerMode === "registered" ? "text-gray-950" : "text-gray-500"}`}
+                  >
+                    <span>Registered</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => customerMode !== "walkin" && toggleCustomerMode()}
+                    aria-keyshortcuts={toggleCustomerShortcut || undefined}
+                    className={`relative z-10 rounded-lg px-3 py-2 text-xs font-semibold ${customerMode === "walkin" ? "text-gray-950" : "text-gray-500"}`}
+                  >
+                    <span>Walk-in</span>
+                  </button>
+                </div>
+              </ShortcutTooltip>
               {customerMode === "registered" && (
-                <Button
-                  size="sm"
-                  outline
-                  icon={Plus}
-                  onClick={() => setQuickCustomerOpen(true)}
-                >
-                  Quick Add Customer
-                </Button>
+                <ShortcutTooltip shortcut={quickAddCustomerShortcut} label="Quick add customer">
+                  <Button
+                    size="sm"
+                    outline
+                    icon={Plus}
+                    onClick={() => setQuickCustomerOpen(true)}
+                    aria-keyshortcuts={quickAddCustomerShortcut || undefined}
+                  >
+                    Quick Add Customer
+                  </Button>
+                </ShortcutTooltip>
               )}
             </div>
             <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
               {customerMode === "registered" ? (
                 <Select
+                  ref={customerSelectRef}
                   label="Customer"
                   value={customerId}
                   onChange={setCustomerId}
@@ -906,6 +1131,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                 />
               ) : (
                 <Input
+                  ref={walkInCustomerRef}
                   label="Customer Name"
                   value={walkIn.customer_name}
                   onChange={(e) =>
@@ -992,6 +1218,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                     Scan QR
                   </Button>
                   <Button
+                    ref={addItemButtonRef}
                     size="sm"
                     icon={Plus}
                     onClick={() =>

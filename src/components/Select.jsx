@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, forwardRef } from "react";
 import { ChevronDown, Check, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { focusNextField } from "../utils/focusNextField";
 
 const Select = forwardRef(function Select(
   { label, options = [], value, onChange, placeholder = "Select...", disabled = false, onSearchSubmit },
@@ -46,32 +47,21 @@ const Select = forwardRef(function Select(
     setActiveIndex(-1);
   }, []);
 
-  const focusNextField = useCallback(() => {
-    const current = triggerRef.current;
-    if (!current) return;
-    const FOCUSABLE = [
-      'input:not([disabled]):not([readonly])',
-      '[data-focusable]:not([disabled])',
-    ].join(", ");
-    const all = [...document.querySelectorAll(FOCUSABLE)].filter((el) => {
-      if (el.offsetParent === null) return false;
-      if (el.closest("[data-shortcut-capture='true']")) return false;
-      return true;
-    });
-    const idx = all.indexOf(current);
-    const next = all[idx + 1];
-    if (next) next.focus();
-  }, []);
-
   const selectOption = useCallback((opt, options = {}) => {
     onChange(opt.value);
     closeDropdown();
     suppressNextFocusOpenRef.current = true;
     triggerRef.current?.focus();
     if (options?.moveNext) {
-      setTimeout(() => focusNextField(), 0);
+      // Wait until the dropdown exit animation and its blur handlers finish.
+      // A second pass protects focus from the parent state update caused by
+      // onChange.
+      window.setTimeout(() => {
+        focusNextField(triggerRef.current);
+        window.setTimeout(() => focusNextField(triggerRef.current), 40);
+      }, 240);
     }
-  }, [onChange, closeDropdown, focusNextField]);
+  }, [onChange, closeDropdown]);
 
   // Expose focus on trigger via ref
   useEffect(() => {
@@ -157,6 +147,7 @@ const Select = forwardRef(function Select(
           if (!isOpen) openDropdown();
         }}
         tabIndex={disabled ? -1 : 0}
+        aria-disabled={disabled}
         data-focusable="select"
         onKeyDown={(e) => {
           if (e.key === "Escape") {
@@ -179,11 +170,11 @@ const Select = forwardRef(function Select(
             e.preventDefault();
             e.stopPropagation();
             if (!isOpen) {
-              openDropdown();
+              focusNextField(triggerRef.current);
               return;
             }
             if (activeIndex >= 0 && filteredOptions[activeIndex]) {
-              selectOption(filteredOptions[activeIndex]);
+              selectOption(filteredOptions[activeIndex], { moveNext: true });
             }
           }
         }}
@@ -270,7 +261,7 @@ const Select = forwardRef(function Select(
                     key={opt.value}
                     ref={(el) => { optionRefs.current[idx] = el; }}
                     onMouseEnter={() => setActiveIndex(idx)}
-                    onClick={() => selectOption(opt)}
+                    onClick={() => selectOption(opt, { moveNext: true })}
                     className={`flex items-center justify-between px-4 py-2.5 cursor-pointer rounded-xl ${
                       idx === activeIndex
                         ? "bg-teal-50 text-teal-800"

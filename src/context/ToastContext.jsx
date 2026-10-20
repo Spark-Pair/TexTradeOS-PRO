@@ -25,6 +25,7 @@ export function ToastProvider({ children }) {
   const showToast = useCallback(({ message, type = "success", duration = 3500, title }) => {
     const text = String(message || "").trim();
     if (!text) return;
+    const activeElement = document.activeElement;
     const resolvedType = TOAST_STYLES[type] ? type : "info";
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
@@ -33,6 +34,18 @@ export function ToastProvider({ children }) {
       return [...withoutDuplicate, { id, message: text, type: resolvedType, title }].slice(-3);
     });
     timersRef.current.set(id, window.setTimeout(() => removeToast(id), Math.max(1500, duration)));
+
+    // Notifications must never steal focus from the form control that
+    // triggered them. Restore it after the toast render if it still exists.
+    requestAnimationFrame(() => {
+      if (
+        activeElement instanceof HTMLElement &&
+        activeElement.isConnected &&
+        (document.activeElement === document.body || !document.activeElement)
+      ) {
+        activeElement.focus({ preventScroll: true });
+      }
+    });
   }, [removeToast]);
 
   useEffect(() => () => {
