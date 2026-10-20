@@ -54,7 +54,7 @@ export default function Inventory() {
       const data = await fetchInventory();
       setRows((Array.isArray(data) ? data : []).map((row) => ({
         ...row,
-        _key: `${row.purchase_id}-${row.article_no}`,
+        _key: `${row.purchase_id}-${row.qr_id || row.article_no}-${row.size || ""}-${row.purchase_rate || row.rate || ""}-${row.sale_rate || ""}`,
         stock_dzn: numberValue(row.stock_dzn ?? numberValue(row.stock_pcs) / 12),
         stock_pkt: numberValue(row.stock_pkt ?? row.available_packets),
       })));

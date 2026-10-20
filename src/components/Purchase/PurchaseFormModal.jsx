@@ -31,6 +31,7 @@ const numberValue = (value) => {
 };
 const newArticle = () => ({
   _key: uuidv4(),
+  article_no: "",
   description: "",
   size: "",
   season: "",
@@ -149,6 +150,13 @@ function PurchaseItemModal({ isOpen, onClose, onSubmit, article = null }) {
         onSubmit={handleSubmit}
         className="grid grid-cols-1 gap-3.5 p-0.5 md:grid-cols-3"
       >
+        <Input
+          label="Article No (Optional)"
+          value={item.article_no}
+          onChange={(e) => update("article_no", e.target.value)}
+          placeholder="e.g. ART-1001"
+          required={false}
+        />
         <Input
           label="Description"
           value={item.description}
@@ -277,7 +285,7 @@ const selectedStickerArticles = (purchase, selections = {}) =>
       {
         length: Math.min(
           maxStickerPackets(article),
-          Math.max(0, Math.floor(numberValue(selections[article.article_no]))),
+          Math.max(0, Math.floor(numberValue(selections[article.qr_id || article.article_no]))),
         ),
       },
       () => article,
@@ -289,6 +297,7 @@ const stickerPayload = (purchase, article) =>
     qrId: article.qr_id || article.article_no,
     purchaseNumber: article.purchase_number || purchase.purchase_number,
   });
+const stickerKey = (article) => article.qr_id || article.article_no || article._key || "article";
 const barcodeDataUrl = (code) => {
   const canvas = document.createElement("canvas");
   code128(canvas, {
@@ -304,17 +313,17 @@ const buildQrHtml = async (purchase, selections = {}) => {
   const articles = selectedStickerArticles(purchase, selections);
   const codeByArticle = new Map();
   for (const article of articles)
-    if (!codeByArticle.has(article.article_no))
+    if (!codeByArticle.has(stickerKey(article)))
       codeByArticle.set(
-        article.article_no,
+        stickerKey(article),
         await stickerPayload(purchase, article),
       );
   const renderedLabels = await Promise.all(
     articles.map(async (article) => ({
       article,
-      qr: codeByArticle.get(article.article_no),
-      barcode: barcodeDataUrl(codeByArticle.get(article.article_no)),
-      svg: await QRCode.toString(codeByArticle.get(article.article_no), {
+      qr: codeByArticle.get(stickerKey(article)),
+      barcode: barcodeDataUrl(codeByArticle.get(stickerKey(article))),
+      svg: await QRCode.toString(codeByArticle.get(stickerKey(article)), {
         type: "svg",
         errorCorrectionLevel: "M",
         margin: 0,
@@ -353,12 +362,12 @@ const downloadStickerPdf = async (purchase, selections = {}) => {
   for (let index = 0; index < articles.length; index += 1) {
     if (index > 0) pdf.addPage([90, 40], "landscape");
     const article = articles[index];
-    if (!codeByArticle.has(article.article_no))
+    if (!codeByArticle.has(stickerKey(article)))
       codeByArticle.set(
-        article.article_no,
+        stickerKey(article),
         await stickerPayload(purchase, article),
       );
-    const secureCode = codeByArticle.get(article.article_no);
+    const secureCode = codeByArticle.get(stickerKey(article));
     const qr = await QRCode.toDataURL(secureCode, {
       width: 500,
       margin: 0,
@@ -546,7 +555,7 @@ export default function PurchaseFormModal({
       sum +
       Math.min(
         maxStickerPackets(article),
-        numberValue(labelQuantities[article.article_no]),
+        numberValue(labelQuantities[stickerKey(article)]),
       ),
     0,
   );
@@ -572,7 +581,7 @@ export default function PurchaseFormModal({
   const setArticleLabelQuantity = (article, value) =>
     setLabelQuantities((prev) => ({
       ...prev,
-      [article.article_no]: Math.min(
+      [stickerKey(article)]: Math.min(
         maxStickerPackets(article),
         Math.max(0, Math.floor(numberValue(value))),
       ),
@@ -581,7 +590,7 @@ export default function PurchaseFormModal({
     setLabelQuantities(
       Object.fromEntries(
         labelArticles.map((article) => [
-          article.article_no,
+          stickerKey(article),
           maxStickerPackets(article),
         ]),
       ),
@@ -754,7 +763,7 @@ export default function PurchaseFormModal({
             <SectionHeader
               step="2"
               title="Purchase Items"
-              subtitle="Article numbers are allocated by the backend when the purchase is saved"
+              subtitle="Article No is optional; the same number can be used for different sizes, quantities, and rates"
               right={
                 <Button
                   size="sm"
@@ -866,10 +875,10 @@ export default function PurchaseFormModal({
           />
           <div className="max-h-[48dvh] divide-y divide-gray-100 overflow-y-auto rounded-xl border border-gray-200 bg-white">
             {visibleLabelArticles.map((article) => {
-              const quantity = Number(labelQuantities[article.article_no] || 0);
+              const quantity = Number(labelQuantities[stickerKey(article)] || 0);
               return (
                 <div
-                  key={article.article_no}
+                  key={stickerKey(article)}
                   className="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_120px_170px] sm:items-center"
                 >
                   <div>
