@@ -120,7 +120,7 @@ const getPrintStyle = (printMode = "a5") => `
   .invoice-table .center{text-align:center}.invoice-table .tabular,.invoice-table .numeric{font-variant-numeric:tabular-nums}.invoice-table .numeric{text-align:right;white-space:nowrap}.invoice-table .amount{font-weight:750;letter-spacing:.02em;color:#000;text-align:right;white-space:nowrap}.invoice-table .row-number{color:#374151;font-size:7.8px;font-weight:750}.invoice-table .muted-value{color:#111827}
   .invoice-table tfoot td { padding:3px 5.5px; border:0; border-top:var(--invoice-border-width) solid var(--invoice-border-color); background:#dfe3e8; color:#111827; font-size:8.1px; font-weight:750; letter-spacing:.02em; }
   .invoice-table tfoot td:first-child{border-bottom-left-radius:calc(var(--invoice-radius) - 1px)}.invoice-table tfoot td:last-child{border-bottom-right-radius:calc(var(--invoice-radius) - 1px)}
-  .invoice-summary { display:flex; justify-content:flex-end; margin-top:7px; }
+  .invoice-summary { display:flex; justify-content:flex-end; margin-top:6px; gap: 6px; }
   .invoice-summary-single { display:grid; grid-template-columns:minmax(0,64mm); justify-content:end; align-items:start; gap:7px; }
   .invoice-summary-single .invoice-totals-panel { width:100%; }
   .invoice-summary.summary-compact .summary-row { min-height:18px; padding-top:2.5px; padding-bottom:2.5px; font-size:9px; }
