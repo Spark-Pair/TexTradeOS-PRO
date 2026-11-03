@@ -134,3 +134,13 @@
   #invoice-print-clone-root .invoice-paper .invoice-footer-note,
   #invoice-print-clone-root .invoice-paper .invoice-agency-credit{font-weight:400!important}
 }
+
+/* Make every text element in the invoice preview bold. */
+.invoice-paper.invoice-paper.invoice-paper,
+.invoice-paper.invoice-paper.invoice-paper * { font-weight: 600 !important; }
+
+@media print {
+  #invoice-print-clone-root .invoice-paper.invoice-paper.invoice-paper,
+  #invoice-print-clone-root .invoice-paper.invoice-paper.invoice-paper * { font-weight: 600 !important; }
+}
+
