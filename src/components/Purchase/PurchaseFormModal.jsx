@@ -336,19 +336,19 @@ const buildQrHtml = async (purchase, selections = {}) => {
 @page{size:3in 2in;margin:0}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;width:3in;background:#fff;font-family:Arial,sans-serif;color:#111827}
-.label{position:relative;width:3in;height:2in;overflow:hidden;break-after:page;page-break-after:always;background:#fff;display:grid;grid-template-columns:1fr 1.12in;padding:0.10in}
+.label{position:relative;width:3in;height:2in;break-after:page;page-break-after:always;overflow:hidden;border:.25mm solid #919191;border-radius:2.5mm;background:#fff;display:grid;grid-template-columns:1fr 32mm}
 .label:last-child{break-after:auto;page-break-after:auto}
-.info{position:relative;min-width:0;padding:0.02in 0.04in 0.02in 0}
-.brand{color:#127475;font-size:8pt;line-height:1.1;font-weight:900;max-height:0.18in;overflow:hidden}
-.article{margin-top:0.035in;font-size:11pt;font-weight:800;line-height:1.1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.desc{height:0.28in;overflow:hidden;font-size:7.5pt;line-height:1.15;margin-top:0.025in}
-.details{margin-top:0.035in;display:grid;grid-template-columns:1fr 1fr;gap:0.025in;font-size:6.5pt;line-height:1.15;color:#374151}
-.barcode{position:absolute;left:0;bottom:0.20in;width:1.62in;height:0.25in;object-fit:fill}
-.purchase{position:absolute;left:0;bottom:0.08in;max-width:1.72in;font-size:5pt;line-height:1.1;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.qr{border-left:0.5px solid #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-left:0.06in;min-width:0}
-.qr svg{width:0.91in;height:0.91in;display:block}
-.scan{margin-top:0.035in;color:#127475;font-size:6pt;font-weight:800}
-.footer{position:absolute;right:0.10in;bottom:0.035in;color:#6b7280;font-size:4.5pt;font-weight:700}
+.info{position:relative;padding:3.5mm 2mm 4mm 5mm;min-width:0}
+.brand{color:#127475;font-size:9px;line-height:1.1;font-weight:900;max-height:6mm;overflow:hidden}
+.article{margin-top:1mm;font-size:12px;font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.desc{height:8mm;overflow:hidden;font-size:8.5px;line-height:1.15}
+.details{margin-top:1.5mm;display:grid;grid-template-columns:1fr 1fr;gap:1mm;font-size:7px;line-height:1.2;color:#4b5563}
+.barcode{position:absolute;left:5mm;bottom:6.9mm;width:42mm;height:6mm;object-fit:fill}
+.purchase{position:absolute;left:5mm;bottom:4.3mm;max-width:42mm;font-size:5.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#6b7280}
+.footer{position:absolute;right:2mm;bottom:1.1mm;color:#6b7280;font-size:4.5px;font-weight:700}
+.qr{border-left:.25mm solid #919191;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2mm;background:#f8fafc;min-width:0}
+.qr svg{width:25mm;height:25mm;display:block}
+.scan{margin-top:1mm;color:#127475;font-size:6px;font-weight:800}
 @media screen{body{background:#e5e7eb}.label{margin:10px auto;box-shadow:0 1px 5px #0002}}
 @media print{html,body{width:3in;height:auto;background:#fff}.label{margin:0;box-shadow:none}}
 </style></head><body>${renderedLabels.map(({ article, svg, barcode }) => `<section class="label"><div class="info"><div class="brand">${escapeHtml(businessName)}</div><div class="article">${escapeHtml(article.article_no)}</div><div class="desc">${escapeHtml(article.description || "Untitled Article")}</div><div class="details"><span>Size <strong>${escapeHtml(article.size || "-")}</strong></span><span>Category <strong>${escapeHtml(article.category || "-")}</strong></span><span>Unit <strong>${escapeHtml(article.unit || 0)} pcs</strong></span><span>Sale <strong>Rs ${escapeHtml(Number(article.sale_rate || article.rate || 0).toFixed(2))}</strong></span></div><img class="barcode" src="${barcode}" alt=""><div class="purchase">${escapeHtml(article.purchase_number || purchase.purchase_number)} - ${escapeHtml(article.supplier_name || purchase.supplier_name || "")}</div></div><div class="qr">${svg}<div class="scan">SCAN ARTICLE</div></div><div class="footer">TexTradeOS PRO by SparkPair</div></section>`).join("")}</body></html>`;
