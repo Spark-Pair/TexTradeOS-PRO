@@ -303,7 +303,7 @@ const barcodeDataUrl = (code) => {
   code128(canvas, {
     text: code,
     scale: 3,
-    height: 7,
+    height: 10,
     includetext: false,
     padding: 0,
   });
@@ -343,7 +343,7 @@ html,body{margin:0;padding:0;width:3in;background:#fff;font-family:Arial,sans-se
 .article{margin-top:1mm;font-size:12px;font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .desc{height:8mm;overflow:hidden;font-size:8.5px;line-height:1.15}
 .details{margin-top:1.5mm;display:grid;grid-template-columns:1fr 1fr;gap:1mm;font-size:7px;line-height:1.2;color:#4b5563}
-.barcode{position:absolute;left:5mm;bottom:9mm;width:42mm;height:5mm;object-fit:fill;display:block}
+.barcode{position:absolute;left:5mm;bottom:8mm;width:36mm;height:8mm;max-width:calc(100% - 7mm);object-fit:contain;object-position:left center;display:block}
 .purchase{position:absolute;left:5mm;bottom:4mm;height:2mm;line-height:2mm;max-width:42mm;font-size:5.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#6b7280}
 .footer{position:absolute;right:2mm;bottom:1.1mm;color:#6b7280;font-size:4.5px;font-weight:700}
 .qr{border-left:.25mm solid #919191;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2mm;background:#f8fafc;min-width:0}
