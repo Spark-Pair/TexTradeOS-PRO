@@ -333,10 +333,10 @@ const buildQrHtml = async (purchase, selections = {}) => {
   );
   const businessName = purchase.business_name || "TexTradeOS Pro";
   return `<!doctype html><html><head><meta charset="utf-8"><title>Article QR Labels</title><style>
-@page{size:3in 2in;margin:0}
+@page{size:76.2mm 50.8mm;margin:0}
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;width:3in;background:#fff;font-family:Arial,sans-serif;color:#111827}
-.label{position:relative;width:3in;height:2in;break-after:page;page-break-after:always;overflow:hidden;border:.25mm solid #919191;border-radius:2.5mm;background:#fff;display:grid;grid-template-columns:1fr 32mm}
+html,body{margin:0;padding:0;width:76.2mm;background:#fff;font-family:Arial,sans-serif;color:#111827}
+.label{position:relative;flex:none;width:76.2mm;height:50.8mm;min-width:76.2mm;min-height:50.8mm;max-width:76.2mm;max-height:50.8mm;break-after:page;page-break-after:always;break-inside:avoid;overflow:hidden;border:.25mm solid #919191;border-radius:2.5mm;background:#fff;display:grid;grid-template-columns:1fr 32mm}
 .label:last-child{break-after:auto;page-break-after:auto}
 .info{position:relative;padding:3.5mm 2mm 4mm 5mm;min-width:0}
 .brand{color:#127475;font-size:9px;line-height:1.1;font-weight:900;max-height:6mm;overflow:hidden}
@@ -344,13 +344,13 @@ html,body{margin:0;padding:0;width:3in;background:#fff;font-family:Arial,sans-se
 .desc{height:8mm;overflow:hidden;font-size:8.5px;line-height:1.15}
 .details{margin-top:1.5mm;display:grid;grid-template-columns:1fr 1fr;gap:1mm;font-size:7px;line-height:1.2;color:#4b5563}
 .barcode{position:absolute;left:5mm;bottom:8mm;width:36mm;height:8mm;max-width:calc(100% - 7mm);object-fit:contain;object-position:left center;display:block}
-.purchase{position:absolute;left:5mm;bottom:4mm;height:2mm;line-height:2mm;max-width:42mm;font-size:5.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#6b7280}
+.purchase{position:absolute;left:5mm;bottom:4mm;height:2mm;line-height:2mm;max-width:36mm;font-size:5.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#6b7280}
 .footer{position:absolute;right:2mm;bottom:1.1mm;color:#6b7280;font-size:4.5px;font-weight:700}
 .qr{border-left:.25mm solid #919191;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2mm;background:#f8fafc;min-width:0}
 .qr svg{width:25mm;height:25mm;display:block}
 .scan{margin-top:1mm;color:#127475;font-size:6px;font-weight:800}
 @media screen{body{background:#e5e7eb}.label{margin:10px auto;box-shadow:0 1px 5px #0002}}
-@media print{html,body{width:3in;height:auto;background:#fff}.label{margin:0;box-shadow:none}}
+@media print{html,body{width:76.2mm;height:auto;margin:0!important;padding:0!important;background:#fff}.label{width:76.2mm!important;height:50.8mm!important;min-width:76.2mm!important;min-height:50.8mm!important;max-width:76.2mm!important;max-height:50.8mm!important;margin:0!important;box-shadow:none;break-after:page;page-break-after:always}.label:last-child{break-after:auto;page-break-after:auto}}
 </style></head><body>${renderedLabels.map(({ article, svg, barcode }) => `<section class="label"><div class="info"><div class="brand">${escapeHtml(businessName)}</div><div class="article">${escapeHtml(article.article_no)}</div><div class="desc">${escapeHtml(article.description || "Untitled Article")}</div><div class="details"><span>Size <strong>${escapeHtml(article.size || "-")}</strong></span><span>Category <strong>${escapeHtml(article.category || "-")}</strong></span><span>Unit <strong>${escapeHtml(article.unit || 0)} pcs</strong></span><span>Sale <strong>Rs ${escapeHtml(Number(article.sale_rate || article.rate || 0).toFixed(2))}</strong></span></div><img class="barcode" src="${barcode}" alt=""><div class="purchase">${escapeHtml(article.purchase_number || purchase.purchase_number)} - ${escapeHtml(article.supplier_name || purchase.supplier_name || "")}</div></div><div class="qr">${svg}<div class="scan">SCAN ARTICLE</div></div><div class="footer">TexTradeOS PRO by SparkPair</div></section>`).join("")}</body></html>`;
 };
 const printPurchaseStickers = async (purchase, selections = {}) => {
