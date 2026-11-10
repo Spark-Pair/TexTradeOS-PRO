@@ -38,6 +38,11 @@ export const createBusinessUser = async (data) => {
   return res.data;
 };
 
+export const updateBusinessUser = async (id, data) => {
+  const res = await apiClient.put(`${USER_URL}/business/${id}`, data);
+  return res.data;
+};
+
 export const resetUserPassword = async (id, data) => {
   const res = await apiClient.patch(`${USER_URL}/${id}/reset-password`, data);
   return res.data;

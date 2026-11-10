@@ -12,19 +12,19 @@ const INITIAL_STATE = {
   role: "staff",
 };
 
-export default function UserFormModal({ isOpen, onClose, onSubmit, loading = false, roleOptions = [] }) {
+export default function UserFormModal({ isOpen, onClose, onSubmit, loading = false, roleOptions = [], initialData = null }) {
   const [formData, setFormData] = useState(INITIAL_STATE);
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(INITIAL_STATE);
+      setFormData(initialData ? { ...INITIAL_STATE, ...initialData, password: "" } : INITIAL_STATE);
     }
   }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
     const firstRole = roleOptions[0]?.value || "staff";
-    setFormData((prev) => ({ ...prev, role: firstRole }));
+    setFormData((prev) => ({ ...prev, role: roleOptions.some((option) => option.value === prev.role) ? prev.role : firstRole }));
   }, [isOpen, roleOptions]);
 
   const handleSubmit = (e) => {
@@ -37,15 +37,15 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, loading = fal
       isOpen={isOpen}
       onClose={onClose}
       maxWidth="max-w-lg"
-      title="Add User"
-      subtitle="Create a business user"
+      title={initialData ? "Edit User" : "Add User"}
+      subtitle={initialData ? "Update account name, username and role" : "Create a business user"}
       footer={
         <div className="flex gap-3">
           <Button outline variant="secondary" onClick={onClose} className="w-1/3">
             Discard
           </Button>
           <Button icon={Save} className="grow" onClick={handleSubmit} disabled={loading}>
-            Create User
+            {initialData ? "Save User" : "Create User"}
           </Button>
         </div>
       }
@@ -72,6 +72,7 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, loading = fal
           placeholder="Set a password"
           onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
           autoComplete="new-password"
+          className={initialData ? "hidden" : undefined}
         />
         <Select
           label="Role"

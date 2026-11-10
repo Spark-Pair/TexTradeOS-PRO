@@ -23,6 +23,11 @@ export async function createReturn(type, payload) {
   return unwrap(response);
 }
 
+export async function updateReturn(type, id, payload) {
+  const response = await apiClient.put(`/returns/${type}/${encodeURIComponent(id)}`, payload);
+  return unwrap(response);
+}
+
 export async function removeReturn(type, id) {
   return apiClient.delete(`/returns/${type}/${id}`);
 }

@@ -13,6 +13,7 @@ import {
   toggleBusinessUserStatus,
   resetBusinessUserPassword,
   createBusinessUser,
+  updateBusinessUser,
   deleteBusinessUser,
   deleteUser,
 } from "../api/user";
@@ -96,9 +97,7 @@ export default function Users() {
     isOpen: false,
     userData: null,
   });
-  const [formModal, setFormModal] = useState({
-    isOpen: false,
-  });
+  const [formModal, setFormModal] = useState({ isOpen: false, data: null });
   const [creating, setCreating] = useState(false);
   const [filters, setFilters] = useState({
     name: "",
@@ -265,7 +264,7 @@ export default function Users() {
     try {
       if (action === "openEdit") {
         setDetailsModal({ isOpen: false });
-        setFormModal({ isOpen: true });
+        setFormModal({ isOpen: true, data });
         return;
       } else if (action === "toggleStatus") {
         const isActive = data.isActive;
@@ -307,15 +306,17 @@ export default function Users() {
     }
   };
 
-  const handleCreateUser = async (payload) => {
+  const handleSaveUser = async (payload) => {
     if (!canManageUsers) return;
     setCreating(true);
     try {
-      await createBusinessUser(payload);
-      setFormModal({ isOpen: false });
+      const editing = Boolean(formModal.data?._id);
+      if (editing) await updateBusinessUser(formModal.data._id, payload);
+      else await createBusinessUser(payload);
+      setFormModal({ isOpen: false, data: null });
       showToast({
         type: "success",
-        message: "User created successfully",
+        message: editing ? "User updated successfully" : "User created successfully",
       });
       loadUsers(1);
     } catch (err) {
@@ -435,7 +436,7 @@ export default function Users() {
           title="User"
           subtitle="Manage all your users effortlessly."
           actionLabel={canManageUsers ? "Add User" : undefined} 
-          onAction={canCreateUser ? () => setFormModal({ isOpen: true }) : undefined}
+          onAction={canCreateUser ? () => setFormModal({ isOpen: true, data: null }) : undefined}
           actionIcon={Plus}
         />
 
@@ -625,6 +626,7 @@ export default function Users() {
         initialData={detailsModal.data}
         onClose={() => setDetailsModal({ ...detailsModal, isOpen: false })}
         onAction={handleUserDetailsActions}
+        canEdit={!isDeveloper && user?.role === "admin"}
       />
 
       <UserPasswordResetModal
@@ -636,8 +638,9 @@ export default function Users() {
 
       <UserFormModal
         isOpen={formModal.isOpen}
-        onClose={() => setFormModal({ isOpen: false })}
-        onSubmit={handleCreateUser}
+        initialData={formModal.data}
+        onClose={() => setFormModal({ isOpen: false, data: null })}
+        onSubmit={handleSaveUser}
         loading={creating}
         roleOptions={userRoleOptions}
       />

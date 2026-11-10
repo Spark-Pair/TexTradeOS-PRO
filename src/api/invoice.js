@@ -15,6 +15,11 @@ export const createInvoice = async (data) => {
   return res.data;
 };
 
+export const updateInvoice = async (id, data) => {
+  const res = await apiClient.put(`/invoices/${id}`, data);
+  return res.data;
+};
+
 export const deleteInvoice = async (id) => {
   const res = await apiClient.delete(`/invoices/${id}`);
   return res.data;

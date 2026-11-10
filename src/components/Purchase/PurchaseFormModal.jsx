@@ -323,24 +323,25 @@ const buildQrHtml = async (purchase, selections = {}) => {
 @page{size:76.2mm 50.8mm;margin:0}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;width:76.2mm;background:#fff;font-family:Arial,sans-serif;color:#000}
-.label{position:relative;flex:none;width:76.2mm;height:50.8mm;min-width:76.2mm;min-height:50.8mm;max-width:76.2mm;max-height:50.8mm;break-after:page;page-break-after:always;break-inside:avoid;overflow:hidden;border:.3mm solid #000;border-radius:2.5mm;background:#fff;display:grid;grid-template-columns:1fr 32mm}
+.label{position:relative;flex:none;width:76.2mm;height:50.8mm;min-width:76.2mm;min-height:50.8mm;max-width:76.2mm;max-height:50.8mm;break-after:page;page-break-after:always;break-inside:avoid;overflow:hidden;border:0;border-radius:2.5mm;background:#fff;display:grid;grid-template-columns:1fr 32mm;padding:.8mm}
+.label:before{content:"";position:absolute;inset:.8mm;border:.3mm solid #000;border-radius:2.2mm;pointer-events:none;z-index:2}
 .label:last-child{break-after:auto;page-break-after:auto}
-.info{position:relative;padding:3.2mm 2.5mm 8mm 4.5mm;min-width:0}
+.info{position:relative;padding:3.2mm 2.5mm 9mm 4.5mm;min-width:0}
 .brand{max-width:100%;overflow:hidden;color:#000;font-size:9px;line-height:1.2;font-weight:700;white-space:nowrap;text-overflow:ellipsis}
 .article{margin-top:1.5mm;font-size:15px;line-height:1.1;font-weight:800;letter-spacing:.1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .desc{height:8mm;margin-top:.7mm;overflow:hidden;font-size:10px;line-height:1.2;font-weight:500}
-.details{margin-top:2mm;display:grid;grid-template-columns:1fr 1fr;column-gap:2mm;row-gap:1.6mm;color:#000}
-.detail{display:flex;min-width:0;flex-direction:column;gap:.5mm}
-.detail-label{font-size:6px;line-height:1.1;font-weight:700;letter-spacing:.35px;text-transform:uppercase}
-.detail-value{overflow:hidden;font-size:8.5px;line-height:1.15;font-weight:700;white-space:nowrap;text-overflow:ellipsis}
-.purchase{position:absolute;left:4.5mm;right:2.5mm;bottom:2mm;height:6mm;overflow:hidden;border-top:.2mm solid #000;padding-top:1mm;color:#000}
+.details{margin-top:2mm;display:grid;grid-template-columns:1fr 1fr;column-gap:2mm;row-gap:1.4mm;color:#000}
+.detail{display:flex;min-width:0;flex-direction:column;gap:.6mm}
+.detail-label{font-size:7px;line-height:1.1;font-weight:700;letter-spacing:.35px;text-transform:uppercase}
+.detail-value{overflow:hidden;font-size:10px;line-height:1.15;font-weight:700;white-space:nowrap;text-overflow:ellipsis}
+.purchase{position:absolute;left:4.5mm;right:2.5mm;bottom:2mm;height:7mm;overflow:hidden;border-top:.2mm solid #000;padding-top:1mm;color:#000}
 .purchase-number,.purchase-supplier{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.purchase-number{font-size:7px;line-height:1.2;font-weight:700}
-.purchase-supplier{margin-top:.5mm;font-size:6px;line-height:1.2;font-weight:400}
+.purchase-number{font-size:8px;line-height:1.2;font-weight:700}
+.purchase-supplier{margin-top:.5mm;font-size:7px;line-height:1.2;font-weight:400}
 .qr{position:relative;border-left:.3mm solid #000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5mm;padding:2mm 2mm 7mm;background:#fff;min-width:0}
 .qr svg{width:24mm;height:24mm;display:block}
 .scan{color:#000;font-size:7px;letter-spacing:.5px;font-weight:800}
-.footer{position:absolute;right:1mm;bottom:2mm;left:1mm;text-align:center;color:#000;font-size:6.5px;line-height:1.2;font-weight:600;white-space:nowrap}
+.footer{position:absolute;right:.5mm;bottom:2mm;left:.5mm;text-align:center;color:#000;font-size:7.2px;line-height:1.2;font-weight:700;white-space:nowrap}
 @media screen{body{background:#e5e7eb}.label{margin:10px auto;box-shadow:0 1px 5px #0002}}
 @media print{html,body{width:76.2mm;height:auto;margin:0!important;padding:0!important;background:#fff}.label{width:76.2mm!important;height:50.8mm!important;min-width:76.2mm!important;min-height:50.8mm!important;max-width:76.2mm!important;max-height:50.8mm!important;margin:0!important;box-shadow:none;break-after:page;page-break-after:always}.label:last-child{break-after:auto;page-break-after:auto}}
 </style></head><body>${renderedLabels.map(({ article, svg }) => `<section class="label"><div class="info"><div class="brand">${escapeHtml(businessName)}</div><div class="article">${escapeHtml(article.article_no)}</div><div class="desc">${escapeHtml(article.description || "Untitled Article")}</div><div class="details"><div class="detail"><span class="detail-label">Size</span><span class="detail-value">${escapeHtml(article.size || "-")}</span></div><div class="detail"><span class="detail-label">Category</span><span class="detail-value">${escapeHtml(article.category || "-")}</span></div><div class="detail"><span class="detail-label">Unit</span><span class="detail-value">${escapeHtml(article.unit || 0)} pcs</span></div><div class="detail"><span class="detail-label">Sale Price</span><span class="detail-value">Rs ${escapeHtml(Number(article.sale_rate || article.rate || 0).toFixed(2))}</span></div></div><div class="purchase"><span class="purchase-number">${escapeHtml(article.purchase_number || purchase.purchase_number)}</span><span class="purchase-supplier">${escapeHtml(article.supplier_name || purchase.supplier_name || "")}</span></div></div><div class="qr">${svg}<div class="scan">SCAN ARTICLE</div><div class="footer">TexTradeOS PRO by SparkPair</div></div></section>`).join("")}</body></html>`;
@@ -404,7 +405,7 @@ const downloadStickerPdf = async (purchase, selections = {}) => {
     });
     pdf.setDrawColor(0);
     pdf.setLineWidth(0.3);
-    pdf.roundedRect(0.5, 0.5, 75.2, 49.8, 2, 2, "S");
+    pdf.roundedRect(0.8, 0.8, 74.6, 49.2, 2, 2, "S");
     pdf.line(44.2, 0.8, 44.2, 50);
     pdf.setTextColor(0);
     const fitText = (value, maxWidth) => {
@@ -428,10 +429,10 @@ const downloadStickerPdf = async (purchase, selections = {}) => {
     pdf.text(descriptionLines, 4.5, 17.2);
     const detail = (label, value, x, y, maxWidth = 16) => {
       pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(6);
+      pdf.setFontSize(7);
       pdf.text(label.toUpperCase(), x, y);
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(8);
+      pdf.setFontSize(9.5);
       pdf.text(fitText(value, maxWidth), x, y + 3.3);
     };
     detail("Size", article.size || "-", 4.5, 27);
@@ -441,22 +442,22 @@ const downloadStickerPdf = async (purchase, selections = {}) => {
     pdf.setLineWidth(0.2);
     pdf.line(4.5, 43.5, 41.5, 43.5);
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(7);
+    pdf.setFontSize(8);
     pdf.text(
       fitText(article.purchase_number || purchase.purchase_number || "", 36),
       4.5,
-      46,
+      45.8,
       { maxWidth: 36 },
     );
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(6);
+    pdf.setFontSize(7);
     pdf.text(fitText(article.supplier_name || purchase.supplier_name || "", 36), 4.5, 48.5);
     pdf.addImage(qr, "PNG", 48.5, 10, 24, 24);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(7);
     pdf.text("SCAN ARTICLE", 60.5, 37, { align: "center" });
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(6.5);
+    pdf.setFontSize(7.2);
     pdf.text("TexTradeOS PRO by SparkPair", 60.2, 48, { align: "center" });
   }
   pdf.save("article-qr-stickers.pdf");

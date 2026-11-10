@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Eye, MoreVertical, Plus, Receipt, Wallet, Hash, Sigma, Trash2 } from "lucide-react";
+import { AlertCircle, Edit3, Eye, MoreVertical, Plus, Receipt, Wallet, Hash, Sigma, Trash2 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import TableToolbar from "../components/table/TableToolbar";
 import TableSkeleton from "../components/table/TableLoader";
@@ -7,7 +7,7 @@ import FilterDrawer from "../components/FilterDrawer";
 import ContextMenu from "../components/ContextMenu";
 import { useToast } from "../context/ToastContext";
 import { formatDate, formatNumbers } from "../utils";
-import { createInvoice, deleteInvoice, fetchInvoice, fetchInvoices } from "../api/invoice";
+import { createInvoice, deleteInvoice, fetchInvoice, fetchInvoices, updateInvoice } from "../api/invoice";
 import InvoiceFormModal from "../components/Invoice/InvoiceFormModal";
 import InvoicePreviewModal from "../components/Invoice/InvoicePreviewModal";
 import StatCard from "../components/StatCard";
@@ -45,7 +45,7 @@ export default function Invoices() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
-  const [formModal, setFormModal] = useState({ isOpen: false });
+  const [formModal, setFormModal] = useState({ isOpen: false, invoice: null });
   const [previewModal, setPreviewModal] = useState({ isOpen: false, data: null });
   const [previewLoading, setPreviewLoading] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null);
@@ -81,8 +81,10 @@ export default function Invoices() {
 
   const handleInvoiceFormAction = async (payload) => {
     try {
-      const savedInvoice = await createInvoice(payload);
-      showToast({ type: "success", message: "Invoice saved successfully" });
+      const editing = Boolean(formModal.invoice?._id);
+      const response = editing ? await updateInvoice(formModal.invoice._id, payload) : await createInvoice(payload);
+      const savedInvoice = editing ? await fetchInvoice(formModal.invoice._id) : response;
+      showToast({ type: "success", message: editing ? "Invoice updated successfully" : "Invoice saved successfully" });
       // Open the just-saved invoice immediately so the user can print it
       // without searching for it again in the invoice list.
       setPreviewModal({ isOpen: true, data: savedInvoice?.data || null });
@@ -118,6 +120,15 @@ export default function Invoices() {
   };
 
   const canDeleteInvoices = user?.role === "developer" || user?.role === "admin";
+  const canEditInvoices = user?.role === "admin" || user?.role === "developer";
+  const handleOpenEdit = async (invoiceId) => {
+    try {
+      const res = await fetchInvoice(invoiceId);
+      setFormModal({ isOpen: true, invoice: res?.data || null });
+    } catch (err) {
+      showToast({ type: "error", message: err.response?.data?.message || "Failed to load invoice for editing" });
+    }
+  };
   const handleDeleteInvoice = async () => {
     if (!deleteTarget) return;
     try {
@@ -141,7 +152,7 @@ export default function Invoices() {
 
   return <>
     <div className="relative z-10 max-w-7xl mx-auto h-full flex flex-col">
-      <PageHeader title="Invoices" subtitle="Create and manage customer invoices." actionLabel="Generate Invoice" actionIcon={Plus} onAction={() => setFormModal({ isOpen: true })} />
+      <PageHeader title="Invoices" subtitle="Create and manage customer invoices." actionLabel="Generate Invoice" actionIcon={Plus} onAction={() => setFormModal({ isOpen: true, invoice: null })} />
       {!loadError && <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <StatCard label="Total Invoices" value={formatNumbers(stats.totalInvoices, 0)} icon={Receipt} />
         <StatCard label="This Page Invoices" value={formatNumbers(stats.currentPageInvoices, 0)} icon={Hash} variant="warning" />
@@ -151,17 +162,17 @@ export default function Invoices() {
       <div className="rounded-3xl bg-white border border-gray-300 overflow-hidden flex-1 flex flex-col">
         {!loadError && <TableToolbar currentPage={pagination.currentPage} totalPages={pagination.totalPages} onPageChange={handlePageChange} onFilter={() => setIsFilterOpen(true)} />}
         {errorState || <><div className="grid gap-2 overflow-auto p-3 md:hidden">
-          {loading ? <div className="py-12 text-center text-sm text-gray-400">Loading invoices...</div> : invoices.length === 0 ? <div className="py-12 text-center text-sm text-gray-400">No invoices found.</div> : invoices.map((invoice) => <button key={invoice._id} type="button" onClick={() => handleOpenPreview(invoice._id)} className="rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm active:bg-teal-50"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-gray-900">{invoice.invoice_number || "Invoice"}</p><p className="mt-0.5 text-xs text-gray-500">{formatDate(invoice.invoice_date, "DD MMM yyyy")}</p></div><Amount value={invoice.total_amount} className="rounded-lg bg-emerald-50 px-2.5 py-1 text-sm font-bold text-emerald-700" /></div><p className="mt-3 truncate text-sm font-semibold text-gray-700">{invoice.customer_name || "Customer"}</p><div className="mt-3 flex items-center border-t border-gray-100 pt-3 text-xs text-gray-500"><span><strong className="text-gray-800">{formatNumbers(invoice.order_count, 0)}</strong> articles</span><span className="ml-auto font-semibold text-teal-700">View invoice →</span></div></button>)}
+          {loading ? <div className="py-12 text-center text-sm text-gray-400">Loading invoices...</div> : invoices.length === 0 ? <div className="py-12 text-center text-sm text-gray-400">No invoices found.</div> : invoices.map((invoice) => <div key={invoice._id} className="rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm"><button type="button" onClick={() => handleOpenPreview(invoice._id)} className="w-full text-left"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-gray-900">{invoice.invoice_number || "Invoice"}</p><p className="mt-0.5 text-xs text-gray-500">{formatDate(invoice.invoice_date, "DD MMM yyyy")}</p></div><Amount value={invoice.total_amount} className="rounded-lg bg-emerald-50 px-2.5 py-1 text-sm font-bold text-emerald-700" /></div><p className="mt-3 truncate text-sm font-semibold text-gray-700">{invoice.customer_name || "Customer"}</p><div className="mt-3 flex items-center border-t border-gray-100 pt-3 text-xs text-gray-500"><span><strong className="text-gray-800">{formatNumbers(invoice.order_count, 0)}</strong> articles</span><span className="ml-auto font-semibold text-teal-700">View invoice →</span></div></button>{canEditInvoices && <button type="button" onClick={() => handleOpenEdit(invoice._id)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 py-2 text-xs font-semibold text-gray-700"><Edit3 size={14} /> Edit Invoice</button>}</div>)}
         </div>
         <div ref={tableScrollRef} className="hidden flex-1 overflow-auto md:block">
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 z-20 bg-gray-100" style={{ boxShadow: "0 1px 0 0 rgba(209,213,219,1)" }}><tr className="text-sm tracking-wider text-gray-500"><th className="px-5 py-3.5 font-medium">#</th><th className="px-5 py-3.5 font-medium">Invoice No</th><th className="px-5 py-3.5 font-medium">Invoice Date</th><th className="px-5 py-3.5 font-medium">Customer</th><th className="px-5 py-3.5 font-medium">Articles</th><th className="px-5 py-3.5 font-medium">Total Amount</th><th className="px-5 py-3.5 font-medium text-right">Actions</th></tr></thead>
-            {loading ? <TableSkeleton rows={30} columns={7} /> : <tbody className="divide-y divide-gray-200">{invoices.length === 0 ? <tr><td colSpan={7} className="px-7 py-16 text-center text-sm text-gray-400">No invoices found.</td></tr> : invoices.map((invoice, index) => <tr key={invoice._id} className="cursor-pointer hover:bg-gray-50/80 transition-colors" onClick={() => handleOpenPreview(invoice._id)}><td className="px-5 py-4 font-medium text-gray-500">{(pagination.currentPage - 1) * pagination.itemsPerPage + index + 1}</td><td className="px-5 py-4 text-sm font-semibold text-gray-700">{invoice.invoice_number || "—"}</td><td className="px-5 py-4 text-sm text-gray-600">{formatDate(invoice.invoice_date, "DD MMM yyyy")}</td><td className="px-5 py-4 text-sm font-semibold text-gray-800">{invoice.customer_name}</td><td className="px-5 py-4 text-sm text-gray-600">{formatNumbers(invoice.order_count, 0)}</td><td className="px-5 py-4 text-sm font-semibold text-emerald-700"><Amount value={invoice.total_amount} /></td><td className="px-5 py-4 text-right relative"><button onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === invoice._id ? null : invoice._id); }} className="p-2 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100" aria-label="Open actions menu"><MoreVertical size={18} /></button><ContextMenu isOpen={activeMenu === invoice._id}><button onClick={(e) => { e.stopPropagation(); handleOpenPreview(invoice._id); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-gray-600 hover:bg-gray-200 cursor-pointer"><Eye size={16} strokeWidth={2.5} />Preview Invoice</button>{canDeleteInvoices && <><div className="h-[1px] bg-gray-200 my-1.5" /><button onClick={(e) => { e.stopPropagation(); setDeleteTarget(invoice); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-red-600 hover:bg-red-50 cursor-pointer"><Trash2 size={16} strokeWidth={2.5} />Delete Invoice</button></>}</ContextMenu></td></tr>)}</tbody>}
+            {loading ? <TableSkeleton rows={30} columns={7} /> : <tbody className="divide-y divide-gray-200">{invoices.length === 0 ? <tr><td colSpan={7} className="px-7 py-16 text-center text-sm text-gray-400">No invoices found.</td></tr> : invoices.map((invoice, index) => <tr key={invoice._id} className="cursor-pointer hover:bg-gray-50/80 transition-colors" onClick={() => handleOpenPreview(invoice._id)}><td className="px-5 py-4 font-medium text-gray-500">{(pagination.currentPage - 1) * pagination.itemsPerPage + index + 1}</td><td className="px-5 py-4 text-sm font-semibold text-gray-700">{invoice.invoice_number || "—"}</td><td className="px-5 py-4 text-sm text-gray-600">{formatDate(invoice.invoice_date, "DD MMM yyyy")}</td><td className="px-5 py-4 text-sm font-semibold text-gray-800">{invoice.customer_name}</td><td className="px-5 py-4 text-sm text-gray-600">{formatNumbers(invoice.order_count, 0)}</td><td className="px-5 py-4 text-sm font-semibold text-emerald-700"><Amount value={invoice.total_amount} /></td><td className="px-5 py-4 text-right relative"><button onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === invoice._id ? null : invoice._id); }} className="p-2 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100" aria-label="Open actions menu"><MoreVertical size={18} /></button><ContextMenu isOpen={activeMenu === invoice._id}><button onClick={(e) => { e.stopPropagation(); handleOpenPreview(invoice._id); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-gray-600 hover:bg-gray-200 cursor-pointer"><Eye size={16} strokeWidth={2.5} />Preview Invoice</button>{canEditInvoices && <button onClick={(e) => { e.stopPropagation(); handleOpenEdit(invoice._id); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-gray-600 hover:bg-gray-200 cursor-pointer"><Edit3 size={16} />Edit Invoice</button>}{canDeleteInvoices && <><div className="h-[1px] bg-gray-200 my-1.5" /><button onClick={(e) => { e.stopPropagation(); setDeleteTarget(invoice); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-red-600 hover:bg-red-50 cursor-pointer"><Trash2 size={16} strokeWidth={2.5} />Delete Invoice</button></>}</ContextMenu></td></tr>)}</tbody>}
           </table>
         </div></>}
       </div>
     </div>
-    <InvoiceFormModal isOpen={formModal.isOpen} onClose={() => setFormModal({ isOpen: false })} onAction={handleInvoiceFormAction} />
+    <InvoiceFormModal isOpen={formModal.isOpen} invoice={formModal.invoice} onClose={() => setFormModal({ isOpen: false, invoice: null })} onAction={handleInvoiceFormAction} />
     <InvoicePreviewModal isOpen={previewModal.isOpen} onClose={() => setPreviewModal({ isOpen: false, data: null })} invoice={previewModal.data} loading={previewLoading} business={user?.business || {}} businessName={user?.business?.name || ""} />
     <FilterDrawer isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} filters={filterConfig} onApply={handleApplyFilters} onReset={handleResetFilters} />
     <ConfirmModal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} onConfirm={handleDeleteInvoice} title="Delete Invoice" message={`Delete invoice "${deleteTarget?.invoice_number || ""}"? This cannot be undone.`} confirmText="Delete Invoice" variant="danger" />

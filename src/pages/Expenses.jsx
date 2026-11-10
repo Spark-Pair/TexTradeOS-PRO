@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   Banknote,
   CreditCard,
+  Edit3,
   Loader2,
   Plus,
   ReceiptText,
@@ -21,7 +22,8 @@ import StatCard from "../components/StatCard";
 import Amount from "../components/Amount";
 import TableToolbar from "../components/table/TableToolbar";
 import { useToast } from "../context/ToastContext";
-import { createExpense, fetchExpenses, removeExpense } from "../api/commerce";
+import { createExpense, fetchExpenses, removeExpense, updateExpense } from "../api/commerce";
+import useAuth from "../hooks/useAuth";
 
 const PAGE_SIZE = 30;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -57,6 +59,7 @@ const categoryOptions = [
 
 export default function Expenses() {
   const { showToast } = useToast();
+  const { user } = useAuth();
   const tableScrollRef = useRef(null);
   const [expenses, setExpenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,6 +77,7 @@ export default function Expenses() {
   const [modalOpen, setModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [editingExpense, setEditingExpense] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const loadExpenses = useCallback(async () => {
@@ -117,7 +121,13 @@ export default function Expenses() {
     setForm((current) => ({ ...current, [key]: value }));
 
   const openModal = () => {
+    setEditingExpense(null);
     setForm(emptyForm());
+    setModalOpen(true);
+  };
+  const openEditModal = (expense) => {
+    setEditingExpense(expense);
+    setForm({ ...emptyForm(), ...expense, amount: String(expense.amount ?? "") });
     setModalOpen(true);
   };
   const closeModal = () => {
@@ -151,16 +161,19 @@ export default function Expenses() {
     }
     setIsSaving(true);
     try {
-      await createExpense({
+      const payload = {
         ...form,
         amount: Number(form.amount || 0),
         reference_no: form.method === "cash" ? "" : form.reference_no,
         bank_name: form.method === "cheque" ? form.bank_name : "",
         cheque_date: form.method === "cheque" ? form.cheque_date : "",
         slip_date: form.method === "slip" ? form.slip_date : "",
-      });
-      showToast({ type: "success", message: "Expense saved" });
+      };
+      if (editingExpense) await updateExpense(editingExpense.id, payload);
+      else await createExpense(payload);
+      showToast({ type: "success", message: editingExpense ? "Expense updated" : "Expense saved" });
       setModalOpen(false);
+      setEditingExpense(null);
       setForm(emptyForm());
       await loadExpenses();
     } catch (e) {
@@ -292,7 +305,7 @@ export default function Expenses() {
               <div className="grid gap-2 overflow-auto p-3 md:hidden">
                 {pageExpenses.length ? (
                   pageExpenses.map((expense) => (
-                    <ExpenseCard key={expense.id} expense={expense} />
+                    <ExpenseCard key={expense.id} expense={expense} isAdmin={user?.role === "admin"} onEdit={openEditModal} />
                   ))
                 ) : (
                   <div className="py-16 text-center text-sm text-gray-400">
@@ -350,6 +363,7 @@ export default function Expenses() {
                             {money(expense.amount)}
                           </td>
                           <td className="px-5 py-4 text-right">
+                            {user?.role === "admin" && <button onClick={() => openEditModal(expense)} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100" aria-label="Edit expense"><Edit3 size={16} /></button>}
                             <button
                               onClick={() => setDeleteTarget(expense)}
                               className="rounded-lg p-2 text-red-500 hover:bg-red-50"
@@ -383,6 +397,7 @@ export default function Expenses() {
         set={set}
         onSubmit={submitExpense}
         isSaving={isSaving}
+        isEditing={Boolean(editingExpense)}
       />
       <FilterDrawer
         isOpen={isFilterOpen}
@@ -408,15 +423,15 @@ export default function Expenses() {
   );
 }
 
-function ExpenseModal({ isOpen, onClose, form, set, onSubmit, isSaving }) {
+function ExpenseModal({ isOpen, onClose, form, set, onSubmit, isSaving, isEditing }) {
   const method = form.method || "cash";
   return (
     <Modal
       isOpen={isOpen}
       onClose={isSaving ? undefined : onClose}
       maxWidth="max-w-2xl"
-      title="Add Expense"
-      subtitle="Create a business expense entry"
+      title={isEditing ? "Edit Expense" : "Add Expense"}
+      subtitle={isEditing ? "Update this business expense entry" : "Create a business expense entry"}
       footer={
         <div className="flex gap-3">
           <Button
@@ -435,7 +450,7 @@ function ExpenseModal({ isOpen, onClose, form, set, onSubmit, isSaving }) {
             loading={isSaving}
             disabled={isSaving}
           >
-            Save Expense
+            {isEditing ? "Update Expense" : "Save Expense"}
           </Button>
         </div>
       }
@@ -536,7 +551,7 @@ function ExpenseModal({ isOpen, onClose, form, set, onSubmit, isSaving }) {
   );
 }
 
-function ExpenseCard({ expense }) {
+function ExpenseCard({ expense, isAdmin, onEdit }) {
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4">
       <div className="flex justify-between gap-3">
@@ -555,6 +570,7 @@ function ExpenseCard({ expense }) {
           {expense.reference_no || "-"}
         </span>
       </div>
+      {isAdmin && <button type="button" onClick={() => onEdit(expense)} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700"><Edit3 size={14} /> Edit Expense</button>}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Eye,
   MoreVertical,
+  Edit3,
   PackageCheck,
   Plus,
   RefreshCw,
@@ -29,6 +30,7 @@ import {
   fetchReturns,
   fetchSalesReturnable,
   removeReturn,
+  updateReturn,
 } from "../api/returns.api";
 import {
   fetchCustomers,
@@ -36,6 +38,7 @@ import {
   fetchSuppliers,
 } from "../api/commerce";
 import { useToast } from "../context/ToastContext";
+import useAuth from "../hooks/useAuth";
 const PAGE_SIZE = 12,
   today = () => new Date().toISOString().slice(0, 10),
   n = (v) => Number(v || 0) || 0,
@@ -45,9 +48,18 @@ const PAGE_SIZE = 12,
       maximumFractionDigits: 2,
     }),
   message = (e, f) => e?.response?.data?.message || e?.message || f;
+const restoreEditingQuantities = (items = [], articles = []) => {
+  const key = (item) => `${item.article_no}::${item.purchase_number || ""}`;
+  const restored = items.map((item) => ({ ...item, available_pcs: n(item.available_pcs) + articles.filter((article) => key(article) === key(item)).reduce((sum, article) => sum + n(article.pcs), 0) }));
+  const existing = new Set(items.map(key));
+  articles.filter((article) => !existing.has(key(article))).forEach((article) => restored.push({ ...article, available_pcs: n(article.pcs), source_id: article.source_document_id }));
+  return restored;
+};
 export default function Returns({ type = "sales" }) {
   const { showToast } = useToast(),
     sales = type === "sales";
+  const { user } = useAuth();
+  const canEdit = user?.role === "admin" || user?.role === "developer";
   const [records, setRecords] = useState([]),
     [parties, setParties] = useState([]),
     [purchaseInventory, setPurchaseInventory] = useState([]),
@@ -66,6 +78,8 @@ export default function Returns({ type = "sales" }) {
     [deletingId, setDeletingId] = useState(null),
     [details, setDetails] = useState(null),
     [detailsLoading, setDetailsLoading] = useState(false),
+    [editingReturn, setEditingReturn] = useState(null),
+    [notes, setNotes] = useState(""),
     [activeMenu, setActiveMenu] = useState(null);
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -129,10 +143,10 @@ export default function Returns({ type = "sales" }) {
     inventory = useMemo(
       () =>
         sales
-          ? returnable
+          ? restoreEditingQuantities(returnable, editingReturn?.articles || [])
           : !party
             ? []
-            : purchaseInventory
+            : restoreEditingQuantities(purchaseInventory
                 .filter((a) => a.supplier_id === party && n(a.stock_pcs) > 0)
                 .map((a) => ({
                   ...a,
@@ -140,8 +154,8 @@ export default function Returns({ type = "sales" }) {
                   pcs: n(a.stock_pcs),
                   rate: n(a.purchase_rate),
                   source_id: a.purchase_id,
-                })),
-      [party, purchaseInventory, returnable, sales],
+                })), editingReturn?.articles || []),
+      [editingReturn, party, purchaseInventory, returnable, sales],
     ),
     totalPages = Math.max(1, Math.ceil(records.length / PAGE_SIZE)),
     pageRecords = records.slice(
@@ -157,6 +171,8 @@ export default function Returns({ type = "sales" }) {
       setParty("");
       setRows([]);
       setAdjustment({ type: "none", value: "" });
+      setEditingReturn(null);
+      setNotes("");
       setDate(today());
       setReturnable([]);
       setInventoryError("");
@@ -172,7 +188,7 @@ export default function Returns({ type = "sales" }) {
       const p = parties.find((x) => x._id === party);
       setSaving(true);
       try {
-        await createReturn(type, {
+        const payload = {
           return_date: date,
           party_id: party,
           party_name: sales ? p?.customer_name : p?.supplier_name,
@@ -181,13 +197,16 @@ export default function Returns({ type = "sales" }) {
           stock_action: String(adjustment.type || "").startsWith("keep_")
             ? "keep_goods"
             : "return_stock",
-        });
+          notes,
+        };
+        if (editingReturn) await updateReturn(type, editingReturn.id ?? editingReturn._id, payload);
+        else await createReturn(type, payload);
         setOpen(false);
         resetForm();
         await loadData();
         showToast({
           type: "success",
-          message: sales ? "Sales return saved" : "Purchase return saved",
+          message: editingReturn ? "Return updated" : sales ? "Sales return saved" : "Purchase return saved",
         });
       } catch (e) {
         const t = message(e, "Could not save return.");
@@ -212,6 +231,17 @@ export default function Returns({ type = "sales" }) {
       } finally {
         setDetailsLoading(false);
       }
+    },
+    startEdit = (record) => {
+      setEditingReturn(record);
+      setParty(String(record.party_id || ""));
+      setDate(record.return_date || today());
+      setNotes(record.notes || "");
+      setAdjustment(!sales && record.stock_action === "keep_goods" ? { type: "keep_goods", value: record.adjustment?.value || "" } : record.adjustment || { type: "none", value: "" });
+      setRows((record.articles || []).map((a) => ({ article_no: a.article_no, purchase_number: a.purchase_number || "", description: a.description || "", pcs: n(a.pcs), rate: n(a.rate), discount: a.discount || "", available_pcs: n(a.pcs), qr_id: a.qr_id || "", source_id: a.source_document_id || "" })));
+      setDetails(null);
+      setOpen(true);
+      setActiveMenu(null);
     },
     deleteRecord = async (r) => {
       const id = r.id ?? r._id;
@@ -459,7 +489,7 @@ export default function Returns({ type = "sales" }) {
         isOpen={open}
         onClose={close}
         maxWidth="max-w-5xl"
-        title={sales ? "Add Sales Return" : "Add Purchase Return"}
+        title={editingReturn ? `Edit ${sales ? "Sales" : "Purchase"} Return` : sales ? "Add Sales Return" : "Add Purchase Return"}
         subtitle={
           sales
             ? "Select the customer, then add the goods being returned."
@@ -480,7 +510,7 @@ export default function Returns({ type = "sales" }) {
               disabled={!party || !rows.length || saving}
               loading={saving}
             >
-              Save Return
+              {editingReturn ? "Update Return" : "Save Return"}
             </Button>
           </div>
         }
@@ -528,6 +558,9 @@ export default function Returns({ type = "sales" }) {
               onAdjustmentChange={setAdjustment}
               allowKeepGoods={!sales}
             />
+            <div className="mt-3">
+              <Input label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes" />
+            </div>
           </section>
         </div>
       </Modal>
@@ -545,7 +578,8 @@ export default function Returns({ type = "sales" }) {
         }
         footer={
           details ? (
-            <div className="flex w-full justify-end">
+            <div className="flex w-full justify-between">
+              {canEdit ? <Button variant="secondary" outline icon={Edit3} onClick={() => startEdit(details)}>Edit Return</Button> : <span />}
               <Button outline onClick={() => setDetails(null)}>
                 Close
               </Button>

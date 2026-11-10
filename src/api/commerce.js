@@ -31,6 +31,7 @@ export const createPaymentClearance = async (source, paymentId, payload) => unwr
 
 export const fetchExpenses = async (params = {}) => unwrap(await apiClient.get("/expenses", { params }));
 export const createExpense = async (payload) => unwrap(await apiClient.post("/expenses", payload));
+export const updateExpense = async (id, payload) => unwrap(await apiClient.put(`/expenses/${id}`, payload));
 export const removeExpense = async (id) => unwrap(await apiClient.delete(`/expenses/${id}`));
 
 export const fetchPurchases = async () => unwrap(await apiClient.get("/purchases"));

@@ -1,4 +1,4 @@
-import { KeyRound, Power } from "lucide-react";
+import { Edit3, KeyRound, Power } from "lucide-react";
 import Button from "../Button";
 import Modal from "../Modal";
 import ModalDetails from "../ModalDetails";
@@ -9,6 +9,7 @@ export default function UserDetailsModal({
   onClose,
   initialData,
   onAction,
+  canEdit = false,
 }) {
   const isActive = initialData?.isActive;
   const businessName = initialData?.business_name || initialData?.businessId?.name || "-";
@@ -21,7 +22,8 @@ export default function UserDetailsModal({
       subtitle="Overview of registered details"
       badge={<StatusBadge active={initialData?.isActive} />}
       footer={
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          {canEdit && <Button icon={Edit3} outline variant="warning" onClick={() => onAction("openEdit", initialData)} className="grow">Edit User</Button>}
           <Button
             icon={KeyRound}
             variant="warning"

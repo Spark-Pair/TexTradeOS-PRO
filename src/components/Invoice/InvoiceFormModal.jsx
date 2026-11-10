@@ -447,7 +447,7 @@ function InvoiceItemModal({
   );
 }
 
-export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
+export default function InvoiceFormModal({ isOpen, onClose, onAction, invoice = null }) {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [step, setStep] = useState("entry"),
@@ -481,6 +481,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
       method: "cash",
     }),
     [invoiceNumber, setInvoiceNumber] = useState(""),
+    [invoiceDate, setInvoiceDate] = useState(todayInput()),
     [submitting, setSubmitting] = useState(false),
     [loadingData, setLoadingData] = useState(false),
     [error, setError] = useState("");
@@ -609,6 +610,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
     setIncludeSalesReturn(false);
     setReturnAdjustment({ type: "none", value: "" });
     setPayment({ received_now: false, amount: "", method: "cash" });
+    setInvoiceDate(invoice?.invoice_date || todayInput());
     setError("");
     setLoadingData(true);
     Promise.all([
@@ -618,20 +620,30 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
     ])
       .then(([customerRows, inventoryRows, counter]) => {
         if (cancelled) return;
-        setCustomers(
-          (Array.isArray(customerRows) ? customerRows : []).filter(
-            (c) => c.isActive !== false,
-          ),
-        );
-        setInventory(
-          toInvoiceInventory(Array.isArray(inventoryRows) ? inventoryRows : []),
-        );
+        setCustomers((Array.isArray(customerRows) ? customerRows : []).filter(
+          (c) => c.isActive !== false || String(c._id) === String(invoice?.customer_id || ""),
+        ));
+        const stockRows = toInvoiceInventory(Array.isArray(inventoryRows) ? inventoryRows : []);
+        setInventory(invoice ? stockRows.map((item) => {
+          const returnedToStock = (invoice.articles || []).filter((article) => article.article_no === item.article_no && String(article.purchase_number || "") === String(item.purchase_number || "")).reduce((sum, article) => sum + numberValue(article.pcs), 0);
+          const stock_pcs = numberValue(item.stock_pcs) + returnedToStock;
+          return { ...item, stock_pcs, label: `${item.article_no} | ${item.description || "Article"} | Stock ${stock_pcs} pcs | Sale ${item.sale_rate || item.rate || 0}` };
+        }) : stockRows);
         setInvoiceNumber(
-          formatInvoiceNumber(
+          invoice?.invoice_number || formatInvoiceNumber(
             counter?.year || new Date().getFullYear(),
             counter?.next_invoice_no || 1,
           ),
         );
+        if (invoice) {
+          const walkInMode = invoice.customer_kind === "walk_in" || !invoice.customer_id;
+          setCustomerMode(walkInMode ? "walkin" : "registered");
+          setCustomerId(String(invoice.customer_id || ""));
+          setWalkIn({ customer_name: invoice.customer_name || "Walk-in Customer", person_name: invoice.walk_in_person || "", urdu_title: invoice.customer_urdu_title || "", phone_number: invoice.customer_phone || "", address: invoice.customer_address || "", city: "" });
+          setSalesmanName(invoice.salesman_name || "");
+          setArticles((invoice.articles || []).map((article) => calculateArticle({ ...article, _key: uuidv4(), is_direct_sale: !article.purchase_number })));
+          setInvoiceDate(invoice.invoice_date || todayInput());
+        }
       })
       .catch((err) => {
         if (!cancelled) {
@@ -649,7 +661,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
     return () => {
       cancelled = true;
     };
-  }, [isOpen]);
+  }, [isOpen, invoice]);
   useEffect(() => {
     let cancelled = false;
     if (!customerId || customerMode !== "registered") {
@@ -737,7 +749,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
       calculateInvoiceTotals(
         calculatedArticles,
         salesReturnTotals.amount,
-        payment.received_now ? payment.amount : 0,
+        invoice ? invoice.received_amount : (payment.received_now ? payment.amount : 0),
       ),
     [calculatedArticles, salesReturnTotals.amount, payment],
   );
@@ -760,33 +772,38 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
   const draftInvoice = useMemo(
     () => ({
       invoice_number: invoiceNumber,
-      invoice_date: todayInput(),
+      invoice_date: invoiceDate,
       customer_id: selectedCustomer?._id || "",
+      customer_kind: customerMode === "walkin" ? "walk_in" : "registered",
       customer_name: selectedCustomer?.customer_name || "",
       customer_urdu_title: selectedCustomer?.urdu_title || "",
       salesman_name: salesmanName.trim(),
       customer_phone: selectedCustomer?.phone_number || "",
       customer_address: selectedCustomer?.address || "",
+      walk_in_person: customerMode === "walkin" ? walkIn.person_name : "",
       articles: calculatedArticles,
       sales_return: {
         articles: salesReturnRows,
         adjustment: returnAdjustment,
-        total_pcs: salesReturnTotals.pcs,
+        total_pcs: invoice ? Number(invoice.sales_return?.total_pcs || 0) : salesReturnTotals.pcs,
         gross_amount: salesReturnTotals.gross,
         adjustment_amount: salesReturnTotals.adjustment,
-        total_amount: salesReturnTotals.amount,
+        total_amount: invoice ? Number(invoice.sales_return_amount || 0) : salesReturnTotals.amount,
       },
       payment: {
         ...payment,
         amount: payment.received_now ? numberValue(payment.amount) : 0,
       },
-      customer_balance_before: selectedCustomer?.isWalkIn ? 0 : Number(selectedCustomer?.balance || 0),
-      customer_balance_after: selectedCustomer?.isWalkIn ? Number(invoiceTotals.total_amount || 0) - Number(invoiceTotals.received_amount || 0) : Number(selectedCustomer?.balance || 0) + Number(invoiceTotals.total_amount || 0) - Number(invoiceTotals.received_amount || 0),
+      customer_balance_before: invoice ? Number(invoice.customer_balance_before || 0) : selectedCustomer?.isWalkIn ? 0 : Number(selectedCustomer?.balance || 0),
+      customer_balance_after: invoice ? Number(invoice.customer_balance_after || 0) : selectedCustomer?.isWalkIn ? Number(invoiceTotals.total_amount || 0) - Number(invoiceTotals.received_amount || 0) : Number(selectedCustomer?.balance || 0) + Number(invoiceTotals.total_amount || 0) - Number(invoiceTotals.received_amount || 0),
       ...invoiceTotals,
     }),
     [
       invoiceNumber,
+      invoiceDate,
       selectedCustomer,
+      customerMode,
+      walkIn.person_name,
       salesmanName,
       calculatedArticles,
       salesReturnRows,
@@ -957,7 +974,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={step === "entry" ? "New Sales Invoice" : "Review Sales Invoice"}
+      title={step === "entry" ? (invoice ? "Edit Sales Invoice" : "New Sales Invoice") : "Review Sales Invoice"}
       subtitle={
         step === "entry"
           ? `Invoice ${invoiceNumber || "..."} · Complete the 3 simple sections below`
@@ -986,7 +1003,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                   onClick={save}
                   loading={submitting}
                 >
-                  Save Invoice
+                  {invoice ? "Update Invoice" : "Save Invoice"}
                 </Button>
               </>
             ) : (
@@ -1118,6 +1135,10 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                   </Button>
                 </ShortcutTooltip>
               )}
+              {invoice && <label className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600">
+                <span>Invoice date</span>
+                <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-sm text-gray-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100" />
+              </label>}
             </div>
             <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
               {customerMode === "registered" ? (
@@ -1426,7 +1447,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                       </p>
                     </div>
                   </div>
-                  {customerMode === "registered" ? (
+                  {invoice ? <span className="text-xs text-gray-600">Existing linked return is preserved: {Number(invoice.sales_return_amount || 0).toFixed(2)} ({Number(invoice.sales_return?.total_pcs || 0)} pcs)</span> : customerMode === "registered" ? (
                     <Checkbox
                       checked={includeSalesReturn}
                       onChange={(checked) => {
@@ -1444,7 +1465,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                     </span>
                   )}
                 </div>
-                {customerMode === "registered" && includeSalesReturn && (
+                {!invoice && customerMode === "registered" && includeSalesReturn && (
                   <div className="border-t border-gray-200 p-4">
                     <ReturnEditor
                       title="Returned Articles"
@@ -1467,7 +1488,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                   title="Payment Received"
                   subtitle="Record payment received against the final payable amount"
                 />
-                <PaymentEditor payment={payment} onChange={setPayment} />
+                {invoice ? <p className="rounded-xl bg-gray-50 p-3 text-sm text-gray-600">Recorded payments are preserved during invoice edits: {Number(invoice.received_amount || 0).toFixed(2)}</p> : <PaymentEditor payment={payment} onChange={setPayment} />}
               </div>
               <div className="grid grid-cols-2 gap-2 rounded-xl border border-gray-300 bg-gray-50 p-3 text-sm md:grid-cols-6">
                 <div>
@@ -1478,7 +1499,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction }) {
                 </div>
                 <div>
                   <span className="text-gray-500">Return PCs</span>
-                  <p className="font-semibold">{salesReturnTotals.pcs}</p>
+                    <p className="font-semibold">{invoice ? Number(invoice.sales_return?.total_pcs || 0) : salesReturnTotals.pcs}</p>
                 </div>
                 <div>
                   <span className="text-gray-500">Return</span>
