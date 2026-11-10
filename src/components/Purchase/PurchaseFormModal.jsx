@@ -284,7 +284,12 @@ const selectedStickerArticles = (purchase, selections = {}) =>
       {
         length: Math.min(
           maxStickerPackets(article),
-          Math.max(0, Math.floor(numberValue(selections[article.qr_id || article.article_no]))),
+          Math.max(
+            0,
+            Math.floor(
+              numberValue(selections[article.qr_id || article.article_no]),
+            ),
+          ),
         ),
       },
       () => article,
@@ -296,7 +301,8 @@ const stickerPayload = (purchase, article) =>
     qrId: article.qr_id || article.article_no,
     purchaseNumber: article.purchase_number || purchase.purchase_number,
   });
-const stickerKey = (article) => article.qr_id || article.article_no || article._key || "article";
+const stickerKey = (article) =>
+  article.qr_id || article.article_no || article._key || "article";
 const buildQrHtml = async (purchase, selections = {}) => {
   const articles = selectedStickerArticles(purchase, selections);
   const codeByArticle = new Map();
@@ -326,15 +332,17 @@ html,body{margin:0;padding:0;width:76.2mm;background:#fff;font-family:Arial,sans
 .label{position:relative;flex:none;width:76.2mm;height:50.8mm;min-width:76.2mm;min-height:50.8mm;max-width:76.2mm;max-height:50.8mm;break-after:page;page-break-after:always;break-inside:avoid;overflow:hidden;border:0;border-radius:2.5mm;background:#fff;display:grid;grid-template-columns:1fr 32mm;padding:.8mm}
 .label:before{content:"";position:absolute;inset:.8mm;border:.3mm solid #000;border-radius:2.2mm;pointer-events:none;z-index:2}
 .label:last-child{break-after:auto;page-break-after:auto}
-.info{position:relative;padding:3.2mm 2.5mm 9mm 4.5mm;min-width:0}
+.info{position:relative;padding:3.2mm 3.5mm 9mm;min-width:0}
 .brand{max-width:100%;overflow:hidden;color:#000;font-size:9px;line-height:1.2;font-weight:700;white-space:nowrap;text-overflow:ellipsis}
 .article{margin-top:1.5mm;font-size:15px;line-height:1.1;font-weight:800;letter-spacing:.1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.desc{height:8mm;margin-top:.7mm;overflow:hidden;font-size:10px;line-height:1.2;font-weight:500}
+.desc{height:9mm;margin-top:.7mm;overflow:hidden;font-size:12px;line-height:1.1;font-weight:600}
 .details{margin-top:2mm;display:grid;grid-template-columns:1fr 1fr;column-gap:2mm;row-gap:1.4mm;color:#000}
 .detail{display:flex;min-width:0;flex-direction:column;gap:.6mm}
 .detail-label{font-size:7px;line-height:1.1;font-weight:700;letter-spacing:.35px;text-transform:uppercase}
 .detail-value{overflow:hidden;font-size:10px;line-height:1.15;font-weight:700;white-space:nowrap;text-overflow:ellipsis}
-.purchase{position:absolute;left:4.5mm;right:2.5mm;bottom:2mm;height:7mm;overflow:hidden;border-top:.2mm solid #000;padding-top:1mm;color:#000}
+.detail.sale-price .detail-label{font-size:8px;letter-spacing:.2px}
+.detail.sale-price .detail-value{font-size:11.5px;line-height:1.05;font-weight:800}
+.purchase{position:absolute;left:3.5mm;right:3.5mm;bottom:2mm;height:7mm;overflow:hidden;border-top:.2mm solid #000;padding-top:1mm;color:#000}
 .purchase-number,.purchase-supplier{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .purchase-number{font-size:8px;line-height:1.2;font-weight:700}
 .purchase-supplier{margin-top:.5mm;font-size:7px;line-height:1.2;font-weight:400}
@@ -344,7 +352,7 @@ html,body{margin:0;padding:0;width:76.2mm;background:#fff;font-family:Arial,sans
 .footer{position:absolute;right:.5mm;bottom:2mm;left:.5mm;text-align:center;color:#000;font-size:7.2px;line-height:1.2;font-weight:700;white-space:nowrap}
 @media screen{body{background:#e5e7eb}.label{margin:10px auto;box-shadow:0 1px 5px #0002}}
 @media print{html,body{width:76.2mm;height:auto;margin:0!important;padding:0!important;background:#fff}.label{width:76.2mm!important;height:50.8mm!important;min-width:76.2mm!important;min-height:50.8mm!important;max-width:76.2mm!important;max-height:50.8mm!important;margin:0!important;box-shadow:none;break-after:page;page-break-after:always}.label:last-child{break-after:auto;page-break-after:auto}}
-</style></head><body>${renderedLabels.map(({ article, svg }) => `<section class="label"><div class="info"><div class="brand">${escapeHtml(businessName)}</div><div class="article">${escapeHtml(article.article_no)}</div><div class="desc">${escapeHtml(article.description || "Untitled Article")}</div><div class="details"><div class="detail"><span class="detail-label">Size</span><span class="detail-value">${escapeHtml(article.size || "-")}</span></div><div class="detail"><span class="detail-label">Category</span><span class="detail-value">${escapeHtml(article.category || "-")}</span></div><div class="detail"><span class="detail-label">Unit</span><span class="detail-value">${escapeHtml(article.unit || 0)} pcs</span></div><div class="detail"><span class="detail-label">Sale Price</span><span class="detail-value">Rs ${escapeHtml(Number(article.sale_rate || article.rate || 0).toFixed(2))}</span></div></div><div class="purchase"><span class="purchase-number">${escapeHtml(article.purchase_number || purchase.purchase_number)}</span><span class="purchase-supplier">${escapeHtml(article.supplier_name || purchase.supplier_name || "")}</span></div></div><div class="qr">${svg}<div class="scan">SCAN ARTICLE</div><div class="footer">TexTradeOS PRO by SparkPair</div></div></section>`).join("")}</body></html>`;
+</style></head><body>${renderedLabels.map(({ article, svg }) => `<section class="label"><div class="info"><div class="brand">${escapeHtml(businessName)}</div><div class="article">${escapeHtml(article.article_no)}</div><div class="desc">${escapeHtml(article.description || "Untitled Article")}</div><div class="details"><div class="detail"><span class="detail-label">Size</span><span class="detail-value">${escapeHtml(article.size || "-")}</span></div><div class="detail"><span class="detail-label">Category</span><span class="detail-value">${escapeHtml(article.category || "-")}</span></div><div class="detail"><span class="detail-label">Unit</span><span class="detail-value">${escapeHtml(article.unit || 0)} pcs</span></div><div class="detail sale-price"><span class="detail-label">Sale Price</span><span class="detail-value">Rs ${escapeHtml(Number(article.sale_rate || article.rate || 0).toFixed(2))}</span></div></div><div class="purchase"><span class="purchase-number">${escapeHtml(article.purchase_number || purchase.purchase_number)}</span><span class="purchase-supplier">${escapeHtml(article.supplier_name || purchase.supplier_name || "")}</span></div></div><div class="qr">${svg}<div class="scan">SCAN ARTICLE</div><div class="footer">TexTradeOS PRO by SparkPair</div></div></section>`).join("")}</body></html>`;
 };
 const printPurchaseStickers = async (purchase, selections = {}) => {
   const html = await buildQrHtml(purchase, selections);
@@ -417,41 +425,52 @@ const downloadStickerPdf = async (purchase, selections = {}) => {
     };
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(8);
-    pdf.text(fitText(businessName, 36), 4.5, 6.5);
+    pdf.text(fitText(businessName, 36), 3.5, 6.5);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(15);
-    pdf.text(fitText(article.article_no, 36), 4.5, 13);
+    pdf.text(fitText(article.article_no, 36), 3.5, 13);
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(11);
     const descriptionLines = pdf
       .splitTextToSize(String(article.description || "Untitled Article"), 36)
       .slice(0, 2);
-    pdf.text(descriptionLines, 4.5, 17.2);
-    const detail = (label, value, x, y, maxWidth = 16) => {
+    pdf.text(descriptionLines, 3.5, 17.2);
+    const detail = (label, value, x, y, maxWidth = 16, emphasized = false) => {
       pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(7);
+      pdf.setFontSize(emphasized ? 8 : 7);
       pdf.text(label.toUpperCase(), x, y);
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(9.5);
+      pdf.setFontSize(emphasized ? 11 : 9.5);
       pdf.text(fitText(value, maxWidth), x, y + 3.3);
     };
-    detail("Size", article.size || "-", 4.5, 27);
-    detail("Category", article.category || "-", 23, 27);
-    detail("Unit", `${article.unit || 0} pcs`, 4.5, 36);
-    detail("Sale Price", `Rs ${Number(article.sale_rate || article.rate || 0).toFixed(2)}`, 23, 36);
+    detail("Size", article.size || "-", 3.5, 27);
+    detail("Category", article.category || "-", 22, 27);
+    detail("Unit", `${article.unit || 0} pcs`, 3.5, 36);
+    detail(
+      "Sale Price",
+      `Rs ${Number(article.sale_rate || article.rate || 0).toFixed(2)}`,
+      22,
+      36,
+      18.5,
+      true,
+    );
     pdf.setLineWidth(0.2);
-    pdf.line(4.5, 43.5, 41.5, 43.5);
+    pdf.line(3.5, 43.5, 40.7, 43.5);
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(8);
     pdf.text(
       fitText(article.purchase_number || purchase.purchase_number || "", 36),
-      4.5,
+      3.5,
       45.8,
       { maxWidth: 36 },
     );
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(7);
-    pdf.text(fitText(article.supplier_name || purchase.supplier_name || "", 36), 4.5, 48.5);
+    pdf.text(
+      fitText(article.supplier_name || purchase.supplier_name || "", 36),
+      3.5,
+      48.5,
+    );
     pdf.addImage(qr, "PNG", 48.5, 10, 24, 24);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(7);
@@ -934,7 +953,9 @@ export default function PurchaseFormModal({
           />
           <div className="max-h-[48dvh] divide-y divide-gray-100 overflow-y-auto rounded-xl border border-gray-200 bg-white">
             {visibleLabelArticles.map((article) => {
-              const quantity = Number(labelQuantities[stickerKey(article)] || 0);
+              const quantity = Number(
+                labelQuantities[stickerKey(article)] || 0,
+              );
               return (
                 <div
                   key={stickerKey(article)}

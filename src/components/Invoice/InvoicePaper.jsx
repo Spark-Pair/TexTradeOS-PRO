@@ -10,6 +10,11 @@ export default function InvoicePaper({
   copyLabel = "",
   isLastCopy = true,
   customerVariant = "customer-1",
+  documentType = "Sales Invoice",
+  partyLabel = "Billed To",
+  numberLabel = "Invoice No",
+  summarySettings = business?.summary_settings,
+  summaryLabels = {},
 }) {
   const articles = invoice?.articles || invoice?.orders || [];
   const customerUrduTitle = String(invoice?.customer_urdu_title || "").trim();
@@ -71,11 +76,11 @@ export default function InvoicePaper({
         <div className="invoice-meta-panel">
           {copyLabel && <span className="copy-label">{copyLabel}</span>}
 
-          <p className="invoice-document-type">Sales Invoice</p>
+          <p className="invoice-document-type">{documentType}</p>
 
           <dl className="invoice-number-box">
             <div>
-              <dt>Invoice No</dt>
+              <dt>{numberLabel}</dt>
               <dd>{invoice?.invoice_number || "-"}</dd>
             </div>
             <div>
@@ -89,7 +94,7 @@ export default function InvoicePaper({
       <section className={`billed-to-section ${customerVariant === "customer-2" ? "customer-two-billed-row" : ""}`}>
         <div className="billed-customer-block">
           <div className="customer-topline">
-            <p className="section-label">Billed To</p>
+            <p className="section-label">{partyLabel}</p>
           </div>
 
           <div className="customer-main">
@@ -111,10 +116,10 @@ export default function InvoicePaper({
         {customerVariant === "customer-2" && (
           <div className="invoice-meta-panel customer-two-invoice-meta">
             {copyLabel && <span className="copy-label">{copyLabel}</span>}
-            <p className="invoice-document-type">Sales Invoice</p>
+            <p className="invoice-document-type">{documentType}</p>
             <dl className="invoice-number-box">
               <div>
-                <dt>Invoice No</dt>
+                <dt>{numberLabel}</dt>
                 <dd>{invoice?.invoice_number || "-"}</dd>
               </div>
               <div>
@@ -130,7 +135,8 @@ export default function InvoicePaper({
         articles={articles}
         invoice={invoice}
         totalAmount={invoice?.total_amount || 0}
-            summarySettings={business?.summary_settings}
+        summarySettings={summarySettings}
+        summaryLabels={summaryLabels}
       />
 
       <footer className="invoice-paper-footer">

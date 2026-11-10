@@ -17,7 +17,7 @@ const renderSummaryValue = (row) => {
   return <Amount value={row.numericValue} decimals={1} />;
 };
 
-export default function InvoiceTable({ articles = [], invoice = null, totalAmount = 0, summarySettings = {} }) {
+export default function InvoiceTable({ articles = [], invoice = null, totalAmount = 0, summarySettings = {}, summaryLabels = {} }) {
   const totalDzn = articles.reduce((sum, article) => sum + Number(article?.dzn || 0), 0);
   const totalPcs = articles.reduce((sum, article) => sum + Number(article?.pcs || 0), 0);
   const lineGrossAmount = articles.reduce((sum, article) => sum + grossForArticle(article), 0);
@@ -42,7 +42,7 @@ export default function InvoiceTable({ articles = [], invoice = null, totalAmoun
     <div className="invoice-table-wrap"><table className="invoice-table"><colgroup><col style={{ width: "5%" }} /><col style={{ width: "12%" }} /><col style={{ width: "28%" }} /><col style={{ width: "7%" }} /><col style={{ width: "7%" }} /><col style={{ width: "9%" }} /><col style={{ width: "7%" }} /><col style={{ width: "15%" }} /><col style={{ width: "15%" }} /></colgroup><thead><tr><th>NO</th><th className="center">SIZE</th><th><span className="screen-label">DESCRIPTION</span><span className="print-label">DESC</span></th><th className="numeric">DZN</th><th className="numeric">PCS</th><th className="numeric">RATE</th><th className="numeric">DISC</th><th className="numeric">GROSS</th><th className="numeric"><span className="screen-label">AMOUNT</span><span className="print-label">AMT</span></th></tr></thead><tbody>{articles.map((article, index) => <tr key={article?._key || article?._id || index}><td className="row-number">{String(index + 1).padStart(2, "0")}</td><td className="center">{article?.size || "-"}</td><td className="description">{article?.description || "-"}</td><td className="numeric tabular">{formatNumbers(article?.dzn, 1)}</td><td className="numeric tabular">{formatNumbers(article?.pcs, 0)}</td><td className="numeric">{formatNumbers(article?.rate, 1)}</td><td className="numeric muted-value">{displayDiscount(article)}</td><td className="numeric muted-value">{formatNumbers(grossForArticle(article), 1)}</td><td className="numeric amount">{formatNumbers(article?.amount, 1)}</td></tr>)}</tbody><tfoot><tr><td colSpan={3}>Totals</td><td className="numeric tabular">{formatNumbers(totalDzn, 1)}</td><td className="numeric tabular">{formatNumbers(totalPcs, 0)}</td><td /><td /><td className="numeric">{formatNumbers(lineGrossAmount, 1)}</td><td className="numeric amount">{formatNumbers(lineFinalAmount, 1)}</td></tr></tfoot></table></div>
     <div className={`invoice-summary invoice-summary-${settings.summary_layout} ${settings.summary_compact ? "summary-compact" : ""}`}>
       {summaryGroups.map((group, groupIndex) => <div className="invoice-totals-panel" key={groupIndex}>
-        {group.map((row) => <div className={`summary-row ${row.tone ? `invoice-${row.tone}-row` : ""}`} key={row.key}><span>{row.label}</span><strong>{renderSummaryValue(row, Amount, formatNumbers)}</strong></div>)}
+        {group.map((row) => <div className={`summary-row ${row.tone ? `invoice-${row.tone}-row` : ""}`} key={row.key}><span>{summaryLabels[row.key] || row.label}</span><strong>{renderSummaryValue(row, Amount, formatNumbers)}</strong></div>)}
       </div>)}
     </div>
   </div>;

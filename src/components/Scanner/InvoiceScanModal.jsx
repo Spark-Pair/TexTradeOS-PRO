@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import Modal from "../Modal";
 import Button from "../Button";
 import { verifyArticleQr } from "../../api/qr.api";
@@ -154,6 +154,7 @@ export default function InvoiceScanModal({ isOpen, onClose, onApply, inventory =
   const [scanningPhoto, setScanningPhoto] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
+  const [cameraAttempt, setCameraAttempt] = useState(0);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -173,12 +174,18 @@ export default function InvoiceScanModal({ isOpen, onClose, onApply, inventory =
       return undefined;
     }
 
-    const scanner = new Html5Qrcode(scannerId);
+    const scanner = new Html5Qrcode(scannerId, {
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+    });
     scannerRef.current = scanner;
-    scanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 240, height: 240 } },
-      (decodedText) => {
+    const config = {
+      fps: 12,
+      qrbox: (width, height) => ({
+        width: Math.floor(Math.min(width, height) * 0.78),
+        height: Math.floor(Math.min(width, height) * 0.78),
+      }),
+    };
+    const onScanSuccess = (decodedText) => {
         const now = Date.now();
         if (scanLockRef.current.value === decodedText) {
           scanLockRef.current.lastSeenAt = now;
@@ -186,18 +193,46 @@ export default function InvoiceScanModal({ isOpen, onClose, onApply, inventory =
         }
         scanLockRef.current = { value: decodedText, lastSeenAt: now };
         addScannedArticleRef.current?.(decodedText);
-      },
-      () => {
-        const lock = scanLockRef.current;
-        if (lock.value && Date.now() - lock.lastSeenAt > 1000) {
-          scanLockRef.current = { value: "", lastSeenAt: 0 };
+      };
+    const onScanFailure = () => {
+      const lock = scanLockRef.current;
+      if (lock.value && Date.now() - lock.lastSeenAt > 1000) {
+        scanLockRef.current = { value: "", lastSeenAt: 0 };
+      }
+    };
+    const startCamera = async () => {
+      try {
+        const cameras = await Html5Qrcode.getCameras();
+        if (stopped) return;
+        const rearCamera = cameras.find((camera) => /back|rear|environment|world/i.test(camera.label || ""));
+        if (rearCamera) {
+          try {
+            await scanner.start(rearCamera.id, config, onScanSuccess, onScanFailure);
+            return;
+          } catch {
+            // Try the browser's rear-facing constraint below.
+          }
+        }
+        try {
+          await scanner.start({ facingMode: { ideal: "environment" } }, config, onScanSuccess, onScanFailure);
+        } catch {
+          const fallbackCamera = cameras.at(-1);
+          if (!fallbackCamera) throw new Error("No camera was found on this device.");
+          await scanner.start(fallbackCamera.id, config, onScanSuccess, onScanFailure);
+        }
+      } catch (error) {
+        if (stopped) return;
+        const detail = String(error?.message || error || "").toLowerCase();
+        if (detail.includes("permission") || detail.includes("notallowed") || detail.includes("denied")) {
+          setCameraError("Camera permission is blocked. Allow camera access for this site in your browser settings, then tap Retry.");
+        } else if (detail.includes("notfound") || detail.includes("no camera")) {
+          setCameraError("No usable camera was found. Use Take QR Photo or connect a camera.");
+        } else {
+          setCameraError("Could not start the camera. Check this site’s camera permission and tap Retry.");
         }
       }
-    )
-      .catch(() => {
-        if (!stopped) setCameraError("Camera scanner unavailable. Please allow camera access and reopen this modal.");
-      })
-      .then(() => {});
+    };
+    startCamera();
 
     return () => {
       stopped = true;
@@ -209,7 +244,7 @@ export default function InvoiceScanModal({ isOpen, onClose, onApply, inventory =
         activeScanner?.clear?.();
       }
     };
-  }, [isOpen, scannerId]);
+  }, [cameraAttempt, isOpen, scannerId]);
 
   const addScannedArticle = async (code, { manual = false } = {}) => {
     let articleNo = String(code || "").trim();
@@ -322,7 +357,9 @@ export default function InvoiceScanModal({ isOpen, onClose, onApply, inventory =
     setScanError("");
     let photoScanner = null;
     try {
-      try { scannerRef.current?.clear(); } catch { /* camera scanner may not have started */ }
+      const liveScanner = scannerRef.current;
+      if (liveScanner?.isScanning) await liveScanner.stop();
+      try { liveScanner?.clear(); } catch { /* camera scanner may not have started */ }
       scannerRef.current = null;
       photoScanner = new Html5Qrcode(scannerId);
       const decodedText = await photoScanner.scanFile(file, true);
@@ -333,6 +370,7 @@ export default function InvoiceScanModal({ isOpen, onClose, onApply, inventory =
     } finally {
       try { photoScanner?.clear(); } catch { /* scanner may already be clear */ }
       setScanningPhoto(false);
+      if (isOpen && window.isSecureContext) setCameraAttempt((attempt) => attempt + 1);
     }
   };
 
@@ -372,18 +410,16 @@ export default function InvoiceScanModal({ isOpen, onClose, onApply, inventory =
           {!cameraError ? <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-gray-300 bg-gray-950 p-3">
           <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black sm:aspect-[4/3]">
             <div id={scannerId} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover [&_button]:hidden [&_select]:hidden" />
-            <div className="pointer-events-none absolute inset-[18%] rounded-xl border-2 border-white/80 shadow-[0_0_0_999px_rgba(0,0,0,0.25)]" />
+            <div className="pointer-events-none absolute left-1/2 top-1/2 aspect-square h-[78%] -translate-x-1/2 -translate-y-1/2 rounded-xl border-2 border-white/80 shadow-[0_0_0_999px_rgba(0,0,0,0.25)]" />
           </div>
             <div className="mt-2 flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2"><span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-400" /><p className="truncate text-xs text-gray-300">Camera ready — hold one QR inside the box</p></div><button type="button" onClick={enableSound} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold ${soundEnabled ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-white hover:bg-white/20"}`}>{soundEnabled ? "Sound On" : "Enable Sound"}</button></div>
-        </div> : <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4"><div id={scannerId} className="hidden" /><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-amber-900">Photo scan mode</p><p className="mt-1 text-xs leading-5 text-amber-700">Live camera is blocked by the browser on HTTP. Take a clear QR photo or enter the article number.</p></div><button type="button" onClick={enableSound} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold ${soundEnabled ? "bg-emerald-100 text-emerald-700" : "bg-white text-gray-700 ring-1 ring-gray-200"}`}>{soundEnabled ? "Sound On" : "Sound"}</button></div></div>}
+        </div> : <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4"><div id={scannerId} className="hidden" /><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-amber-900">Camera unavailable</p><p role="alert" className="mt-1 text-xs leading-5 text-amber-700">{cameraError}</p></div>{window.isSecureContext && <button type="button" onClick={() => { setCameraError(""); setCameraAttempt((attempt) => attempt + 1); }} className="shrink-0 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-amber-900 ring-1 ring-amber-200">Retry</button>}</div></div>}
         {lastScanned && !scanError && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5"><p className="text-xs font-semibold text-emerald-700">✓ Scan successful</p><p className="mt-0.5 text-sm font-semibold text-gray-800">{lastScanned.article_no}</p><p className="text-xs text-gray-500">{lastScanned.description}</p></div>}
         <div className="min-w-0 rounded-xl border border-gray-200 bg-gray-50 p-3">
-          {cameraError && (
-            <label className="mb-3 flex w-full cursor-pointer items-center justify-center rounded-xl bg-[#127475] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#0f6465]">
-              {scanningPhoto ? "Reading QR…" : "Take QR Photo"}
+          <label className="mb-3 flex w-full cursor-pointer items-center justify-center rounded-xl bg-[#127475] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#0f6465]">
+              {scanningPhoto ? "Reading QR…" : "Scan with phone camera / choose photo"}
               <input type="file" accept="image/*" capture="environment" onClick={(event) => event.stopPropagation()} onChange={scanQrPhoto} disabled={scanningPhoto} className="hidden" />
-            </label>
-          )}
+          </label>
           <button type="button" onClick={() => setManualEntryOpen((open) => !open)} className="flex w-full items-center justify-between rounded-lg px-1 py-1.5 text-left text-xs font-semibold text-gray-700"><span>Enter article number manually</span><span className="text-base text-gray-400">{manualEntryOpen ? "−" : "+"}</span></button>
           {manualEntryOpen && <form onSubmit={submitManualCode} className="mt-2">
             <label className="text-xs font-semibold text-gray-700">Camera not working? Enter article number</label>

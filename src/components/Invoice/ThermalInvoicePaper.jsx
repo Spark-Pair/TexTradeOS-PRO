@@ -29,7 +29,7 @@ const renderSummaryValue = (row) => {
   return <Amount value={row.numericValue} decimals={1} />;
 };
 
-export default function ThermalInvoicePaper({ invoice, businessName = "", business = {}, customerVariant = "customer-1" }) {
+export default function ThermalInvoicePaper({ invoice, businessName = "", business = {}, customerVariant = "customer-1", documentType = "Sales Invoice", partyLabel = "Billed To", numberLabel = "Invoice No", summarySettings: summarySettingsOverride, summaryLabels = {} }) {
   const articles = invoice?.articles || invoice?.orders || [];
   const customerUrduTitle = String(invoice?.customer_urdu_title || "").trim();
   const salesmanName = String(invoice?.salesman_name || "").trim();
@@ -57,7 +57,7 @@ export default function ThermalInvoicePaper({ invoice, businessName = "", busine
   const payableAmount = Number(invoice?.total_amount ?? 0);
   const balanceAmount = Number(invoice?.balance_amount ?? Math.max(0, payableAmount - receivedAmount));
   const returnAmount = Number(invoice?.return_amount ?? Math.max(0, receivedAmount - payableAmount));
-  const summarySettings = normalizeSummarySettings(business?.summary_settings);
+  const summarySettings = normalizeSummarySettings(summarySettingsOverride || business?.summary_settings);
   const summaryRows = buildInvoiceSummaryRows({ invoice, settings: summarySettings, grossAmount, percentDiscountAmount, rupeeDiscountAmount, netAmount, salesReturnAmount, salesReturnPcs, receivedAmount, paymentMethod, payableAmount, balanceAmount, returnAmount });
   const summaryGroups = splitSummaryRows(summaryRows, summarySettings.summary_layout);
 
@@ -91,13 +91,13 @@ export default function ThermalInvoicePaper({ invoice, businessName = "", busine
       </header>}
 
       <section className="thermal-meta">
-        <div><span>Invoice No</span><strong>{invoice?.invoice_number || "-"}</strong></div>
+        <div><span>{numberLabel}</span><strong>{invoice?.invoice_number || "-"}</strong></div>
         <div><span>Date</span><strong>{formatDate(invoice?.invoice_date, "DD MMM yyyy") || "-"}</strong></div>
-        <div><span>Type</span><strong>Sales Invoice</strong></div>
+        <div><span>Type</span><strong>{documentType}</strong></div>
       </section>
 
       <section className="thermal-customer">
-        <p className="thermal-label">Billed To</p>
+        <p className="thermal-label">{partyLabel}</p>
         <h2>
           {invoice?.customer_name || "-"}
           {customerUrduTitle && <span dir="rtl" lang="ur">{customerUrduTitle}</span>}
@@ -134,7 +134,7 @@ export default function ThermalInvoicePaper({ invoice, businessName = "", busine
       
       <section className={`thermal-summary thermal-summary-${summarySettings.summary_layout} ${summarySettings.summary_compact ? "summary-compact" : ""}`}>
         {summaryGroups.map((group, groupIndex) => <div className="thermal-summary-panel" key={groupIndex}>
-          {group.map((row) => <div className={row.tone ? `thermal-summary-${row.tone}` : ""} key={row.key}><span>{row.label}</span><strong>{renderSummaryValue(row, Amount, formatNumbers)}</strong></div>)}
+          {group.map((row) => <div className={row.tone ? `thermal-summary-${row.tone}` : ""} key={row.key}><span>{summaryLabels[row.key] || row.label}</span><strong>{renderSummaryValue(row, Amount, formatNumbers)}</strong></div>)}
         </div>)}
       </section>
 

@@ -8,6 +8,7 @@ import {
   MoreVertical,
   Edit3,
   PackageCheck,
+  Printer,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -23,6 +24,7 @@ import PageHeader from "../components/PageHeader";
 import StatCard from "../components/StatCard";
 import ContextMenu from "../components/ContextMenu";
 import ReturnEditor from "../components/Returns/ReturnEditor";
+import ReturnPrintPreviewModal from "../components/Returns/ReturnPrintPreviewModal";
 import TableToolbar from "../components/table/TableToolbar";
 import {
   createReturn,
@@ -78,6 +80,8 @@ export default function Returns({ type = "sales" }) {
     [deletingId, setDeletingId] = useState(null),
     [details, setDetails] = useState(null),
     [detailsLoading, setDetailsLoading] = useState(false),
+    [printRecord, setPrintRecord] = useState(null),
+    [printLoading, setPrintLoading] = useState(false),
     [editingReturn, setEditingReturn] = useState(null),
     [notes, setNotes] = useState(""),
     [activeMenu, setActiveMenu] = useState(null);
@@ -232,6 +236,21 @@ export default function Returns({ type = "sales" }) {
         setDetailsLoading(false);
       }
     },
+    openPrintPreview = async (r) => {
+      const id = r.id ?? r._id;
+      if (!id) return;
+      setActiveMenu(null);
+      setDetails(null);
+      setPrintRecord(null);
+      setPrintLoading(true);
+      try {
+        setPrintRecord(await fetchReturn(type, id));
+      } catch (e) {
+        showToast({ type: "error", message: message(e, "Could not load return for printing.") });
+      } finally {
+        setPrintLoading(false);
+      }
+    },
     startEdit = (record) => {
       setEditingReturn(record);
       setParty(String(record.party_id || ""));
@@ -327,8 +346,8 @@ export default function Returns({ type = "sales" }) {
                   return (
                     <div
                       key={id}
-                      onClick={() => openDetails(r)}
-                      className="rounded-2xl border border-gray-200 bg-white p-4"
+                      onClick={() => openPrintPreview(r)}
+                      className="cursor-pointer rounded-2xl border border-gray-200 bg-white p-4"
                     >
                       <div className="flex justify-between gap-3">
                         <div>
@@ -400,7 +419,7 @@ export default function Returns({ type = "sales" }) {
                         return (
                           <tr
                             key={id}
-                            onClick={() => openDetails(r)}
+                            onClick={() => openPrintPreview(r)}
                             className="cursor-pointer hover:bg-teal-50/40"
                           >
                             <td className="px-4 py-4 text-sm text-gray-500">
@@ -460,6 +479,12 @@ export default function Returns({ type = "sales" }) {
                                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
                                 >
                                   <Eye size={16} /> View Details
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openPrintPreview(r); }}
+                                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
+                                >
+                                  <Printer size={16} /> Preview / Print
                                 </button>
                                 <div className="my-1.5 h-px bg-gray-200" />
                                 <button
@@ -579,7 +604,7 @@ export default function Returns({ type = "sales" }) {
         footer={
           details ? (
             <div className="flex w-full justify-between">
-              {canEdit ? <Button variant="secondary" outline icon={Edit3} onClick={() => startEdit(details)}>Edit Return</Button> : <span />}
+              <div className="flex gap-2">{canEdit && <Button variant="secondary" outline icon={Edit3} onClick={() => startEdit(details)}>Edit Return</Button>}<Button variant="secondary" outline icon={Printer} onClick={() => openPrintPreview(details)}>Preview / Print</Button></div>
               <Button outline onClick={() => setDetails(null)}>
                 Close
               </Button>
@@ -595,6 +620,7 @@ export default function Returns({ type = "sales" }) {
           <ReturnDetails record={details} sales={sales} />
         ) : null}
       </Modal>
+      <ReturnPrintPreviewModal isOpen={Boolean(printRecord) || printLoading} onClose={() => setPrintRecord(null)} record={printRecord} loading={printLoading} sales={sales} business={user?.business || {}} businessName={user?.business?.name || ""} />
     </>
   );
 }

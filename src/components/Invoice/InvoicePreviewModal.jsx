@@ -227,6 +227,11 @@ export function InvoicePrintPreview({
   business = {},
   printMode = "a5",
   customerVariant = "customer-1",
+  documentType = "Sales Invoice",
+  partyLabel = "Billed To",
+  numberLabel = "Invoice No",
+  summarySettings,
+  summaryLabels = {},
 }) {
   const stageRef = useRef(null);
   const [previewScale, setPreviewScale] = useState(1);
@@ -261,6 +266,11 @@ export function InvoicePrintPreview({
               businessName={businessName}
               business={business}
               customerVariant={resolvedCustomerVariant}
+              documentType={documentType}
+              partyLabel={partyLabel}
+              numberLabel={numberLabel}
+              summarySettings={summarySettings}
+              summaryLabels={summaryLabels}
             />
           ) : (
             <InvoicePaper
@@ -268,6 +278,11 @@ export function InvoicePrintPreview({
               businessName={businessName}
               business={business}
               customerVariant={resolvedCustomerVariant}
+              documentType={documentType}
+              partyLabel={partyLabel}
+              numberLabel={numberLabel}
+              summarySettings={summarySettings}
+              summaryLabels={summaryLabels}
             />
           )}
         </div>
@@ -283,6 +298,11 @@ export default function InvoicePreviewModal({
   loading = false,
   business = {},
   businessName = "",
+  documentType = "Sales Invoice",
+  partyLabel = "Billed To",
+  numberLabel = "Invoice No",
+  summarySettings,
+  summaryLabels = {},
 }) {
   const [printMode, setPrintMode] = useState("a5");
   const customizedInvoiceEnabled = business?.custom_invoice_enabled === true;
@@ -322,7 +342,7 @@ export default function InvoicePreviewModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Invoice Preview"
+      title={`${documentType} Preview`}
       subtitle={
         printMode === "thermal"
           ? "80mm thermal printer preview"
@@ -355,7 +375,7 @@ export default function InvoicePreviewModal({
           <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
             {printMode === "a5" && (
               <p className="text-xs text-gray-400">
-                Choose A4 or A5 in the print dialog. The invoice keeps equal
+                Choose A4 or A5 in the print dialog. The document keeps equal
                 safe margins on all sides.
               </p>
             )}
@@ -368,7 +388,7 @@ export default function InvoicePreviewModal({
                 onClick={handlePrintInvoice}
                 disabled={!invoice || loading}
               >
-                Print {printMode === "thermal" ? "Thermal" : "Invoice"}
+                Print {printMode === "thermal" ? "Thermal" : documentType}
               </Button>
             </div>
           </div>
@@ -393,6 +413,11 @@ export default function InvoicePreviewModal({
           businessName={businessName}
           printMode={printMode}
           customerVariant={activeCustomerVariant}
+          documentType={documentType}
+          partyLabel={partyLabel}
+          numberLabel={numberLabel}
+          summarySettings={summarySettings}
+          summaryLabels={summaryLabels}
         />
       )}
     </Modal>
