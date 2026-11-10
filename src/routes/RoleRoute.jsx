@@ -49,6 +49,7 @@ export default function RoleRoute({ allow, accessKey, children }) {
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
   if (accessKey && user.role === "developer") return children;
+  if (accessKey && user.role === "admin") return children;
   if (Array.isArray(allow) && allow.includes(user.role)) return children;
   if (!accessKey && !Array.isArray(allow)) return children;
   if (accessKey && user.role !== "developer") {

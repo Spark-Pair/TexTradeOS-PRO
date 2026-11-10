@@ -11,7 +11,6 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
 import { jsPDF } from "jspdf";
-import { code128 } from "bwip-js";
 import Modal from "../Modal";
 import Button from "../Button";
 import Input from "../Input";
@@ -298,17 +297,6 @@ const stickerPayload = (purchase, article) =>
     purchaseNumber: article.purchase_number || purchase.purchase_number,
   });
 const stickerKey = (article) => article.qr_id || article.article_no || article._key || "article";
-const barcodeDataUrl = (code) => {
-  const canvas = document.createElement("canvas");
-  code128(canvas, {
-    text: code,
-    scale: 3,
-    height: 10,
-    includetext: false,
-    padding: 0,
-  });
-  return canvas.toDataURL("image/png");
-};
 const buildQrHtml = async (purchase, selections = {}) => {
   const articles = selectedStickerArticles(purchase, selections);
   const codeByArticle = new Map();
@@ -322,12 +310,11 @@ const buildQrHtml = async (purchase, selections = {}) => {
     articles.map(async (article) => ({
       article,
       qr: codeByArticle.get(stickerKey(article)),
-      barcode: barcodeDataUrl(codeByArticle.get(stickerKey(article))),
       svg: await QRCode.toString(codeByArticle.get(stickerKey(article)), {
         type: "svg",
         errorCorrectionLevel: "M",
         margin: 0,
-        color: { dark: "#111827", light: "#ffffff" },
+        color: { dark: "#000000", light: "#ffffff" },
       }),
     })),
   );
@@ -335,23 +322,28 @@ const buildQrHtml = async (purchase, selections = {}) => {
   return `<!doctype html><html><head><meta charset="utf-8"><title>Article QR Labels</title><style>
 @page{size:76.2mm 50.8mm;margin:0}
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;width:76.2mm;background:#fff;font-family:Arial,sans-serif;color:#111827}
-.label{position:relative;flex:none;width:76.2mm;height:50.8mm;min-width:76.2mm;min-height:50.8mm;max-width:76.2mm;max-height:50.8mm;break-after:page;page-break-after:always;break-inside:avoid;overflow:hidden;border:.25mm solid #919191;border-radius:2.5mm;background:#fff;display:grid;grid-template-columns:1fr 32mm}
+html,body{margin:0;padding:0;width:76.2mm;background:#fff;font-family:Arial,sans-serif;color:#000}
+.label{position:relative;flex:none;width:76.2mm;height:50.8mm;min-width:76.2mm;min-height:50.8mm;max-width:76.2mm;max-height:50.8mm;break-after:page;page-break-after:always;break-inside:avoid;overflow:hidden;border:.3mm solid #000;border-radius:2.5mm;background:#fff;display:grid;grid-template-columns:1fr 32mm}
 .label:last-child{break-after:auto;page-break-after:auto}
-.info{position:relative;padding:3.5mm 2mm 4mm 5mm;min-width:0}
-.brand{color:#127475;font-size:9px;line-height:1.1;font-weight:900;max-height:6mm;overflow:hidden}
-.article{margin-top:1mm;font-size:12px;font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.desc{height:8mm;overflow:hidden;font-size:8.5px;line-height:1.15}
-.details{margin-top:1.5mm;display:grid;grid-template-columns:1fr 1fr;gap:1mm;font-size:7px;line-height:1.2;color:#4b5563}
-.barcode{position:absolute;left:5mm;bottom:8mm;width:36mm;height:8mm;max-width:calc(100% - 7mm);object-fit:contain;object-position:left center;display:block}
-.purchase{position:absolute;left:5mm;bottom:4mm;height:2mm;line-height:2mm;max-width:36mm;font-size:5.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#6b7280}
-.footer{position:absolute;right:2mm;bottom:1.1mm;color:#6b7280;font-size:4.5px;font-weight:700}
-.qr{border-left:.25mm solid #919191;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2mm;background:#f8fafc;min-width:0}
-.qr svg{width:25mm;height:25mm;display:block}
-.scan{margin-top:1mm;color:#127475;font-size:6px;font-weight:800}
+.info{position:relative;padding:3.2mm 2.5mm 8mm 4.5mm;min-width:0}
+.brand{max-width:100%;overflow:hidden;color:#000;font-size:9px;line-height:1.2;font-weight:700;white-space:nowrap;text-overflow:ellipsis}
+.article{margin-top:1.5mm;font-size:15px;line-height:1.1;font-weight:800;letter-spacing:.1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.desc{height:8mm;margin-top:.7mm;overflow:hidden;font-size:10px;line-height:1.2;font-weight:500}
+.details{margin-top:2mm;display:grid;grid-template-columns:1fr 1fr;column-gap:2mm;row-gap:1.6mm;color:#000}
+.detail{display:flex;min-width:0;flex-direction:column;gap:.5mm}
+.detail-label{font-size:6px;line-height:1.1;font-weight:700;letter-spacing:.35px;text-transform:uppercase}
+.detail-value{overflow:hidden;font-size:8.5px;line-height:1.15;font-weight:700;white-space:nowrap;text-overflow:ellipsis}
+.purchase{position:absolute;left:4.5mm;right:2.5mm;bottom:2mm;height:6mm;overflow:hidden;border-top:.2mm solid #000;padding-top:1mm;color:#000}
+.purchase-number,.purchase-supplier{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.purchase-number{font-size:7px;line-height:1.2;font-weight:700}
+.purchase-supplier{margin-top:.5mm;font-size:6px;line-height:1.2;font-weight:400}
+.qr{position:relative;border-left:.3mm solid #000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5mm;padding:2mm 2mm 7mm;background:#fff;min-width:0}
+.qr svg{width:24mm;height:24mm;display:block}
+.scan{color:#000;font-size:7px;letter-spacing:.5px;font-weight:800}
+.footer{position:absolute;right:1mm;bottom:2mm;left:1mm;text-align:center;color:#000;font-size:6.5px;line-height:1.2;font-weight:600;white-space:nowrap}
 @media screen{body{background:#e5e7eb}.label{margin:10px auto;box-shadow:0 1px 5px #0002}}
 @media print{html,body{width:76.2mm;height:auto;margin:0!important;padding:0!important;background:#fff}.label{width:76.2mm!important;height:50.8mm!important;min-width:76.2mm!important;min-height:50.8mm!important;max-width:76.2mm!important;max-height:50.8mm!important;margin:0!important;box-shadow:none;break-after:page;page-break-after:always}.label:last-child{break-after:auto;page-break-after:auto}}
-</style></head><body>${renderedLabels.map(({ article, svg, barcode }) => `<section class="label"><div class="info"><div class="brand">${escapeHtml(businessName)}</div><div class="article">${escapeHtml(article.article_no)}</div><div class="desc">${escapeHtml(article.description || "Untitled Article")}</div><div class="details"><span>Size <strong>${escapeHtml(article.size || "-")}</strong></span><span>Category <strong>${escapeHtml(article.category || "-")}</strong></span><span>Unit <strong>${escapeHtml(article.unit || 0)} pcs</strong></span><span>Sale <strong>Rs ${escapeHtml(Number(article.sale_rate || article.rate || 0).toFixed(2))}</strong></span></div><img class="barcode" src="${barcode}" alt=""><div class="purchase">${escapeHtml(article.purchase_number || purchase.purchase_number)} - ${escapeHtml(article.supplier_name || purchase.supplier_name || "")}</div></div><div class="qr">${svg}<div class="scan">SCAN ARTICLE</div></div><div class="footer">TexTradeOS PRO by SparkPair</div></section>`).join("")}</body></html>`;
+</style></head><body>${renderedLabels.map(({ article, svg }) => `<section class="label"><div class="info"><div class="brand">${escapeHtml(businessName)}</div><div class="article">${escapeHtml(article.article_no)}</div><div class="desc">${escapeHtml(article.description || "Untitled Article")}</div><div class="details"><div class="detail"><span class="detail-label">Size</span><span class="detail-value">${escapeHtml(article.size || "-")}</span></div><div class="detail"><span class="detail-label">Category</span><span class="detail-value">${escapeHtml(article.category || "-")}</span></div><div class="detail"><span class="detail-label">Unit</span><span class="detail-value">${escapeHtml(article.unit || 0)} pcs</span></div><div class="detail"><span class="detail-label">Sale Price</span><span class="detail-value">Rs ${escapeHtml(Number(article.sale_rate || article.rate || 0).toFixed(2))}</span></div></div><div class="purchase"><span class="purchase-number">${escapeHtml(article.purchase_number || purchase.purchase_number)}</span><span class="purchase-supplier">${escapeHtml(article.supplier_name || purchase.supplier_name || "")}</span></div></div><div class="qr">${svg}<div class="scan">SCAN ARTICLE</div><div class="footer">TexTradeOS PRO by SparkPair</div></div></section>`).join("")}</body></html>`;
 };
 const printPurchaseStickers = async (purchase, selections = {}) => {
   const html = await buildQrHtml(purchase, selections);
@@ -410,33 +402,62 @@ const downloadStickerPdf = async (purchase, selections = {}) => {
       margin: 0,
       errorCorrectionLevel: "M",
     });
-    const barcode = barcodeDataUrl(secureCode);
-    pdf.setDrawColor(145);
+    pdf.setDrawColor(0);
+    pdf.setLineWidth(0.3);
     pdf.roundedRect(0.5, 0.5, 75.2, 49.8, 2, 2, "S");
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(9);
-    pdf.text(String(businessName).slice(0, 32), 4, 8, { maxWidth: 40 });
-    pdf.setFontSize(12);
-    pdf.text(String(article.article_no), 4, 15, { maxWidth: 40 });
+    pdf.line(44.2, 0.8, 44.2, 50);
+    pdf.setTextColor(0);
+    const fitText = (value, maxWidth) => {
+      let text = String(value ?? "");
+      if (pdf.getTextWidth(text) <= maxWidth) return text;
+      while (text && pdf.getTextWidth(`${text}…`) > maxWidth)
+        text = text.slice(0, -1);
+      return text ? `${text}…` : "";
+    };
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8.5);
-    pdf.text(
-      String(article.description || "Untitled Article").slice(0, 42),
-      4,
-      20,
-      { maxWidth: 40 },
-    );
+    pdf.setFontSize(8);
+    pdf.text(fitText(businessName, 36), 4.5, 6.5);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(15);
+    pdf.text(fitText(article.article_no, 36), 4.5, 13);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9.5);
+    const descriptionLines = pdf
+      .splitTextToSize(String(article.description || "Untitled Article"), 36)
+      .slice(0, 2);
+    pdf.text(descriptionLines, 4.5, 17.2);
+    const detail = (label, value, x, y, maxWidth = 16) => {
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(6);
+      pdf.text(label.toUpperCase(), x, y);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(8);
+      pdf.text(fitText(value, maxWidth), x, y + 3.3);
+    };
+    detail("Size", article.size || "-", 4.5, 27);
+    detail("Category", article.category || "-", 23, 27);
+    detail("Unit", `${article.unit || 0} pcs`, 4.5, 36);
+    detail("Sale Price", `Rs ${Number(article.sale_rate || article.rate || 0).toFixed(2)}`, 23, 36);
+    pdf.setLineWidth(0.2);
+    pdf.line(4.5, 43.5, 41.5, 43.5);
+    pdf.setFont("helvetica", "normal");
     pdf.setFontSize(7);
-    pdf.text(`Size: ${String(article.size || "-").slice(0, 13)}`, 4, 26);
-    pdf.text(`Unit: ${article.unit || 0} pcs`, 4, 30);
-    pdf.addImage(barcode, "PNG", 4, 36, 39, 7);
-    pdf.addImage(qr, "PNG", 49, 5, 23, 23);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(6);
-    pdf.text("SCAN ARTICLE", 60.5, 32, { align: "center" });
+    pdf.text(
+      fitText(article.purchase_number || purchase.purchase_number || "", 36),
+      4.5,
+      46,
+      { maxWidth: 36 },
+    );
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(4.5);
-    pdf.text("TexTradeOS PRO by SparkPair", 73, 48, { align: "right" });
+    pdf.setFontSize(6);
+    pdf.text(fitText(article.supplier_name || purchase.supplier_name || "", 36), 4.5, 48.5);
+    pdf.addImage(qr, "PNG", 48.5, 10, 24, 24);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(7);
+    pdf.text("SCAN ARTICLE", 60.5, 37, { align: "center" });
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(6.5);
+    pdf.text("TexTradeOS PRO by SparkPair", 60.2, 48, { align: "center" });
   }
   pdf.save("article-qr-stickers.pdf");
 };

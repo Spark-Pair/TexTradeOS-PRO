@@ -36,7 +36,7 @@ export default function useAccessControl(user) {
     return () => { active = false; };
   }, [user]);
 
-  const accessReady = user?.role === "developer" || (!loading && !error && referenceData && ruleData);
+  const accessReady = user?.role === "developer" || user?.role === "admin" || (!loading && !error && referenceData && ruleData);
   const canAccess = (key) => user?.role === "developer" || Boolean(accessReady && hasAccessForRole(ruleData, referenceData, key, user?.role));
 
   const accessibleModules = useMemo(() => {
