@@ -26,24 +26,34 @@ input[type=number] {
   -moz-appearance: textfield;
 }
 
-/* 🔒 REMOVE SCROLLBAR FROM ENTIRE APP */
+/* Native scrollbars stay functional but are replaced by an overlay indicator. */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 
-/* Chrome, Edge, Safari */
 *::-webkit-scrollbar {
-  width: 0px;
-  height: 0px;
   display: none;
 }
 
-/* Firefox */
-* {
-  scrollbar-width: none;
+.app-scrollbar-overlay {
+  position: fixed;
+  z-index: 9999;
+  width: 5px;
+  min-height: 24px;
+  border-radius: 999px;
+  background: #1c7773;
+  box-shadow: 0 0 0 1px #fff9;
+  opacity: 0;
+  pointer-events: none;
+  touch-action: none;
+  cursor: grab;
+  transition: opacity 150ms ease;
 }
 
-/* Internet Explorer */
-* {
-  -ms-overflow-style: none;
-}
+.app-scrollbar-overlay.is-visible { opacity: .78; pointer-events: auto; }
+.app-scrollbar-overlay:hover { opacity: 1; cursor: grab; }
+.app-scrollbar-overlay:active { cursor: grabbing; }
 
 .is-negative-number {
   color: rgb(225 29 72) !important;
