@@ -160,6 +160,8 @@ export default function Modal({
                 restoreFocus();
                 return;
               }
+              panelRef.current?.setAttribute("data-modal-entered", "true");
+              panelRef.current?.dispatchEvent(new Event("modal-enter-complete"));
               focusFirstField(panelRef.current);
               onEnterComplete?.();
             }}

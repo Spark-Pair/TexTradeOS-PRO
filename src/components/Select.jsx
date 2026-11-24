@@ -15,7 +15,6 @@ const Select = forwardRef(function Select(
   const triggerRef = useRef(null);
   const searchRef = useRef(null);
   const optionRefs = useRef([]);
-  const suppressNextFocusOpenRef = useRef(false);
 
   const filteredOptions = options.filter(opt =>
     opt.label.toLowerCase().includes(search.toLowerCase())
@@ -41,26 +40,29 @@ const Select = forwardRef(function Select(
     setIsOpen(true);
   }, [disabled]);
 
-  const closeDropdown = useCallback(() => {
+  const closeDropdown = useCallback(({ moveNext = false } = {}) => {
+    // Release the search input before starting the exit animation. This keeps
+    // focus out of the disappearing dropdown while it closes.
+    if (searchRef.current?.contains(document.activeElement)) {
+      searchRef.current.blur();
+    }
     setIsOpen(false);
     setSearch("");
     setActiveIndex(-1);
+
+    if (moveNext) {
+      // Let the dropdown finish exiting before moving focus to the next field.
+      window.setTimeout(() => {
+        focusNextField(triggerRef.current);
+        // Parent state updates after selection can briefly affect the tab order.
+        window.setTimeout(() => focusNextField(triggerRef.current), 40);
+      }, 240);
+    }
   }, []);
 
   const selectOption = useCallback((opt, options = {}) => {
     onChange(opt.value);
-    closeDropdown();
-    suppressNextFocusOpenRef.current = true;
-    triggerRef.current?.focus();
-    if (options?.moveNext) {
-      // Wait until the dropdown exit animation and its blur handlers finish.
-      // A second pass protects focus from the parent state update caused by
-      // onChange.
-      window.setTimeout(() => {
-        focusNextField(triggerRef.current);
-        window.setTimeout(() => focusNextField(triggerRef.current), 40);
-      }, 240);
-    }
+    closeDropdown({ moveNext: options?.moveNext });
   }, [onChange, closeDropdown]);
 
   // Expose focus on trigger via ref
@@ -118,11 +120,16 @@ const Select = forwardRef(function Select(
   };
 
   const handleTriggerFocus = () => {
-    if (suppressNextFocusOpenRef.current) {
-      suppressNextFocusOpenRef.current = false;
+    window.setTimeout(() => triggerRef.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 120);
+
+    const modalPanel = triggerRef.current?.closest(".modal-panel");
+    if (modalPanel && modalPanel.dataset.modalEntered !== "true") {
+      modalPanel.addEventListener("modal-enter-complete", () => {
+        if (triggerRef.current === document.activeElement) openDropdown();
+      }, { once: true });
       return;
     }
-    window.setTimeout(() => triggerRef.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 120);
+
     openDropdown();
   };
 
@@ -153,7 +160,7 @@ const Select = forwardRef(function Select(
           if (e.key === "Escape") {
             e.preventDefault();
             e.stopPropagation();
-            closeDropdown();
+            closeDropdown({ moveNext: true });
             return;
           }
           if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -231,7 +238,7 @@ const Select = forwardRef(function Select(
                   if (e.key === "Escape") {
                     e.preventDefault();
                     e.stopPropagation();
-                    closeDropdown();
+                    closeDropdown({ moveNext: true });
                     return;
                   }
                   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -247,7 +254,7 @@ const Select = forwardRef(function Select(
                       selectOption(filteredOptions[activeIndex], { moveNext: true });
                     } else if (onSearchSubmit && search.trim()) {
                       onSearchSubmit(search.trim());
-                      closeDropdown();
+                      closeDropdown({ moveNext: true });
                     }
                   }
                 }}
