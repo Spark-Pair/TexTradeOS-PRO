@@ -137,13 +137,21 @@ function ShortcutTooltip({ shortcut, label, children }) {
 }
 const formatInvoiceNumber = (year, next) =>
   `${year}-${String(Math.max(1, Number(next) || 1)).padStart(4, "0")}`;
+const inventoryOptionLabel = (item, stockLabel) => {
+  const details = [
+    item.size && `Size ${item.size}`,
+    item.season && `Season ${item.season}`,
+    item.category && `Category ${item.category}`,
+  ].filter(Boolean);
+  return `${item.article_no} | ${item.description || "Article"}${details.length ? ` | ${details.join(" | ")}` : ""} | ${stockLabel} | Sale ${item.sale_rate || item.rate || 0}`;
+};
 const toInvoiceInventory = (items = []) =>
   items
     .map((item) => ({
       ...item,
       value: item.article_no,
       stock_pcs: Math.max(0, numberValue(item.stock_pcs ?? item.available_pcs)),
-      label: `${item.article_no} | ${item.description || "Article"} | Stock ${Math.max(0, numberValue(item.stock_pcs ?? item.available_pcs))} pcs | Sale ${item.sale_rate || item.rate || 0}`,
+      label: inventoryOptionLabel(item, `Stock ${Math.max(0, numberValue(item.stock_pcs ?? item.available_pcs))} pcs`),
     }))
     .filter((item) => item.stock_pcs > 0 || !item.purchase_number);
 const newInvoiceArticle = (item) => ({
@@ -152,6 +160,8 @@ const newInvoiceArticle = (item) => ({
   purchase_number: item.purchase_number,
   description: item.description || "",
   size: item.size || "",
+  season: item.season || "",
+  category: item.category || "",
   unit: numberValue(item.unit),
   quantity_pkt: "",
   dzn: "",
@@ -391,6 +401,9 @@ function InvoiceItemModal({
                   selectedArticle.sale_rate || selectedArticle.rate || 0,
                 ).toFixed(2)}
               </p>
+              {selectedArticle.size && <p><b className="text-gray-800">Size:</b> {selectedArticle.size}</p>}
+              {selectedArticle.season && <p><b className="text-gray-800">Season:</b> {selectedArticle.season}</p>}
+              {selectedArticle.category && <p><b className="text-gray-800">Category:</b> {selectedArticle.category}</p>}
             </div>
           )}
         </div>
@@ -627,7 +640,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction, invoice = 
         setInventory(invoice ? stockRows.map((item) => {
           const returnedToStock = (invoice.articles || []).filter((article) => article.article_no === item.article_no && String(article.purchase_number || "") === String(item.purchase_number || "")).reduce((sum, article) => sum + numberValue(article.pcs), 0);
           const stock_pcs = numberValue(item.stock_pcs) + returnedToStock;
-          return { ...item, stock_pcs, label: `${item.article_no} | ${item.description || "Article"} | Stock ${stock_pcs} pcs | Sale ${item.sale_rate || item.rate || 0}` };
+          return { ...item, stock_pcs, label: inventoryOptionLabel(item, `Stock ${stock_pcs} pcs`) };
         }) : stockRows);
         setInvoiceNumber(
           invoice?.invoice_number || formatInvoiceNumber(
@@ -711,7 +724,7 @@ export default function InvoiceFormModal({ isOpen, onClose, onAction, invoice = 
           return {
             ...item,
             stock_pcs: stock,
-            label: `${item.article_no} | ${item.description || "Article"} | Available ${stock} pcs | Sale ${item.sale_rate || item.rate || 0}`,
+            label: inventoryOptionLabel(item, `Available ${stock} pcs`),
           };
         })
         .filter(
