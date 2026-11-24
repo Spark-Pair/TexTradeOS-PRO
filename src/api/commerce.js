@@ -17,9 +17,13 @@ export const updateSupplier = async (id, payload) => unwrap(await apiClient.put(
 export const toggleSupplier = async (id) => unwrap(await apiClient.patch(`/suppliers/${id}/toggle-status`));
 
 export const fetchBankAccounts = async () => unwrap(await apiClient.get("/bank-accounts"));
+export const fetchBankAccountStatement = async (id, params = {}) => unwrap(await apiClient.get(`/bank-accounts/${id}/statement`, { params }));
 export const createBankAccount = async (payload) => unwrap(await apiClient.post("/bank-accounts", payload));
 export const updateBankAccount = async (id, payload) => unwrap(await apiClient.put(`/bank-accounts/${id}`, payload));
 export const toggleBankAccount = async (id) => unwrap(await apiClient.patch(`/bank-accounts/${id}/toggle-status`));
+
+export const fetchBalanceEntries = async () => unwrap(await apiClient.get("/balance-entries"));
+export const createBalanceEntry = async (payload) => unwrap(await apiClient.post("/balance-entries", payload));
 
 export const fetchPayments = async (params = {}) => unwrap(await apiClient.get("/payments", { params }));
 export const updatePayment = async (id, payload) => unwrap(await apiClient.put(`/party-payments/${id}`, payload));

@@ -24,11 +24,12 @@ const balance = (v) => {
 };
 export default function StatementPaper({ data, type, business = {} }) {
   const customer = type === "customer",
-    party = data?.party || {},
+    bank = type === "bank",
+    party = bank ? data?.account || {} : data?.party || {},
     totals = data?.totals || {},
     period = data?.period || {},
     rows = Array.isArray(data?.rows) ? data.rows : [],
-    name = party[customer ? "customer_name" : "supplier_name"] || "-",
+    name = bank ? party.account_title || "-" : party[customer ? "customer_name" : "supplier_name"] || "-",
     from = period.date_from
       ? date(period.date_from)
       : rows[0]?.date
@@ -63,7 +64,7 @@ export default function StatementPaper({ data, type, business = {} }) {
             {businessDetails && <p>{businessDetails}</p>}
           </div>
           <div className="document-meta">
-            <h2>{customer ? "CUSTOMER" : "SUPPLIER"} STATEMENT</h2>
+            <h2>{bank ? "BANK ACCOUNT" : customer ? "CUSTOMER" : "SUPPLIER"} STATEMENT</h2>
             <div>
               <b>STATEMENT DATE</b>
               <strong>{date(new Date().toISOString().slice(0, 10))}</strong>
@@ -75,16 +76,18 @@ export default function StatementPaper({ data, type, business = {} }) {
           </div>
         </header>
         <section className="party-block">
-          <span>{customer ? "CUSTOMER" : "SUPPLIER"}</span>
+          <span>{bank ? "BANK ACCOUNT" : customer ? "CUSTOMER" : "SUPPLIER"}</span>
           <div>
             <h3>{name}</h3>
-            {party.person_name && <b>{party.person_name}</b>}
+            {bank ? <b>{party.bank_name || ""}</b> : party.person_name && <b>{party.person_name}</b>}
           </div>
           <p>
             {[
-              party.phone_number && `Tel: ${party.phone_number}`,
-              party.city && `City: ${party.city}`,
-              party.address && `Address: ${party.address}`,
+              bank && party.account_no && `Account No: ${party.account_no}`,
+              bank && party.bank_name,
+              !bank && party.phone_number && `Tel: ${party.phone_number}`,
+              !bank && party.city && `City: ${party.city}`,
+              !bank && party.address && `Address: ${party.address}`,
             ]
               .filter(Boolean)
               .join(" | ") || "Account details"}
@@ -108,7 +111,7 @@ export default function StatementPaper({ data, type, business = {} }) {
               <th>Reff. No.</th>
               <th>Method</th>
               <th>Description</th>
-              <th>{customer ? "Bill" : "Purchase"}</th>
+              <th>{bank ? "Debit" : customer ? "Bill" : "Purchase"}</th>
               <th>Credit</th>
               <th>Balance</th>
             </tr>
@@ -165,7 +168,7 @@ export default function StatementPaper({ data, type, business = {} }) {
               <b>{balance(data?.opening_balance)}</b>
             </p>
             <p>
-              <span>Total {customer ? "Bill" : "Purchase"}</span>
+              <span>Total {bank ? "Debit" : customer ? "Bill" : "Purchase"}</span>
               <b
                 style={
                   Number(totals.debit) < 0 ? { color: "#dc2626" } : undefined

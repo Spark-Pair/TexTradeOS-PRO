@@ -27,11 +27,15 @@ import {
   fetchPayments,
   fetchPurchases,
   fetchInventory,
+  fetchBalanceEntries,
+  fetchBankAccounts,
+  fetchBankAccountStatement,
 } from "../api/commerce";
 import { fetchInvoices } from "../api/invoice";
 import useAuth from "../hooks/useAuth";
 
 const money = (value) => <Amount value={value} decimals={2} />;
+const ENTITY_LABELS = { customer: "Customer", supplier: "Supplier", bank_account: "Bank Account" };
 const REPORT_GROUPS = [
   {
     title: "Accounts",
@@ -48,6 +52,16 @@ const REPORT_GROUPS = [
         value: "statement",
         category: "supplier",
         description: "Supplier ledger and balance",
+      },
+      {
+        label: "Bank Account Statement",
+        value: "bank_statement",
+        description: "Bank account activity and current balance",
+      },
+      {
+        label: "Balance Entries",
+        value: "balance_entries",
+        description: "Opening balances and account adjustments",
       },
     ],
   },
@@ -132,6 +146,13 @@ const REPORT_META = {
     amount: (row) =>
       Number(row.stock_pcs || 0) * Number(row.purchase_rate || 0),
   },
+  balance_entries: {
+    title: "Balance Entries Report",
+    date: (row) => row.entry_date,
+    party: (row) => `${row.entity_name || ENTITY_LABELS[row.entity_type] || "Account"} · ${ENTITY_LABELS[row.entity_type] || "Account"}`,
+    ref: (row) => `${String(row.direction || "").toUpperCase()} · ${row.reference || row.description || "Balance Entry"}`,
+    amount: (row) => row.direction === "credit" ? -Number(row.amount || 0) : Number(row.amount || 0),
+  },
 };
 const rowsFrom = (result) => {
   const rows = result?.data?.data ?? result?.data ?? result;
@@ -145,6 +166,8 @@ export default function Reports() {
   const [reportType, setReportType] = useState("statement");
   const [parties, setParties] = useState([]);
   const [partyId, setPartyId] = useState("");
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [bankAccountId, setBankAccountId] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [data, setData] = useState(null);
@@ -155,9 +178,13 @@ export default function Reports() {
 
   useEffect(() => {
     let live = true;
-    if (reportType !== "statement") {
+    const partyStatement = reportType === "statement";
+    const bankStatement = reportType === "bank_statement";
+    if (!partyStatement && !bankStatement) {
       setParties([]);
       setPartyId("");
+      setBankAccounts([]);
+      setBankAccountId("");
       setPartiesLoading(false);
       return () => {
         live = false;
@@ -166,17 +193,21 @@ export default function Reports() {
     const loadParties = async () => {
       setPartiesLoading(true);
       setPartyId("");
+      setBankAccountId("");
       setData(null);
       setError("");
       try {
-        const rows =
-          category === "customer"
-            ? await fetchCustomers()
-            : await fetchSuppliers();
-        if (live) setParties(Array.isArray(rows) ? rows : []);
+        if (partyStatement) {
+          const rows = category === "customer" ? await fetchCustomers() : await fetchSuppliers();
+          if (live) setParties(Array.isArray(rows) ? rows : []);
+        } else {
+          const rows = await fetchBankAccounts();
+          if (live) setBankAccounts(Array.isArray(rows) ? rows : []);
+        }
       } catch (e) {
         if (live) {
           setParties([]);
+          setBankAccounts([]);
           setError(
             e?.response?.data?.message ||
               e?.message ||
@@ -203,17 +234,24 @@ export default function Reports() {
       })),
     [parties, category],
   );
+  const bankAccountOptions = useMemo(() => bankAccounts.map((account) => ({ value: String(account._id), label: `${account.account_title} · ${account.bank_name || "Bank"} · Balance ${Number(account.balance || 0).toLocaleString()}` })), [bankAccounts]);
   const selected = useMemo(
     () => parties.find((party) => String(party._id) === String(partyId)),
     [parties, partyId],
   );
   const selectedName =
-    selected?.[category === "customer" ? "customer_name" : "supplier_name"] ||
-    "Account";
+    reportType === "bank_statement"
+      ? bankAccounts.find((account) => String(account._id) === String(bankAccountId))?.account_title || "Bank Account"
+      : selected?.[category === "customer" ? "customer_name" : "supplier_name"] || "Account";
+  const isLedgerReport = reportType === "statement" || reportType === "bank_statement";
 
   const generate = async () => {
     if (reportType === "statement" && !partyId) {
       setError(`Select a ${category} first`);
+      return;
+    }
+    if (reportType === "bank_statement" && !bankAccountId) {
+      setError("Select a bank account first");
       return;
     }
     if (dateFrom && dateTo && dateFrom > dateTo) {
@@ -235,6 +273,9 @@ export default function Reports() {
             : fetchSupplierStatement(partyId, params)),
         );
         setReportData(null);
+      } else if (reportType === "bank_statement") {
+        setData(await fetchBankAccountStatement(bankAccountId, params));
+        setReportData(null);
       } else {
         const source = {
           sales: () => fetchInvoices({ page: 1, limit: 5000 }),
@@ -242,6 +283,7 @@ export default function Reports() {
           payments: fetchPayments,
           expenses: fetchExpenses,
           stock: fetchInventory,
+          balance_entries: fetchBalanceEntries,
         }[reportType];
         const rows = rowsFrom(await source());
         const meta = REPORT_META[reportType];
@@ -384,7 +426,7 @@ export default function Reports() {
                 </div>
               </div>
               <div className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-medium text-gray-500">
-                {reportType === "statement"
+                {isLedgerReport
                   ? "Blank dates show full account history"
                   : reportType === "stock"
                     ? "Stock balances are current"
@@ -392,7 +434,7 @@ export default function Reports() {
               </div>
             </div>
             <div
-              className={`grid gap-4 p-4 sm:p-5 lg:p-6 ${reportType === "statement" ? "xl:grid-cols-[minmax(260px,1fr)_170px_170px_auto]" : "xl:grid-cols-[1fr_1fr_auto]"}`}
+              className={`grid gap-4 p-4 sm:p-5 lg:p-6 ${isLedgerReport ? "xl:grid-cols-[minmax(260px,1fr)_170px_170px_auto]" : "xl:grid-cols-[1fr_1fr_auto]"}`}
             >
               {reportType === "statement" && (
                 <Select
@@ -412,6 +454,7 @@ export default function Reports() {
                   }}
                 />
               )}
+              {reportType === "bank_statement" && <Select label="Bank Account" options={bankAccountOptions} value={bankAccountId} disabled={partiesLoading} placeholder={partiesLoading ? "Loading accounts..." : "Select bank account"} onChange={(value) => { setBankAccountId(value); clearPreview(); setError(""); }} />}
               <DateField
                 label="From Date"
                 value={dateFrom}
@@ -433,7 +476,7 @@ export default function Reports() {
                   icon={Search}
                   onClick={generate}
                   disabled={
-                    loading || (reportType === "statement" && partiesLoading)
+                    loading || (isLedgerReport && partiesLoading)
                   }
                   className="w-full xl:min-w-32"
                 >
@@ -455,7 +498,7 @@ export default function Reports() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-800">
-                  {reportType === "statement"
+                  {isLedgerReport
                     ? "Statement preview"
                     : "Report preview"}
                 </p>
@@ -479,7 +522,7 @@ export default function Reports() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="rounded-lg bg-teal-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#127475]">
-                      {category}
+                      {reportType === "bank_statement" ? "Bank Account" : category}
                     </span>
                     <p className="truncate text-sm font-bold text-gray-900">
                       {selectedName}
@@ -516,7 +559,7 @@ export default function Reports() {
                 <div className="statement-sheet mx-auto min-h-[297mm] w-[210mm] max-w-none bg-white px-[7mm] py-[6mm] shadow-[0_12px_40px_rgba(15,23,42,0.14)]">
                   <StatementPaper
                     data={data}
-                    type={category}
+                    type={reportType === "bank_statement" ? "bank" : category}
                     business={user?.business || {}}
                   />
                 </div>
