@@ -26,7 +26,7 @@ input[type=number] {
   -moz-appearance: textfield;
 }
 
-/* Native scrollbars stay functional but are replaced by an overlay indicator. */
+/* Hide native tracks; the active scroll area gets a floating thumb instead. */
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -38,12 +38,11 @@ input[type=number] {
 
 .app-scrollbar-overlay {
   position: fixed;
-  z-index: 9999;
-  width: 5px;
+  z-index: 110;
+  width: 6px;
   min-height: 24px;
   border-radius: 999px;
-  background: #1c7773;
-  box-shadow: 0 0 0 1px #fff9;
+  background: rgba(28, 119, 115, 0.6);
   opacity: 0;
   pointer-events: none;
   touch-action: none;
@@ -51,8 +50,8 @@ input[type=number] {
   transition: opacity 150ms ease;
 }
 
-.app-scrollbar-overlay.is-visible { opacity: .78; pointer-events: auto; }
-.app-scrollbar-overlay:hover { opacity: 1; cursor: grab; }
+.app-scrollbar-overlay.is-visible { opacity: .9; pointer-events: auto; }
+.app-scrollbar-overlay:hover { background: #1c7773; cursor: grab; }
 .app-scrollbar-overlay:active { cursor: grabbing; }
 
 .is-negative-number {

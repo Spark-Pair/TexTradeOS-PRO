@@ -102,168 +102,122 @@ export default function App() {
   useEffect(() => {
     const root = document.getElementById("root");
     if (!root) return undefined;
-    const overlays = new Map();
-    const hovered = new Set();
+
+    const thumb = document.createElement("div");
+    thumb.className = "app-scrollbar-overlay";
+    thumb.setAttribute("aria-hidden", "true");
+    document.body.appendChild(thumb);
+
+    let activeScroller = null;
     let hideTimer;
-    const getOverlay = (element) => {
-      let overlay = overlays.get(element);
-      if (!overlay) {
-        overlay = document.createElement("div");
-        overlay.className = "app-scrollbar-overlay";
-        overlay.setAttribute("aria-hidden", "true");
-        overlay.addEventListener("pointerenter", () => {
-          hovered.add(element);
-          clearTimeout(hideTimer);
-          update(element, true);
-        });
-        overlay.addEventListener("pointerleave", () => {
-          hovered.delete(element);
-          scheduleHide(element);
-        });
-        overlay.addEventListener("pointerdown", (event) => {
-          event.preventDefault();
-          const isPage = element === document.body || element === document.documentElement;
-          const contentHeight = isPage ? document.documentElement.scrollHeight : element.scrollHeight;
-          const viewportHeight = isPage ? window.innerHeight : element.clientHeight;
-          const thumbHeight = overlay.getBoundingClientRect().height;
-          const rect = isPage
-            ? { top: 0, bottom: window.innerHeight }
-            : element.getBoundingClientRect();
-          const trackHeight = Math.max(
-            0,
-            Math.min(window.innerHeight, rect.bottom) - Math.max(0, rect.top),
-          );
-          const scrollRange = contentHeight - viewportHeight;
-          const thumbRange = trackHeight - thumbHeight;
-          const startY = event.clientY;
-          const startScroll = isPage ? window.scrollY : element.scrollTop;
-          overlay.setPointerCapture(event.pointerId);
-          const move = (moveEvent) => {
-            const nextScroll = startScroll + ((moveEvent.clientY - startY) / Math.max(1, thumbRange)) * scrollRange;
-            if (isPage) window.scrollTo(0, nextScroll);
-            else element.scrollTop = nextScroll;
-            update(element, true);
-          };
-          const finish = () => {
-            overlay.removeEventListener("pointermove", move);
-            overlay.removeEventListener("pointerup", finish);
-            overlay.removeEventListener("pointercancel", finish);
-          };
-          overlay.addEventListener("pointermove", move);
-          overlay.addEventListener("pointerup", finish, { once: true });
-          overlay.addEventListener("pointercancel", finish, { once: true });
-        });
-        document.body.appendChild(overlay);
-        overlays.set(element, overlay);
-      }
-      return overlay;
-    };
+    let dragState = null;
+
+    const isPageScroller = (element) => element === document.body || element === document.documentElement || element === document.scrollingElement;
     const isScrollable = (element) => {
       if (!(element instanceof HTMLElement)) return false;
-      if (element === document.body || element === document.documentElement)
-        return document.documentElement.scrollHeight > window.innerHeight + 2;
+      if (isPageScroller(element)) return document.documentElement.scrollHeight > window.innerHeight + 2;
       const style = getComputedStyle(element);
-      return /(auto|scroll|overlay)/.test(style.overflowY) &&
-        element.scrollHeight > element.clientHeight + 2;
+      return /(auto|scroll|overlay)/.test(style.overflowY) && element.scrollHeight > element.clientHeight + 2;
     };
-    const update = (element, show = false) => {
+    const findScroller = (event) => event.composedPath().find(isScrollable) || null;
+    const setVisible = (element) => {
       if (!isScrollable(element)) return;
-      const overlay = getOverlay(element);
-      const isPage = element === document.body || element === document.documentElement;
-      const rect = isPage
-        ? { top: 0, right: window.innerWidth, height: window.innerHeight }
-        : element.getBoundingClientRect();
-      const trackTop = Math.max(0, rect.top);
-      const trackBottom = Math.min(window.innerHeight, rect.top + rect.height);
-      const trackHeight = Math.max(0, trackBottom - trackTop);
-      if (trackHeight < 24) return;
-      const viewportHeight = isPage ? window.innerHeight : element.clientHeight;
-      const contentHeight = isPage ? document.documentElement.scrollHeight : element.scrollHeight;
-      const thumbHeight = Math.min(
-        trackHeight,
-        Math.max(14, (viewportHeight / contentHeight) * trackHeight),
-      );
-      const maxScroll = contentHeight - viewportHeight;
-      const scrollTop = isPage ? window.scrollY : element.scrollTop;
-      const scrollProgress = maxScroll > 0 ? Math.min(1, Math.max(0, scrollTop / maxScroll)) : 0;
-      const thumbTop = trackTop + scrollProgress * Math.max(0, trackHeight - thumbHeight);
-      overlay.style.left = `${Math.max(0, Math.min(window.innerWidth - 7, rect.right - 7))}px`;
-      overlay.style.top = `${thumbTop}px`;
-      overlay.style.height = `${Math.min(thumbHeight, trackHeight)}px`;
-      if (show) overlay.classList.add("is-visible");
+      activeScroller = element;
+      clearTimeout(hideTimer);
+      const page = isPageScroller(element);
+      const rect = page ? { top: 0, right: window.innerWidth, bottom: window.innerHeight } : element.getBoundingClientRect();
+      const top = Math.max(0, rect.top);
+      const bottom = Math.min(window.innerHeight, rect.bottom);
+      const trackHeight = Math.max(0, bottom - top);
+      const viewportHeight = page ? window.innerHeight : element.clientHeight;
+      const contentHeight = page ? document.documentElement.scrollHeight : element.scrollHeight;
+      if (trackHeight < 24 || contentHeight <= viewportHeight) return;
+      const thumbHeight = Math.min(trackHeight, Math.max(24, (viewportHeight / contentHeight) * trackHeight));
+      const scrollTop = page ? window.scrollY : element.scrollTop;
+      const scrollRange = Math.max(1, contentHeight - viewportHeight);
+      const thumbTop = top + (scrollTop / scrollRange) * Math.max(0, trackHeight - thumbHeight);
+      const right = page ? window.innerWidth : rect.right;
+      thumb.style.left = `${Math.max(0, Math.min(window.innerWidth - 7, right - 7))}px`;
+      thumb.style.top = `${thumbTop}px`;
+      thumb.style.height = `${thumbHeight}px`;
+      thumb.classList.add("is-visible");
     };
-    const scan = (node = root) => {
-      if (node instanceof HTMLElement && isScrollable(node)) getOverlay(node);
-      node.querySelectorAll?.("*").forEach((element) => {
-        if (isScrollable(element)) getOverlay(element);
-      });
-    };
-    const findScroller = (event, fallback = true) => {
-      for (const node of event.composedPath())
-        if (isScrollable(node)) return node;
-      return fallback ? document.scrollingElement || document.documentElement : null;
-    };
-    const scheduleHide = (element) => {
+    const scheduleHide = () => {
       clearTimeout(hideTimer);
       hideTimer = window.setTimeout(() => {
-        if (!hovered.has(element)) overlays.get(element)?.classList.remove("is-visible");
-      }, 500);
+        if (!dragState && !thumb.matches(":hover")) thumb.classList.remove("is-visible");
+      }, 650);
     };
-    const onPointerOver = (event) => {
-      const element = findScroller(event, false);
-      if (!isScrollable(element)) return;
-      hovered.add(element);
-      clearTimeout(hideTimer);
-      update(element, true);
-    };
-    const onPointerOut = (event) => {
-      const element = findScroller(event, false);
-      if (!isScrollable(element)) return;
-      const next = event.relatedTarget;
-      if (next instanceof Node && element.contains(next)) return;
-      if (next instanceof HTMLElement && next.classList.contains("app-scrollbar-overlay")) return;
-      hovered.delete(element);
-      scheduleHide(element);
+    const onPointerMove = (event) => {
+      if (thumb.contains(event.target)) return;
+      const scroller = findScroller(event);
+      if (scroller) setVisible(scroller);
+      else if (activeScroller && !thumb.matches(":hover")) scheduleHide();
     };
     const onScroll = (event) => {
-      const element = event.target instanceof HTMLElement && isScrollable(event.target)
-        ? event.target
-        : findScroller(event);
-      update(element, true);
-      if (!hovered.has(element)) scheduleHide(element);
+      const target = event.target;
+      const scroller = isScrollable(target) ? target : document.scrollingElement;
+      if (isScrollable(scroller)) setVisible(scroller);
+      scheduleHide();
     };
-    const onResize = () => overlays.forEach((_, element) => update(element));
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach(({ addedNodes, removedNodes, target }) => {
-        if (target instanceof HTMLElement) scan(target);
-        addedNodes.forEach((node) => node instanceof HTMLElement && scan(node));
-        removedNodes.forEach((node) => {
-          if (!(node instanceof HTMLElement)) return;
-          overlays.forEach((overlay, element) => {
-            if (element === node || node.contains(element)) {
-              overlay.remove();
-              overlays.delete(element);
-            }
-          });
-        });
-      });
-    });
-    scan();
-    observer.observe(root, { childList: true, subtree: true });
-    document.addEventListener("pointerover", onPointerOver, true);
-    document.addEventListener("pointerout", onPointerOut, true);
+    const onResize = () => activeScroller && setVisible(activeScroller);
+    const onThumbPointerEnter = () => clearTimeout(hideTimer);
+    const onThumbPointerLeave = scheduleHide;
+    const onPointerDown = (event) => {
+      event.preventDefault();
+      if (!activeScroller) return;
+      const page = isPageScroller(activeScroller);
+      const viewportHeight = page ? window.innerHeight : activeScroller.clientHeight;
+      const contentHeight = page ? document.documentElement.scrollHeight : activeScroller.scrollHeight;
+      const thumbHeight = thumb.getBoundingClientRect().height;
+      const rect = page ? { top: 0 } : activeScroller.getBoundingClientRect();
+      const trackTop = Math.max(0, rect.top);
+      const trackHeight = Math.max(1, Math.min(window.innerHeight, page ? window.innerHeight : rect.bottom) - trackTop);
+      dragState = {
+        pointerId: event.pointerId,
+        startY: event.clientY,
+        startScroll: page ? window.scrollY : activeScroller.scrollTop,
+        scrollRange: Math.max(0, contentHeight - viewportHeight),
+        thumbRange: Math.max(1, trackHeight - thumbHeight),
+      };
+      thumb.setPointerCapture(event.pointerId);
+    };
+    const onPointerDrag = (event) => {
+      if (!dragState || event.pointerId !== dragState.pointerId || !activeScroller) return;
+      const next = dragState.startScroll + ((event.clientY - dragState.startY) / dragState.thumbRange) * dragState.scrollRange;
+      if (isPageScroller(activeScroller)) window.scrollTo(0, next);
+      else activeScroller.scrollTop = next;
+      setVisible(activeScroller);
+    };
+    const onPointerUp = () => {
+      dragState = null;
+      scheduleHide();
+    };
+
+    thumb.addEventListener("pointerenter", onThumbPointerEnter);
+    thumb.addEventListener("pointerleave", onThumbPointerLeave);
+    thumb.addEventListener("pointerdown", onPointerDown);
+    thumb.addEventListener("pointermove", onPointerDrag);
+    thumb.addEventListener("pointerup", onPointerUp);
+    thumb.addEventListener("pointercancel", onPointerUp);
+    document.addEventListener("pointermove", onPointerMove, true);
     document.addEventListener("scroll", onScroll, true);
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onResize);
+
     return () => {
-      observer.disconnect();
-      document.removeEventListener("pointerover", onPointerOver, true);
-      document.removeEventListener("pointerout", onPointerOut, true);
+      clearTimeout(hideTimer);
+      thumb.removeEventListener("pointerenter", onThumbPointerEnter);
+      thumb.removeEventListener("pointerleave", onThumbPointerLeave);
+      thumb.removeEventListener("pointerdown", onPointerDown);
+      thumb.removeEventListener("pointermove", onPointerDrag);
+      thumb.removeEventListener("pointerup", onPointerUp);
+      thumb.removeEventListener("pointercancel", onPointerUp);
+      document.removeEventListener("pointermove", onPointerMove, true);
       document.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onResize);
-      clearTimeout(hideTimer);
-      overlays.forEach((overlay) => overlay.remove());
+      thumb.remove();
     };
   }, []);
   useEffect(() => {
