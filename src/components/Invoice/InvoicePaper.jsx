@@ -32,7 +32,7 @@ export default function InvoicePaper({
     .join(" | ");
 
   return (
-    <article className={`invoice-paper ${isLastCopy ? "last-copy" : ""} ${customerVariant === "customer-2" ? "customer-two-invoice" : ""}`} style={customerVariant === "customer-2" ? customerBrandStyle : undefined}>
+    <article className={`invoice-paper ${isLastCopy ? "last-copy" : ""} ${customerVariant === "customer-2" ? "customer-two-invoice" : ""} ${business?.invoice_column_borders_enabled === true ? "invoice-column-borders" : ""}`} style={customerVariant === "customer-2" ? customerBrandStyle : undefined}>
       {customerVariant === "customer-2" && (
         <>
           <div className="customer-two-banner">

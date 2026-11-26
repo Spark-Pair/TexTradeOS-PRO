@@ -31,7 +31,7 @@ function SectionCard({ icon: Icon, title, description, children, className = "",
   </section>;
 }
 
-function AnimatedSwitch({ checked, onChange }) {
+function AnimatedSwitch({ checked, onChange, label = "setting" }) {
   const knobControls = useAnimationControls();
   const reduceMotion = useReducedMotion();
   const initialized = useRef(false);
@@ -51,7 +51,7 @@ function AnimatedSwitch({ checked, onChange }) {
 
   return <button type="button" role="switch" aria-checked={checked} onClick={onChange} className={`relative h-6 w-11 shrink-0 overflow-hidden rounded-full border transition-colors duration-300 ease-out focus:outline-none ${checked ? "border-[#127475] bg-[#127475]" : "border-gray-300 bg-gray-300"}`}>
     <motion.span initial={false} animate={knobControls} className="absolute left-0.5 top-0.5 h-[18px] w-[18px] rounded-full bg-white shadow-sm will-change-transform" />
-    <span className="sr-only">{checked ? "Disable customized invoice" : "Enable customized invoice"}</span>
+    <span className="sr-only">{checked ? `Disable ${label}` : `Enable ${label}`}</span>
   </button>;
 }
 
@@ -104,7 +104,7 @@ export default function BusinessSetup() {
     <form id="business-profile-form" onSubmit={submit} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2">
       <div className="grid gap-3 xl:grid-cols-[360px_minmax(0,1fr)]">
         <div className="grid content-start gap-4">
-          <SectionCard icon={FileText} title="Customized Invoice" description="Branded Customer 2 design." className="xl:min-h-[360px]" bodyClassName="" headerRight={<AnimatedSwitch checked={Boolean(form.custom_invoice_enabled)} onChange={() => setForm((current) => ({ ...current, custom_invoice_enabled: !current.custom_invoice_enabled }))} />}>
+          <SectionCard icon={FileText} title="Customized Invoice" description="Branded Customer 2 design." className="xl:min-h-[360px]" bodyClassName="" headerRight={<AnimatedSwitch label="customized invoice" checked={Boolean(form.custom_invoice_enabled)} onChange={() => setForm((current) => ({ ...current, custom_invoice_enabled: !current.custom_invoice_enabled }))} />}>
             <label className="group relative flex h-56 cursor-pointer items-center justify-center overflow-hidden bg-[linear-gradient(45deg,#f8fafc_25%,transparent_25%),linear-gradient(-45deg,#f8fafc_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f8fafc_75%),linear-gradient(-45deg,transparent_75%,#f8fafc_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0px] p-8 outline-none focus-within:ring-2 focus-within:ring-inset focus-within:ring-[#127475]/20">
               {form.logo_data ? <>
                 <img src={form.logo_data} alt="Business logo preview" className="h-full w-full object-contain" />
@@ -175,6 +175,10 @@ export default function BusinessSetup() {
             <label className="mt-3 flex cursor-pointer items-center justify-between gap-4 border-b border-gray-200 pb-4">
               <span className="min-w-0"><strong className="block text-sm font-semibold text-gray-800">Compact rows</strong><span className="mt-0.5 block text-[11px] leading-4 text-gray-400">Reduce summary height.</span></span>
               <AnimatedSwitch checked={summarySettings.summary_compact} onChange={() => updateSummarySetting("summary_compact", !summarySettings.summary_compact)} />
+            </label>
+            <label className="mt-3 flex cursor-pointer items-center justify-between gap-4 border-b border-gray-200 pb-4">
+              <span className="min-w-0"><strong className="block text-sm font-semibold text-gray-800">Column borders</strong><span className="mt-0.5 block text-[11px] text-gray-400">Show vertical dividers between invoice table columns.</span></span>
+              <AnimatedSwitch label="invoice column borders" checked={form.invoice_column_borders_enabled === true} onChange={() => setForm((current) => ({ ...current, invoice_column_borders_enabled: current.invoice_column_borders_enabled !== true }))} />
             </label>
             <div className="pt-4">
               <p className="text-xs font-semibold text-gray-700">Box layout</p>
