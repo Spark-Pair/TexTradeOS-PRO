@@ -11,6 +11,8 @@ const date = (value) =>
 
 export default function OperationalReportPaper({ data, business, meta }) {
   const stock = data.type === "stock";
+  const supplierStock = data.type === "supplier_stock";
+  const inventory = stock || supplierStock;
   const rows = data.rows || [];
   const total = rows.reduce(
     (sum, row) => sum + Number(meta.amount(row) || 0),
@@ -56,7 +58,7 @@ export default function OperationalReportPaper({ data, business, meta }) {
             <div>
               <b>PERIOD</b>
               <strong>
-                {stock ? "Current stock" : `${date(from)} — ${date(to)}`}
+                {supplierStock ? `Current stock · ${data.supplierName || "Selected supplier"}` : stock ? "Current stock" : `${date(from)} — ${date(to)}`}
               </strong>
             </div>
           </div>
@@ -67,9 +69,9 @@ export default function OperationalReportPaper({ data, business, meta }) {
           <div>
             <p>
               <b>{rows.length.toLocaleString()}</b>
-              <small>{stock ? "Articles" : "Records"}</small>
+              <small>{supplierStock ? "Stock items" : stock ? "Articles" : "Records"}</small>
             </p>
-            {stock && (
+            {inventory && (
               <p>
                 <b>
                   {rows
@@ -81,7 +83,7 @@ export default function OperationalReportPaper({ data, business, meta }) {
             )}
             <p>
               <b>{money(total)}</b>
-              <small>{stock ? "Stock cost value" : "Grand total"}</small>
+              <small>{inventory ? "Stock cost value" : "Grand total"}</small>
             </p>
           </div>
         </section>
@@ -89,7 +91,17 @@ export default function OperationalReportPaper({ data, business, meta }) {
         <table className="report-paper-ledger">
           <thead>
             <tr>
-              {stock ? (
+              {supplierStock ? (
+                <>
+                  <th>Article</th>
+                  <th>Description</th>
+                  <th>Size</th>
+                  <th>Purchase No.</th>
+                  <th>Stock pcs</th>
+                  <th>Cost / pc</th>
+                  <th>Stock cost</th>
+                </>
+              ) : stock ? (
                 <>
                   <th>Article</th>
                   <th>Description</th>
@@ -117,7 +129,17 @@ export default function OperationalReportPaper({ data, business, meta }) {
                     row._id || row.id || `${meta.ref(row) || "record"}-${index}`
                   }
                 >
-                  {stock ? (
+                  {supplierStock ? (
+                    <>
+                      <td><b>{row.article_no || "-"}</b></td>
+                      <td>{row.description || "-"}</td>
+                      <td>{row.size || "-"}</td>
+                      <td>{row.purchase_number || "-"}</td>
+                      <td className="report-paper-number">{Number(row.stock_pcs || 0).toLocaleString()}</td>
+                      <td className="report-paper-number">{money(row.purchase_rate)}</td>
+                      <td className="report-paper-number"><b>{money(meta.amount(row))}</b></td>
+                    </>
+                  ) : stock ? (
                     <>
                       <td>
                         <b>{row.article_no || "-"}</b>
@@ -153,13 +175,13 @@ export default function OperationalReportPaper({ data, business, meta }) {
               ))
             ) : (
               <tr>
-                <td colSpan={stock ? 7 : 4} className="report-paper-empty">
+                <td colSpan={supplierStock ? 7 : stock ? 7 : 4} className="report-paper-empty">
                   No records found for this period.
                 </td>
               </tr>
             )}
           </tbody>
-          {!stock && rows.length > 0 && (
+          {!inventory && rows.length > 0 && (
             <tfoot>
               <tr>
                 <td colSpan="3">Grand Total</td>

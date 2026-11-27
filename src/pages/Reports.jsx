@@ -106,6 +106,11 @@ const REPORT_GROUPS = [
         value: "stock",
         description: "Available pieces and stock cost",
       },
+      {
+        label: "Supplier Stock at Cost",
+        value: "supplier_stock",
+        description: "Choose a supplier to view available items at cost",
+      },
     ],
   },
 ];
@@ -146,6 +151,13 @@ const REPORT_META = {
     amount: (row) =>
       Number(row.stock_pcs || 0) * Number(row.purchase_rate || 0),
   },
+  supplier_stock: {
+    title: "Supplier Stock at Cost Report",
+    date: () => "",
+    party: (row) => row.supplier_name || "Unassigned",
+    ref: (row) => row.article_no,
+    amount: (row) => Number(row.stock_pcs || 0) * Number(row.purchase_rate || 0),
+  },
   balance_entries: {
     title: "Balance Entries Report",
     date: (row) => row.entry_date,
@@ -159,7 +171,6 @@ const rowsFrom = (result) => {
   return Array.isArray(rows) ? rows : [];
 };
 const dateKey = (value) => String(value || "").slice(0, 10);
-
 export default function Reports() {
   const { user } = useAuth();
   const [category, setCategory] = useState("customer");
@@ -180,7 +191,8 @@ export default function Reports() {
     let live = true;
     const partyStatement = reportType === "statement";
     const bankStatement = reportType === "bank_statement";
-    if (!partyStatement && !bankStatement) {
+    const supplierStockReport = reportType === "supplier_stock";
+    if (!partyStatement && !bankStatement && !supplierStockReport) {
       setParties([]);
       setPartyId("");
       setBankAccounts([]);
@@ -197,8 +209,9 @@ export default function Reports() {
       setData(null);
       setError("");
       try {
-        if (partyStatement) {
-          const rows = category === "customer" ? await fetchCustomers() : await fetchSuppliers();
+        if (partyStatement || supplierStockReport) {
+          const supplierMode = supplierStockReport || category === "supplier";
+          const rows = supplierMode ? await fetchSuppliers() : await fetchCustomers();
           if (live) setParties(Array.isArray(rows) ? rows : []);
         } else {
           const rows = await fetchBankAccounts();
@@ -225,14 +238,13 @@ export default function Reports() {
   }, [category, reportType]);
 
   const partyOptions = useMemo(
-    () =>
-      parties.map((party) => ({
+    () => parties.map((party) => ({
         value: String(party._id),
         label:
-          party[category === "customer" ? "customer_name" : "supplier_name"] ||
+          party[(reportType === "supplier_stock" || category === "supplier") ? "supplier_name" : "customer_name"] ||
           "Unnamed account",
       })),
-    [parties, category],
+    [parties, category, reportType],
   );
   const bankAccountOptions = useMemo(() => bankAccounts.map((account) => ({ value: String(account._id), label: `${account.account_title} · ${account.bank_name || "Bank"} · Balance ${Number(account.balance || 0).toLocaleString()}` })), [bankAccounts]);
   const selected = useMemo(
@@ -242,8 +254,9 @@ export default function Reports() {
   const selectedName =
     reportType === "bank_statement"
       ? bankAccounts.find((account) => String(account._id) === String(bankAccountId))?.account_title || "Bank Account"
-      : selected?.[category === "customer" ? "customer_name" : "supplier_name"] || "Account";
+      : selected?.[(reportType === "supplier_stock" || category === "supplier") ? "supplier_name" : "customer_name"] || "Account";
   const isLedgerReport = reportType === "statement" || reportType === "bank_statement";
+  const isInventoryReport = reportType === "stock" || reportType === "supplier_stock";
 
   const generate = async () => {
     if (reportType === "statement" && !partyId) {
@@ -254,7 +267,11 @@ export default function Reports() {
       setError("Select a bank account first");
       return;
     }
-    if (dateFrom && dateTo && dateFrom > dateTo) {
+    if (reportType === "supplier_stock" && !partyId) {
+      setError("Select a supplier first");
+      return;
+    }
+    if (!isInventoryReport && dateFrom && dateTo && dateFrom > dateTo) {
       setError("From date cannot be after To date");
       return;
     }
@@ -283,6 +300,7 @@ export default function Reports() {
           payments: fetchPayments,
           expenses: fetchExpenses,
           stock: fetchInventory,
+          supplier_stock: fetchInventory,
           balance_entries: fetchBalanceEntries,
         }[reportType];
         const rows = rowsFrom(await source());
@@ -290,6 +308,8 @@ export default function Reports() {
         const filtered =
           reportType === "stock"
             ? rows
+            : reportType === "supplier_stock"
+              ? rows.filter((row) => String(row.supplier_id || "") === String(partyId) && Number(row.stock_pcs || 0) > 0)
             : rows.filter((row) => {
                 const date = dateKey(meta.date(row));
                 return (
@@ -298,7 +318,7 @@ export default function Reports() {
                   (!dateTo || date <= dateTo)
                 );
               });
-        setReportData({ type: reportType, rows: filtered, dateFrom, dateTo });
+        setReportData({ type: reportType, rows: filtered, dateFrom, dateTo, supplierName: reportType === "supplier_stock" ? selectedName : "" });
         setData(null);
       }
     } catch (e) {
@@ -364,7 +384,7 @@ export default function Reports() {
               return (
                 <section
                   key={group.title}
-                  className="rounded-3xl border border-gray-300 bg-white p-4 sm:p-5"
+                  className="flex h-[300px] flex-col rounded-3xl border border-gray-300 bg-white p-4 sm:p-5"
                 >
                   <div className="mb-3 flex items-center gap-2.5">
                     <span className="grid h-9 w-9 place-items-center rounded-xl bg-teal-50 text-[#127475]">
@@ -374,7 +394,7 @@ export default function Reports() {
                       {group.title}
                     </h2>
                   </div>
-                  <div className="grid gap-2">
+                  <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                     {group.items.map((item) => {
                       const active =
                         item.value === reportType &&
@@ -389,7 +409,7 @@ export default function Reports() {
                             clearPreview();
                             setError("");
                           }}
-                          className={`flex min-w-0 items-start gap-2.5 rounded-xl border px-3 py-2.5 text-left transition ${active ? "border-teal-200 bg-teal-50/70" : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"}`}
+                          className={`flex w-full min-w-0 items-start gap-2.5 rounded-xl border px-3 py-2.5 text-left transition ${active ? "border-teal-200 bg-teal-50/70" : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"}`}
                         >
                           <span
                             className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${active ? "bg-teal-600" : "bg-gray-300"}`}
@@ -428,24 +448,24 @@ export default function Reports() {
               <div className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-medium text-gray-500">
                 {isLedgerReport
                   ? "Blank dates show full account history"
-                  : reportType === "stock"
+                  : reportType === "stock" || reportType === "supplier_stock"
                     ? "Stock balances are current"
                     : "Dates are optional"}
               </div>
             </div>
             <div
-              className={`grid gap-4 p-4 sm:p-5 lg:p-6 ${isLedgerReport ? "xl:grid-cols-[minmax(260px,1fr)_170px_170px_auto]" : "xl:grid-cols-[1fr_1fr_auto]"}`}
+              className={`grid gap-4 p-4 sm:p-5 lg:p-6 ${isLedgerReport ? "xl:grid-cols-[minmax(260px,1fr)_170px_170px_auto]" : reportType === "supplier_stock" ? "sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end" : isInventoryReport ? "xl:grid-cols-[auto] xl:justify-start" : "xl:grid-cols-[1fr_1fr_auto]"}`}
             >
-              {reportType === "statement" && (
+              {(reportType === "statement" || reportType === "supplier_stock") && (
                 <Select
-                  label={category === "customer" ? "Customer" : "Supplier"}
+                  label={reportType === "supplier_stock" || category === "supplier" ? "Supplier" : "Customer"}
                   options={partyOptions}
                   value={partyId}
                   disabled={partiesLoading}
                   placeholder={
                     partiesLoading
-                      ? "Loading accounts..."
-                      : `Select ${category}`
+                      ? `Loading ${reportType === "supplier_stock" || category === "supplier" ? "suppliers" : "customers"}...`
+                      : `Select ${reportType === "supplier_stock" ? "supplier" : category}`
                   }
                   onChange={(value) => {
                     setPartyId(value);
@@ -455,28 +475,28 @@ export default function Reports() {
                 />
               )}
               {reportType === "bank_statement" && <Select label="Bank Account" options={bankAccountOptions} value={bankAccountId} disabled={partiesLoading} placeholder={partiesLoading ? "Loading accounts..." : "Select bank account"} onChange={(value) => { setBankAccountId(value); clearPreview(); setError(""); }} />}
-              <DateField
+              {!isInventoryReport && <DateField
                 label="From Date"
                 value={dateFrom}
                 onChange={(value) => {
                   setDateFrom(value);
                   clearPreview();
                 }}
-              />
-              <DateField
+              />}
+              {!isInventoryReport && <DateField
                 label="To Date"
                 value={dateTo}
                 onChange={(value) => {
                   setDateTo(value);
                   clearPreview();
                 }}
-              />
-              <div className="flex items-end">
+              />}
+              <div className={`flex items-end ${reportType === "supplier_stock" ? "sm:w-32" : ""}`}>
                 <Button
                   icon={Search}
                   onClick={generate}
                   disabled={
-                    loading || (isLedgerReport && partiesLoading)
+                    loading || ((isLedgerReport || reportType === "supplier_stock") && partiesLoading)
                   }
                   className="w-full xl:min-w-32"
                 >
@@ -505,15 +525,19 @@ export default function Reports() {
                 <p className="mt-1 max-w-2xl text-xs leading-5 text-gray-500">
                   {reportType === "statement"
                     ? "Choose Customer or Supplier, select an account and generate the complete ledger or a specific date range."
-                    : "Choose a date range and generate a clear, printable report for your business."}
+                    : reportType === "supplier_stock"
+                      ? "Select a supplier and generate to see its current stock items and cost value."
+                      : reportType === "stock"
+                        ? "Generate to see current stock quantities and cost value."
+                        : "Choose a date range and generate a clear, printable report for your business."}
                 </p>
               </div>
             </section>
           )}
           {loading && (
             <div className="flex min-h-64 items-center justify-center gap-2 rounded-3xl border border-gray-300 bg-white text-sm text-gray-500">
-              <Loader2 size={18} className="animate-spin" /> Preparing detailed
-              account statement...
+              <Loader2 size={18} className="animate-spin" />
+              {isLedgerReport ? "Preparing account statement..." : isInventoryReport ? "Preparing current stock report..." : "Preparing report..."}
             </div>
           )}
           {data && (
@@ -587,6 +611,8 @@ function removeStatementPrintClone() {
 function OperationalReport({ data, business, onPrint }) {
   const meta = REPORT_META[data.type];
   const stock = data.type === "stock";
+  const supplierStock = data.type === "supplier_stock";
+  const inventory = stock || supplierStock;
   const total = data.rows.reduce(
     (sum, row) => sum + Number(meta.amount(row) || 0),
     0,
@@ -602,7 +628,7 @@ function OperationalReport({ data, business, onPrint }) {
         <div>
           <h2 className="text-sm font-bold text-gray-900">{meta.title}</h2>
           <p className="mt-1 text-xs text-gray-500">
-            {stock
+            {supplierStock ? `Supplier: ${data.supplierName || "Selected supplier"} · Current available stock` : inventory
               ? "Current available stock"
               : `${dateFromLabel(data.rows, meta)} · ${data.rows.length} records`}
           </p>
@@ -618,13 +644,13 @@ function OperationalReport({ data, business, onPrint }) {
       </div>
       <div className="grid grid-cols-2 gap-px border-b border-gray-200 bg-gray-200 sm:grid-cols-3">
         <Metric
-          label={stock ? "Articles" : "Records"}
+          label={supplierStock ? "Stock Items" : stock ? "Articles" : "Records"}
           value={data.rows.length.toLocaleString()}
         />
         <Metric
-          label={stock ? "Stock Pieces" : "Total Amount"}
+          label={inventory ? "Stock Pieces" : "Total Amount"}
           value={
-            stock
+            inventory
               ? data.rows
                   .reduce((sum, row) => sum + Number(row.stock_pcs || 0), 0)
                   .toLocaleString()
@@ -633,8 +659,8 @@ function OperationalReport({ data, business, onPrint }) {
           highlight
         />
         <Metric
-          label={stock ? "Stock Cost Value" : "Report Date"}
-          value={stock ? money(total) : reportDate}
+          label={inventory ? "Stock Cost Value" : "Report Date"}
+          value={inventory ? money(total) : reportDate}
         />
       </div>
       <div className="statement-preview-stage overflow-auto bg-[#e9eeed] p-4 sm:p-5 lg:p-6">
