@@ -177,7 +177,7 @@ export default function BusinessSetup() {
               <AnimatedSwitch checked={summarySettings.summary_compact} onChange={() => updateSummarySetting("summary_compact", !summarySettings.summary_compact)} />
             </label>
             <label className="mt-3 flex cursor-pointer items-center justify-between gap-4 border-b border-gray-200 pb-4">
-              <span className="min-w-0"><strong className="block text-sm font-semibold text-gray-800">Column borders</strong><span className="mt-0.5 block text-[11px] text-gray-400">Show vertical dividers between invoice table columns.</span></span>
+              <span className="min-w-0"><strong className="block text-sm font-semibold text-gray-800">Column borders</strong><span className="mt-0.5 block text-[11px] text-gray-400">Show vertical dividers in invoice items and summary totals.</span></span>
               <AnimatedSwitch label="invoice column borders" checked={form.invoice_column_borders_enabled === true} onChange={() => setForm((current) => ({ ...current, invoice_column_borders_enabled: current.invoice_column_borders_enabled !== true }))} />
             </label>
             <div className="pt-4">

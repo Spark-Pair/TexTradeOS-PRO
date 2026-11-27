@@ -62,7 +62,7 @@ export default function ThermalInvoicePaper({ invoice, businessName = "", busine
   const summaryGroups = splitSummaryRows(summaryRows, summarySettings.summary_layout);
 
   return (
-    <article className={`thermal-invoice-paper ${customerVariant === "customer-2" ? "customer-two-invoice" : ""}`} style={customerVariant === "customer-2" ? customerBrandStyle : undefined}>
+    <article className={`thermal-invoice-paper ${customerVariant === "customer-2" ? "customer-two-invoice" : ""} ${business?.invoice_column_borders_enabled === true ? "invoice-column-borders" : ""}`} style={customerVariant === "customer-2" ? customerBrandStyle : undefined}>
       {customerVariant === "customer-2" && (
         <>
           <div className="customer-two-banner">
